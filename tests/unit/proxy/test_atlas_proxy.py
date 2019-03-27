@@ -95,7 +95,8 @@ class TestAtlasProxy(unittest.TestCase):
         unique_attr_response = MagicMock()
         unique_attr_response.entity = self.entity1
 
-        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy._driver.entity_unique_attribute = MagicMock(
+            return_value=unique_attr_response)
         response = self.proxy.get_table(table_uri=self.table_uri)
 
         expected = Table(database=self.entity_type,

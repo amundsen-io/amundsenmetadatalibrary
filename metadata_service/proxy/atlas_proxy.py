@@ -88,11 +88,13 @@ class AtlasProxy(BaseProxy):
             # The reason to use the DATASET_ENTITY here instead of TABLE_ENTITY
             # is to access the older data (if any) which was generated before
             # introducing the TABLE_ENTITY in atlas.
-            entity = self._driver.entity_unique_attribute(table_info['entity'],
-                                                          qualifiedName=table_info.get('name')).entity
+            entity = self._driver.entity_unique_attribute(
+                table_info['entity'],
+                qualifiedName=table_info.get('name')).entity
         except Exception as ex:
             LOGGER.exception('Table not found. {}'.format(str(ex)))
-            raise NotFoundException('Table URI( {table_uri} ) does not exist'.format(table_uri=table_uri))
+            raise NotFoundException('Table URI( {table_uri} ) does not exist'
+                                    .format(table_uri=table_uri))
 
         try:
             table = Table(database=table_info['entity'],
@@ -104,9 +106,11 @@ class AtlasProxy(BaseProxy):
 
             return table
         except KeyError as ex:
-            LOGGER.exception('Error while accessing table information. {}'.format(str(ex)))
-            raise BadRequest('Some of the required attributes are missing in : ( {table_uri} )'.
-                             format(table_uri=table_uri))
+            LOGGER.exception('Error while accessing table information. {}'
+                             .format(str(ex)))
+            raise BadRequest('Some of the required attributes '
+                             'are missing in : ( {table_uri} )'
+                             .format(table_uri=table_uri))
 
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
         pass
