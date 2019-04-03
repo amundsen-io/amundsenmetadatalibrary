@@ -4,6 +4,8 @@ from typing import Union, List, Dict, Any, Tuple
 
 from atlasclient.client import Atlas
 from atlasclient.exceptions import BadRequest
+from atlasclient.models import EntityUniqueAttribute
+
 from metadata_service.entity.tag_detail import TagDetail
 
 from metadata_service.entity.popular_table import PopularTable
@@ -74,7 +76,7 @@ class AtlasProxy(BaseProxy):
         result = pattern.match(table_uri)
         return result.groupdict() if result else dict()
 
-    def _get_table_entity(self, *, table_uri: str) -> Tuple:
+    def _get_table_entity(self, *, table_uri: str) -> Tuple[EntityUniqueAttribute, Dict]:
         """
         Fetch information from table_uri and then find the appropriate entity
         The reason, we're not returning the entity_unique_attribute().entity
@@ -116,7 +118,7 @@ class AtlasProxy(BaseProxy):
                 tags.append(
                     Tag(
                         tag_name=classification.get('typeName'),
-                        tag_type=classification.get('typeName')
+                        tag_type="default"
                     )
                 )
 

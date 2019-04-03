@@ -140,7 +140,7 @@ class TestAtlasProxy(unittest.TestCase):
                          cluster=self.cluster,
                          schema=self.db,
                          name=self.name,
-                         tags=[Tag(tag_name=classif_name, tag_type=classif_name)],
+                         tags=[Tag(tag_name=classif_name, tag_type="default")],
                          description=ent_attrs['description'],
                          owners=[User(email=ent_attrs['owner'])],
                          columns=self.entity1['relationshipAttributes']['columns'],
