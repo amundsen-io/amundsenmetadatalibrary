@@ -9,7 +9,7 @@ from atlasclient.models import EntityUniqueAttribute
 from metadata_service.entity.tag_detail import TagDetail
 
 from metadata_service.entity.popular_table import PopularTable
-from metadata_service.entity.table_detail import Table, User, Tag
+from metadata_service.entity.table_detail import Table, User, Tag, Column
 from metadata_service.entity.user_detail import User as UserEntity
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import BaseProxy
@@ -122,6 +122,19 @@ class AtlasProxy(BaseProxy):
                     )
                 )
 
+            columns = []
+            for column in rel_attrs.get('columns', list()):
+                col_entity = self._driver.entity_guid(column['guid'])
+                col_attrs = col_entity.entity['attributes']
+                columns.append(
+                    Column(
+                        name=col_attrs.get(self.NAME_KEY),
+                        description=col_attrs.get('description'),
+                        col_type=col_attrs.get('type'),
+                        sort_order=col_attrs.get('position'),
+                    )
+                )
+
             table = Table(database=table_info['entity'],
                           cluster=table_info['cluster'],
                           schema=table_info['db'],
@@ -129,7 +142,7 @@ class AtlasProxy(BaseProxy):
                           tags=tags,
                           description=attrs.get('description'),
                           owners=[User(email=attrs.get('owner'))],
-                          columns=rel_attrs.get('columns'),
+                          columns=columns,
                           last_updated_timestamp=table_details.get('updateTime'))
 
             return table
@@ -204,6 +217,7 @@ class AtlasProxy(BaseProxy):
             guid_entity = self._driver.entity_guid(entity.entity['guid'])
             guid_entity.classifications(tag).delete()
         except Exception as ex:
+            # FixMe (Verdan): Too broad exception. Please make it specific
             LOGGER.exception('For some reason this deletes the classification '
                              'but also always return exception. {}'.format(str(ex)))
 
