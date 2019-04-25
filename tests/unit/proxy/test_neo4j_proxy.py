@@ -146,7 +146,8 @@ class TestNeo4jProxy(unittest.TestCase):
                                                       id=self.table_writer['id']),
                              last_updated_timestamp=1,
                              source=Source(source='/source_file_loc',
-                                           source_type='github'))
+                                           source_type='github'),
+                             is_view=False)
 
             self.assertEqual(str(expected), str(table))
 
