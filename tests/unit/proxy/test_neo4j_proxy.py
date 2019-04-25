@@ -154,7 +154,7 @@ class TestNeo4jProxy(unittest.TestCase):
     def test_get_table_view_only(self) -> None:
         col_usage_return_value = copy.deepcopy(self.col_usage_return_value)
         for col in col_usage_return_value:
-            col['tbl']['is_view'] = True
+            col['tbl']['is_view'] = 'True'
 
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.side_effect = [col_usage_return_value, [], self.table_level_return_value]
