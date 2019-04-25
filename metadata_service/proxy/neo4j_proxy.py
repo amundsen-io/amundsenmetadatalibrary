@@ -69,10 +69,6 @@ class Neo4jProxy(BaseProxy):
 
         wmk_results, table_writer, timestamp_value, owners, tags, source = self._exec_table_query(table_uri)
 
-        # neo4j returns is_view (boolean data type) as str, so we need to convert it to bool
-        is_view = self._safe_get(last_neo4j_record, 'tbl', 'is_view')
-        is_view = is_view.lower() in ['t', 'true'] if is_view else False
-
         table = Table(database=last_neo4j_record['db']['name'],
                       cluster=last_neo4j_record['clstr']['name'],
                       schema=last_neo4j_record['schema']['name'],
@@ -86,7 +82,7 @@ class Neo4jProxy(BaseProxy):
                       table_writer=table_writer,
                       last_updated_timestamp=timestamp_value,
                       source=source,
-                      is_view=is_view)
+                      is_view=self._safe_get(last_neo4j_record, 'tbl', 'is_view'))
 
         return table
 
@@ -238,7 +234,7 @@ class Neo4jProxy(BaseProxy):
         """
         for key in keys:
             dct = dct.get(key)
-            if not dct:
+            if dct is None:
                 return None
         return dct
 
