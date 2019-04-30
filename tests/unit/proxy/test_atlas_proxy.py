@@ -76,10 +76,6 @@ class TestAtlasProxy(unittest.TestCase):
             },
         }
         self.entity1.update(self.classification_entity)
-        # self.entity1.update({
-        #     'db': self.db_entity,
-        #     'columns': [self.test_column],
-        # })
 
         self.entity2 = {
             'guid': '2',
