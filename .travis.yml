@@ -1,14 +1,14 @@
 dist: xenial
 language: python
 python: 3.7
-env:
-  - CODECOV_TOKEN="ef1ba357-22c8-4aee-839b-03ad5ffc19d6"
 install:
 - pip3 install -r requirements.txt
-- pip3 install pytest pytest-cov
+- pip3 install codecov
 - python3 setup.py install
 script:
 - make test
+after_success:
+- codecov
 deploy:
   provider: pypi
   user: amundsen-dev
