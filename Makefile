@@ -6,7 +6,7 @@ clean:
 
 .PHONY: test_unit
 test_unit:
-	pytest --cov=tests/
+	python3 -b -m pytest tests
 
 lint:
 	python3 -m flake8
