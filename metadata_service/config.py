@@ -36,7 +36,7 @@ class Config:
 
     # Display name of Atlas Entities that we use for amundsen project.
     # Atlas uses qualifiedName as indexed attribute. but also supports 'name' attribute.
-    ATLAS_NAME_ATTRIBUTE = 'qualifiedName'
+    ATLAS_NAME_ATTRIBUTE = 'name'
 
 
 class LocalConfig(Config):
