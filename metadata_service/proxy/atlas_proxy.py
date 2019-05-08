@@ -40,20 +40,6 @@ class AtlasProxy(BaseProxy):
         """
         self._driver = Atlas(host=host, port=port, username=user, password=password)
 
-    def _get_ids_from_basic_search(self, *, params: Dict) -> List[str]:
-        """
-        FixMe (Verdan): UNUSED. Please remove after implementing atlas proxy
-        Search for the entities based on the params provided as argument.
-        :param params: the dictionary of parameters to be used for the basic search
-        :return: The flat list of GUIDs of entities founds based on the params.
-        """
-        ids = list()
-        search_results = self._driver.search_basic(**params)
-        for result in search_results:
-            for entity in result.entities:
-                ids.append(entity.guid)
-        return ids
-
     def _get_rel_attributes_dict(self, *, entities: List[Entity], attribute: str) -> Dict:
         """
         Atlas doesn't provide relational in referredEntities when making searching
@@ -115,11 +101,17 @@ class AtlasProxy(BaseProxy):
         :return:
         """
         table_info = self._extract_info_from_uri(table_uri=table_uri)
-
         try:
+            entity = table_info['entity'] or "Table"
+            name = table_info.get('name')
+            db = table_info.get('db')
+            cluster = table_info.get('cluster')
+            if cluster == 'null':
+                cluster = ''
+            qualified_name = f"{db}.{name}@{cluster}"
             return self._driver.entity_unique_attribute(
-                table_info['entity'],
-                qualifiedName=table_info.get('name')), table_info
+                entity,
+                qualifiedName=qualified_name), table_info
         except Exception as ex:
             LOGGER.exception(f'Table not found. {str(ex)}')
             raise NotFoundException('Table URI( {table_uri} ) does not exist'
@@ -345,7 +337,8 @@ class AtlasProxy(BaseProxy):
             if db_entity:
                 db_attrs = db_entity.attributes
                 db_name = db_attrs.get(self.NAME_ATTRIBUTE)
-                db_cluster = db_attrs.get('clusterName')
+                db_qualified_name = db_attrs.get('qualifiedName', '').split('@')
+                db_cluster = db_qualified_name[1] if len(db_qualified_name) > 1 else ''
             else:
                 db_name = ''
                 db_cluster = ''
