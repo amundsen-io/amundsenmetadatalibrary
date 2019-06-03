@@ -20,35 +20,32 @@ class ColumnDescriptionAPI(Resource):
         super(ColumnDescriptionAPI, self).__init__()
 
     def put(self,
-            table_uri: str,
-            column_name: str,
+            column_guid: str,
             description_val: str) -> Iterable[Union[dict, tuple, int, None]]:
         """
         Updates column description
         """
         try:
-            self.client.put_column_description(table_uri=table_uri,
-                                               column_name=column_name,
+            self.client.put_column_description(column_guid=column_guid,
                                                description=description_val)
 
             return None, HTTPStatus.OK
 
         except NotFoundException:
-            msg = 'table_uri {} with column {} does not exist'.format(table_uri, column_name)
+            msg = 'column {} does not exist'.format(column_guid)
             return {'message': msg}, HTTPStatus.NOT_FOUND
 
-    def get(self, table_uri: str, column_name: str) -> Union[tuple, int, None]:
+    def get(self, column_guid: str) -> Union[tuple, int, None]:
         """
         Gets column descriptions in Neo4j
         """
         try:
-            description = self.client.get_column_description(table_uri=table_uri,
-                                                             column_name=column_name)
+            description = self.client.get_column_description(column_guid=column_guid)
 
             return {'description': description}, HTTPStatus.OK
 
         except NotFoundException:
-            msg = 'table_uri {} with column {} does not exist'.format(table_uri, column_name)
+            msg = 'column {} does not exist'.format(column_guid)
             return {'message': msg}, HTTPStatus.NOT_FOUND
 
         except Exception:
