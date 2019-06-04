@@ -1,13 +1,11 @@
 import os
 
 # PROXY configuration keys
-PROXY_HOST = 'localhost'
-PROXY_PORT = '21000'
+PROXY_HOST = 'PROXY_HOST'
+PROXY_PORT = 'PROXY_PORT'
 PROXY_USER = 'PROXY_USER'
 PROXY_PASSWORD = 'PROXY_PASSWORD'
-PROXY_CLIENT = 'ATLAS'
-CREDENTIALS_PROXY_USER = 'admin'
-CREDENTIALS_PROXY_PASSWORD = 'admin'
+PROXY_CLIENT = 'PROXY_CLIENT'
 
 
 PROXY_CLIENTS = {
@@ -50,5 +48,3 @@ class LocalConfig(Config):
     PROXY_HOST = os.environ.get('PROXY_HOST', f'bolt://{LOCAL_HOST}')
     PROXY_PORT = os.environ.get('PROXY_PORT', 7687)
     PROXY_CLIENT = PROXY_CLIENTS[os.environ.get('PROXY_CLIENT', 'NEO4J')]
-    PROXY_USER = os.environ.get('CREDENTIALS_PROXY_USER', 'elastic')
-    PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', 'elastic')

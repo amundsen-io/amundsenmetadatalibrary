@@ -18,45 +18,45 @@ class BaseProxy(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_table(self, *, table_guid: str, table_info: Dict) -> Table:
+    def get_table(self, *, table_id: str, table_info: Dict) -> Table:
         pass
 
     @abstractmethod
-    def delete_owner(self, *, table_guid: str, owner: str) -> None:
+    def delete_owner(self, *, table_id: str, owner: str) -> None:
         pass
 
     @abstractmethod
-    def add_owner(self, *, table_guid: str, owner: str) -> None:
+    def add_owner(self, *, table_id: str, owner: str) -> None:
         pass
 
     @abstractmethod
     def get_table_description(self, *,
-                              table_guid: str) -> Union[str, None]:
+                              table_id: str) -> Union[str, None]:
         pass
 
     @abstractmethod
     def put_table_description(self, *,
-                              table_guid: str,
+                              table_id: str,
                               description: str) -> None:
         pass
 
     @abstractmethod
-    def add_tag(self, *, table_guid: str, tag: str) -> None:
+    def add_tag(self, *, table_id: str, tag: str) -> None:
         pass
 
     @abstractmethod
-    def delete_tag(self, *, table_guid: str, tag: str) -> None:
+    def delete_tag(self, *, table_id: str, tag: str) -> None:
         pass
 
     @abstractmethod
     def put_column_description(self, *,
-                               column_guid: str,
+                               column_id: str,
                                description: str) -> None:
         pass
 
     @abstractmethod
     def get_column_description(self, *,
-                               column_guid: str) -> Union[str, None]:
+                               column_id: str) -> Union[str, None]:
         pass
 
     @abstractmethod
@@ -79,14 +79,14 @@ class BaseProxy(metaclass=ABCMeta):
 
     @abstractmethod
     def add_table_relation_by_user(self, *,
-                                   table_guid: str,
+                                   table_id: str,
                                    user_email: str,
                                    relation_type: UserResourceRel) -> None:
         pass
 
     @abstractmethod
     def delete_table_relation_by_user(self, *,
-                                      table_guid: str,
+                                      table_id: str,
                                       user_email: str,
                                       relation_type: UserResourceRel) -> None:
         pass

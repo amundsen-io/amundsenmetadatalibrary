@@ -71,48 +71,48 @@ class UserFollowAPI(Resource):
         except Exception:
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def put(self, user_id: str, resource_type: str, table_guid: str) -> Iterable[Union[Mapping, int, None]]:
+    def put(self, user_id: str, resource_type: str, table_id: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Create the follow relationship between user and resources.
         todo: It will need to refactor all neo4j proxy api to take a type argument.
 
         :param user_id:
-        :param table_guid:
+        :param table_id:
         :return:
         """
         try:
-            self.client.add_table_relation_by_user(table_guid=table_guid,
+            self.client.add_table_relation_by_user(table_id=table_id,
                                                    user_email=user_id,
                                                    relation_type=UserResourceRel.follow)
-            return {'message': 'The user {} for table_uri {} '
+            return {'message': 'The user {} for table_id {} '
                                'is added successfully'.format(user_id,
-                                                              table_guid)}, HTTPStatus.OK
+                                                              table_id)}, HTTPStatus.OK
         except Exception as e:
-            return {'message': 'The user {} for table_uri {} '
+            return {'message': 'The user {} for table_id {} '
                                'is not added successfully'.format(user_id,
-                                                                  table_guid)}, \
+                                                                  table_id)}, \
                 HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def delete(self, user_id: str, resource_type: str, table_guid: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, user_id: str, resource_type: str, table_id: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Delete the follow relationship between user and resources.
         todo: It will need to refactor all neo4j proxy api to take a type argument.
 
         :param user_id:
-        :param table_guid:
+        :param table_id:
         :return:
         """
         try:
-            self.client.delete_table_relation_by_user(table_guid=table_guid,
+            self.client.delete_table_relation_by_user(table_id=table_id,
                                                       user_email=user_id,
                                                       relation_type=UserResourceRel.follow)
-            return {'message': 'The user {} for table_uri {} '
+            return {'message': 'The user {} for table_id {} '
                                'is added successfully'.format(user_id,
-                                                              table_guid)}, HTTPStatus.OK
+                                                              table_id)}, HTTPStatus.OK
         except Exception as e:
-            return {'message': 'The user {} for table_uri {} '
+            return {'message': 'The user {} for table_id {} '
                                'is not added successfully'.format(user_id,
-                                                                  table_guid)}, \
+                                                                  table_id)}, \
                 HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -144,35 +144,35 @@ class UserOwnAPI(Resource):
         except Exception:
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def put(self, user_id: str, resource_type: str, table_guid: str) -> Iterable[Union[Mapping, int, None]]:
+    def put(self, user_id: str, resource_type: str, table_id: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Create the follow relationship between user and resources.
 
         :param user_id:
         :param resource_type:
-        :param table_guid:
+        :param table_id:
         :return:
         """
         try:
-            self.client.add_owner(table_guid=table_guid, owner=user_id)
-            return {'message': 'The owner {} for table_uri {} '
+            self.client.add_owner(table_id=table_id, owner=user_id)
+            return {'message': 'The owner {} for table_id {} '
                                'is added successfully'.format(user_id,
-                                                              table_guid)}, HTTPStatus.OK
+                                                              table_id)}, HTTPStatus.OK
         except Exception as e:
-            return {'message': 'The owner {} for table_uri {} '
+            return {'message': 'The owner {} for table_id {} '
                                'is not added successfully'.format(user_id,
-                                                                  table_guid)}, HTTPStatus.INTERNAL_SERVER_ERROR
+                                                                  table_id)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def delete(self, user_id: str, resource_type: str, table_guid: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, user_id: str, resource_type: str, table_id: str) -> Iterable[Union[Mapping, int, None]]:
         try:
-            self.client.delete_owner(table_guid=table_guid, owner=user_id)
-            return {'message': 'The owner {} for table_uri {} '
+            self.client.delete_owner(table_id=table_id, owner=user_id)
+            return {'message': 'The owner {} for table_id {} '
                                'is deleted successfully'.format(user_id,
-                                                                table_guid)}, HTTPStatus.OK
+                                                                table_id)}, HTTPStatus.OK
         except Exception:
-            return {'message': 'The owner {} for table_uri {} '
+            return {'message': 'The owner {} for table_id {} '
                                'is not deleted successfully'.format(user_id,
-                                                                    table_guid)}, HTTPStatus.INTERNAL_SERVER_ERROR
+                                                                    table_id)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 class UserReadAPI(Resource):

@@ -1,10 +1,9 @@
 import logging
-import re
-from typing import Union, List, Dict, Any, Tuple
+from typing import Union, List, Dict, Any
 
 from atlasclient.client import Atlas
 from atlasclient.exceptions import BadRequest
-from atlasclient.models import EntityUniqueAttribute, Entity
+from atlasclient.models import Entity
 from flask import current_app as app
 
 from metadata_service.entity.tag_detail import TagDetail
@@ -80,74 +79,50 @@ class AtlasProxy(BaseProxy):
 
         return entities_dict
 
-    # def _extract_info_from_uri(self, *, table_uri: str) -> Dict:
-    #     """
-    #     Extracts the table information from table_uri coming from frontend.
-    #     :param table_uri:
-    #     :return: Dictionary object, containing following information:
-    #     entity: Database Namespace: rdbms_table, hive_table etc.
-    #     entity: Type of entity example: rdbms_table, hive_table etc.
-    #     cluster: Cluster information
-    #     db: Database Name
-    #     name: Unique Table Identifier
-    #     """
-    #     pattern = re.compile(r"""
-    #         ^   (?P<entity>.*?)
-    #         :\/\/
-    #             (?P<cluster>.*)
-    #         \.
-    #             (?P<db>.*?)
-    #         \/
-    #             (?P<name>.*?)
-    #         $
-    #     """, re.X)
-    #     result = pattern.match(table_uri)
-    #     return result.groupdict() if result else dict()
-
-    def _get_table_entity(self, *, table_guid: str) -> Entity:
+    def _get_table_entity(self, *, table_id: str) -> Entity:
         """
-        Fetch information from table_uri and then find the appropriate entity
+        Fetch information from table_id and then find the appropriate entity
         The reason, we're not returning the entity_unique_attribute().entity
         directly is because the entity_unique_attribute() return entity Object
         that can be used for update purposes,
         while entity_unique_attribute().entity only returns the dictionary
-        :param table_guid:
+        :param table_id:
         :return:
         """
         try:
-            return self._driver.entity_guid(table_guid)
+            return self._driver.entity_guid(table_id)
         except Exception as ex:
             LOGGER.exception(f'Table not found. {str(ex)}')
-            raise NotFoundException('Table GUID( {table_guid} ) does not exist'
-                                    .format(table_guid=table_guid))
+            raise NotFoundException('Table GUID( {table_id} ) does not exist'
+                                    .format(table_id=table_id))
 
-    def _get_column(self, *, column_guid: str) -> Entity:
+    def _get_column(self, *, column_id: str) -> Entity:
         """
         Fetch the column information from referredEntities of the table entity
-        :param column_guid:
+        :param column_id:
         :return: A dictionary containing the column details
         """
 
         try:
-            return self._driver.entity_guid(column_guid)
+            return self._driver.entity_guid(column_id)
 
         except Exception as ex:
             LOGGER.exception(f'Column not found: {str(ex)}')
-            raise NotFoundException(f'Column not found: {column_guid}')
+            raise NotFoundException(f'Column not found: {column_id}')
 
     def get_user_detail(self, *, user_id: str) -> Union[UserEntity, None]:
         pass
 
-    def get_table(self, *, table_guid: str, table_info: Dict) -> Table:
+    def get_table(self, *, table_id: str, table_info: Dict) -> Table:
         """
         Gathers all the information needed for the Table Detail Page.
-        :param table_guid:
+        :param table_id:
         :param table_info: Additional table information (entity, db, cluster, name)
         :return: A Table object with all the information available
         or gathered from different entities.
         """
 
-        table_entity = self._get_table_entity(table_guid=table_guid)
+        table_entity = self._get_table_entity(table_id=table_id)
         table_details = table_entity.entity
 
         try:
@@ -192,70 +167,70 @@ class AtlasProxy(BaseProxy):
             LOGGER.exception('Error while accessing table information. {}'
                              .format(str(ex)))
             raise BadRequest('Some of the required attributes '
-                             'are missing in : ( {table_guid} )'
-                             .format(table_guid=table_guid))
+                             'are missing in : ( {table_id} )'
+                             .format(table_id=table_id))
 
-    def delete_owner(self, *, table_guid: str, owner: str) -> None:
+    def delete_owner(self, *, table_id: str, owner: str) -> None:
         pass
 
-    def add_owner(self, *, table_guid: str, owner: str) -> None:
+    def add_owner(self, *, table_id: str, owner: str) -> None:
         """
         It simply replaces the owner field in atlas with the new string.
         FixMe (Verdan): Implement multiple data owners and
         atlas changes in the documentation if needed to make owner field a list
-        :param table_guid:
+        :param table_id:
         :param owner: Email address of the owner
         :return: None, as it simply adds the owner.
         """
-        entity = self._get_table_entity(table_guid=table_guid)
+        entity = self._get_table_entity(table_id=table_id)
         entity.entity[self.ATTRS_KEY]['owner'] = owner
         entity.update()
 
     def get_table_description(self, *,
-                              table_guid: str) -> Union[str, None]:
+                              table_id: str) -> Union[str, None]:
         """
-        :param table_guid:
+        :param table_id:
         :return: The description of the table as a string
         """
-        entity = self._get_table_entity(table_guid=table_guid)
+        entity = self._get_table_entity(table_id=table_id)
         return entity.entity[self.ATTRS_KEY].get('description')
 
     def put_table_description(self, *,
-                              table_guid: str,
+                              table_id: str,
                               description: str) -> None:
         """
         Update the description of the given table.
-        :param table_guid:
+        :param table_id:
         :param description: Description string
         :return: None
         """
-        entity = self._get_table_entity(table_guid=table_guid)
+        entity = self._get_table_entity(table_id=table_id)
         entity.entity[self.ATTRS_KEY]['description'] = description
         entity.update()
 
-    def add_tag(self, *, table_guid: str, tag: str) -> None:
+    def add_tag(self, *, table_id: str, tag: str) -> None:
         """
         Assign the tag/classification to the give table
         API Ref: /resource_EntityREST.html#resource_EntityREST_addClassification_POST
-        :param table_guid:
+        :param table_id:
         :param tag: Tag/Classification Name
         :return: None
         """
-        entity = self._get_table_entity(table_guid=table_guid)
+        entity = self._get_table_entity(table_id=table_id)
         entity_bulk_tag = {"classification": {"typeName": tag},
                            "entityGuids": [entity.entity['guid']]}
         self._driver.entity_bulk_classification.create(data=entity_bulk_tag)
 
-    def delete_tag(self, *, table_guid: str, tag: str) -> None:
+    def delete_tag(self, *, table_id: str, tag: str) -> None:
         """
         Delete the assigned classfication/tag from the given table
         API Ref: /resource_EntityREST.html#resource_EntityREST_deleteClassification_DELETE
-        :param table_guid:
+        :param table_id:
         :param tag:
         :return:
         """
         try:
-            entity = self._get_table_entity(table_guid=table_guid)
+            entity = self._get_table_entity(table_id=table_id)
             guid_entity = self._driver.entity_guid(entity.entity['guid'])
             guid_entity.classifications(tag).delete()
         except Exception as ex:
@@ -264,28 +239,27 @@ class AtlasProxy(BaseProxy):
                              'but also always return exception. {}'.format(str(ex)))
 
     def put_column_description(self, *,
-                               column_guid: str,
+                               column_id: str,
                                description: str) -> None:
         """
-        :param column_guid:
+        :param column_id:
         :param description: The description string
         :return: None, as it simply updates the description of a column
         """
         column_entity = self._get_column(
-            column_guid=column_guid)
+            column_id=column_id)
 
         column_entity.entity[self.ATTRS_KEY]['description'] = description
         column_entity.update(attribute='description')
 
     def get_column_description(self, *,
-                               column_guid: str) -> Union[str, None]:
+                               column_id: str) -> Union[str, None]:
         """
-        :param column_guid:
-        :param column_name:
-        :return: The column description using the column guid
+        :param column_id:
+        :return: The column description using the column id
         """
         column_entity = self._get_column(
-            column_guid=column_guid)
+            column_id=column_id)
         return column_entity.entity[self.ATTRS_KEY].get('description')
 
     def get_popular_tables(self, *,
@@ -366,13 +340,13 @@ class AtlasProxy(BaseProxy):
         pass
 
     def add_table_relation_by_user(self, *,
-                                   table_guid: str,
+                                   table_id: str,
                                    user_email: str,
                                    relation_type: UserResourceRel) -> None:
         pass
 
     def delete_table_relation_by_user(self, *,
-                                      table_guid: str,
+                                      table_id: str,
                                       user_email: str,
                                       relation_type: UserResourceRel) -> None:
         pass
