@@ -11,16 +11,16 @@ class RedshiftCommentEditDisableTest(unittest.TestCase):
         with patch('metadata_service.api.table.get_proxy_client'):
             tbl_dscrpt_api = TableDescriptionAPI()
 
-            table_uri = 'hive://gold.test_schema/test_table'
-            response = tbl_dscrpt_api.put(table_uri=table_uri, description_val='test')
+            table_id = '8cfc0513-9a6b-4cdb-a4cc-f6549ed087cf'
+            response = tbl_dscrpt_api.put(table_id=table_id, description_val='test')
             self.assertEqual(list(response)[1], HTTPStatus.OK)
 
     def test_column_comment_edit(self) -> None:
         with patch('metadata_service.api.column.get_proxy_client'):
             col_dscrpt_api = ColumnDescriptionAPI()
 
-            table_uri = 'hive://gold.test_schema/test_table'
-            response = col_dscrpt_api.put(table_uri=table_uri, column_name='foo', description_val='test')
+            column_id = '5717362e-19a2-4bac-be49-0e4c5851300e'
+            response = col_dscrpt_api.put(column_id=column_id, description_val='test')
             self.assertEqual(list(response)[1], HTTPStatus.OK)
 
 
