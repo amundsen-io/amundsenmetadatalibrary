@@ -53,7 +53,7 @@ class TestStatsdUtilities(unittest.TestCase):
             mock_statsd_client.return_value.incr = mock_success_incr
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.add_owner(table_uri='bogus_uri', owner='foo')
+            neo4j_proxy.add_owner(key='bogus_uri', owner='foo')
 
             self.assertEqual(mock_success_incr.call_count, 1)
 

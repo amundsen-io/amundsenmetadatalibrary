@@ -9,7 +9,7 @@ from flask import current_app as app
 from metadata_service.entity.tag_detail import TagDetail
 
 from metadata_service.entity.popular_table import PopularTable
-from metadata_service.entity.table_detail import Table, User, Tag, Column
+from metadata_service.entity.table_detail import Table, User, Tag, Column, Statistics
 from metadata_service.entity.user_detail import User as UserEntity
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import BaseProxy
@@ -79,50 +79,94 @@ class AtlasProxy(BaseProxy):
 
         return entities_dict
 
-    def _get_table_entity(self, *, table_id: str) -> Entity:
+    def _get_table_entity(self, *, key: str) -> Entity:
         """
-        Fetch information from table_id and then find the appropriate entity
+        Fetch information from key and then find the appropriate entity
         The reason, we're not returning the entity_unique_attribute().entity
         directly is because the entity_unique_attribute() return entity Object
         that can be used for update purposes,
         while entity_unique_attribute().entity only returns the dictionary
-        :param table_id:
+        :param key:
         :return:
         """
         try:
-            return self._driver.entity_guid(table_id)
+            return self._driver.entity_guid(key)
         except Exception as ex:
             LOGGER.exception(f'Table not found. {str(ex)}')
-            raise NotFoundException('Table GUID( {table_id} ) does not exist'
-                                    .format(table_id=table_id))
+            raise NotFoundException('Table GUID( {key} ) does not exist'
+                                    .format(key=key))
 
-    def _get_column(self, *, column_id: str) -> Entity:
+    def _get_column(self, *, key: str, column_name: str) -> Dict:
         """
         Fetch the column information from referredEntities of the table entity
-        :param column_id:
+        :param key:
+        :param column_name:
         :return: A dictionary containing the column details
         """
 
         try:
-            return self._driver.entity_guid(column_id)
+            table_entity = self._get_table_entity(key=key)
+            columns = table_entity.entity[self.REL_ATTRS_KEY].get('columns')
+            for column in columns or list():
+                col_details = table_entity.referredEntities[column['guid']]
+                if column_name == col_details[self.ATTRS_KEY][self.NAME_ATTRIBUTE]:
+                    return col_details
+            raise NotFoundException(f'Column not found: {column_name}')
 
-        except Exception as ex:
+        except KeyError as ex:
             LOGGER.exception(f'Column not found: {str(ex)}')
-            raise NotFoundException(f'Column not found: {column_id}')
+            raise NotFoundException(f'Column not found: {column_name}')
+
+    def _serialize_columns(self, *, entity: Entity) -> \
+            Union[List[Column], List]:
+        """
+        Helper function to fetch the columns from entity and serialize them
+        using Column and Statistics model.
+        :param entity: EntityUniqueAttribute object,
+        along with relationshipAttributes
+        :return: A list of Column objects, if there are any columns available,
+        else an empty list.
+        """
+        columns = list()
+        for column in entity.entity[self.REL_ATTRS_KEY].get('columns') or list():
+            col_entity = entity.referredEntities[column['guid']]
+            col_attrs = col_entity[self.ATTRS_KEY]
+            statistics = list()
+            for stats in col_attrs.get('stats') or list():
+                stats_attrs = stats['attributes']
+                statistics.append(
+                    Statistics(
+                        stat_type=stats_attrs.get('stat_name'),
+                        stat_val=stats_attrs.get('stat_val'),
+                        start_epoch=stats_attrs.get('start_epoch'),
+                        end_epoch=stats_attrs.get('end_epoch'),
+                    )
+                )
+
+            columns.append(
+                Column(
+                    name=col_attrs.get(self.NAME_ATTRIBUTE),
+                    description=col_attrs.get('description'),
+                    col_type=col_attrs.get('type') or col_attrs.get('dataType'),
+                    sort_order=col_attrs.get('position'),
+                    stats=statistics,
+                )
+            )
+        return columns
 
     def get_user_detail(self, *, user_id: str) -> Union[UserEntity, None]:
         pass
 
-    def get_table(self, *, table_id: str, table_info: Dict) -> Table:
+    def get_table(self, *, key: str, table_info: Dict) -> Table:
         """
         Gathers all the information needed for the Table Detail Page.
-        :param table_id:
+        :param key:
         :param table_info: Additional table information (entity, db, cluster, name)
         :return: A Table object with all the information available
         or gathered from different entities.
         """
 
-        table_entity = self._get_table_entity(table_id=table_id)
+        table_entity = self._get_table_entity(key=key)
         table_details = table_entity.entity
 
         try:
@@ -139,18 +183,7 @@ class AtlasProxy(BaseProxy):
                     )
                 )
 
-            columns = []
-            for column in rel_attrs.get('columns') or list():
-                col_entity = table_entity.referredEntities[column['guid']]
-                col_attrs = col_entity[self.ATTRS_KEY]
-                columns.append(
-                    Column(
-                        name=col_attrs.get(self.NAME_ATTRIBUTE),
-                        description=col_attrs.get('description'),
-                        col_type=col_attrs.get('type') or col_attrs.get('dataType'),
-                        sort_order=col_attrs.get('position'),
-                    )
-                )
+            columns = self._serialize_columns(entity=table_entity)
 
             table = Table(database=table_info['entity'],
                           cluster=table_info['cluster'],
@@ -167,70 +200,70 @@ class AtlasProxy(BaseProxy):
             LOGGER.exception('Error while accessing table information. {}'
                              .format(str(ex)))
             raise BadRequest('Some of the required attributes '
-                             'are missing in : ( {table_id} )'
-                             .format(table_id=table_id))
+                             'are missing in : ( {key} )'
+                             .format(key=key))
 
-    def delete_owner(self, *, table_id: str, owner: str) -> None:
+    def delete_owner(self, *, key: str, owner: str) -> None:
         pass
 
-    def add_owner(self, *, table_id: str, owner: str) -> None:
+    def add_owner(self, *, key: str, owner: str) -> None:
         """
         It simply replaces the owner field in atlas with the new string.
         FixMe (Verdan): Implement multiple data owners and
         atlas changes in the documentation if needed to make owner field a list
-        :param table_id:
+        :param key:
         :param owner: Email address of the owner
         :return: None, as it simply adds the owner.
         """
-        entity = self._get_table_entity(table_id=table_id)
+        entity = self._get_table_entity(key=key)
         entity.entity[self.ATTRS_KEY]['owner'] = owner
         entity.update()
 
     def get_table_description(self, *,
-                              table_id: str) -> Union[str, None]:
+                              key: str) -> Union[str, None]:
         """
-        :param table_id:
+        :param key:
         :return: The description of the table as a string
         """
-        entity = self._get_table_entity(table_id=table_id)
+        entity = self._get_table_entity(key=key)
         return entity.entity[self.ATTRS_KEY].get('description')
 
     def put_table_description(self, *,
-                              table_id: str,
+                              key: str,
                               description: str) -> None:
         """
         Update the description of the given table.
-        :param table_id:
+        :param key:
         :param description: Description string
         :return: None
         """
-        entity = self._get_table_entity(table_id=table_id)
+        entity = self._get_table_entity(key=key)
         entity.entity[self.ATTRS_KEY]['description'] = description
         entity.update()
 
-    def add_tag(self, *, table_id: str, tag: str) -> None:
+    def add_tag(self, *, key: str, tag: str) -> None:
         """
         Assign the tag/classification to the give table
         API Ref: /resource_EntityREST.html#resource_EntityREST_addClassification_POST
-        :param table_id:
+        :param key:
         :param tag: Tag/Classification Name
         :return: None
         """
-        entity = self._get_table_entity(table_id=table_id)
+        entity = self._get_table_entity(key=key)
         entity_bulk_tag = {"classification": {"typeName": tag},
                            "entityGuids": [entity.entity['guid']]}
         self._driver.entity_bulk_classification.create(data=entity_bulk_tag)
 
-    def delete_tag(self, *, table_id: str, tag: str) -> None:
+    def delete_tag(self, *, key: str, tag: str) -> None:
         """
         Delete the assigned classfication/tag from the given table
         API Ref: /resource_EntityREST.html#resource_EntityREST_deleteClassification_DELETE
-        :param table_id:
+        :param key:
         :param tag:
         :return:
         """
         try:
-            entity = self._get_table_entity(table_id=table_id)
+            entity = self._get_table_entity(key=key)
             guid_entity = self._driver.entity_guid(entity.entity['guid'])
             guid_entity.classifications(tag).delete()
         except Exception as ex:
@@ -239,28 +272,36 @@ class AtlasProxy(BaseProxy):
                              'but also always return exception. {}'.format(str(ex)))
 
     def put_column_description(self, *,
-                               column_id: str,
+                               key: str,
+                               column_name: str,
                                description: str) -> None:
         """
-        :param column_id:
+        :param key:
+        :param column_name:
         :param description: The description string
         :return: None, as it simply updates the description of a column
         """
-        column_entity = self._get_column(
-            column_id=column_id)
+        column_detail = self._get_column(
+            key=key,
+            column_name=column_name)
+        col_guid = column_detail['guid']
 
-        column_entity.entity[self.ATTRS_KEY]['description'] = description
-        column_entity.update(attribute='description')
+        entity = self._driver.entity_guid(col_guid)
+        entity.entity[self.ATTRS_KEY]['description'] = description
+        entity.update(attribute='description')
 
     def get_column_description(self, *,
-                               column_id: str) -> Union[str, None]:
+                               key: str,
+                               column_name: str) -> Union[str, None]:
         """
-        :param column_id:
+        :param key:
+        :param column_name:
         :return: The column description using the column id
         """
-        column_entity = self._get_column(
-            column_id=column_id)
-        return column_entity.entity[self.ATTRS_KEY].get('description')
+        column_detail = self._get_column(
+            key=key,
+            column_name=column_name)
+        return column_detail[self.ATTRS_KEY].get('description')
 
     def get_popular_tables(self, *,
                            num_entries: int = 10) -> List[PopularTable]:
@@ -293,6 +334,7 @@ class AtlasProxy(BaseProxy):
         # Make instances of PopularTable
         for entity in table_entities:
             attrs = entity.attributes
+            tbl_id = entity.guid
 
             # DB would be available in attributes
             # because it is in the request parameter.
@@ -311,6 +353,8 @@ class AtlasProxy(BaseProxy):
                                          cluster=db_cluster,
                                          schema=db_name,
                                          name=attrs.get(self.NAME_ATTRIBUTE),
+                                         key=tbl_id,
+                                         entity_type='table',
                                          description=attrs.get('description'))
             popular_tables.append(popular_table)
         return popular_tables
@@ -340,13 +384,13 @@ class AtlasProxy(BaseProxy):
         pass
 
     def add_table_relation_by_user(self, *,
-                                   table_id: str,
+                                   key: str,
                                    user_email: str,
                                    relation_type: UserResourceRel) -> None:
         pass
 
     def delete_table_relation_by_user(self, *,
-                                      table_id: str,
+                                      key: str,
                                       user_email: str,
                                       relation_type: UserResourceRel) -> None:
         pass

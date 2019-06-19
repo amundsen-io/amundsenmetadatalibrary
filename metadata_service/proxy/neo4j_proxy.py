@@ -57,17 +57,17 @@ class Neo4jProxy(BaseProxy):
                                             auth=(user, password))  # type: Driver
 
     @timer_with_counter
-    def get_table(self, *, table_uri: str) -> Table:
+    def get_table(self, *, key: str) -> Table:
         """
-        :param table_uri: Table URI
+        :param key: Table URI
         :return:  A Table object
         """
 
-        cols, last_neo4j_record = self._exec_col_query(table_uri)
+        cols, last_neo4j_record = self._exec_col_query(key)
 
-        readers = self._exec_usage_query(table_uri)
+        readers = self._exec_usage_query(key)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source = self._exec_table_query(table_uri)
+        wmk_results, table_writer, timestamp_value, owners, tags, source = self._exec_table_query(key)
 
         table = Table(database=last_neo4j_record['db']['name'],
                       cluster=last_neo4j_record['clstr']['name'],
@@ -87,7 +87,7 @@ class Neo4jProxy(BaseProxy):
         return table
 
     @timer_with_counter
-    def _exec_col_query(self, table_uri: str) -> Tuple:
+    def _exec_col_query(self, key: str) -> Tuple:
         # Return Value: (Columns, Last Processed Record)
 
         column_level_query = textwrap.dedent("""
@@ -100,7 +100,7 @@ class Neo4jProxy(BaseProxy):
         ORDER BY col.sort_order;""")
 
         tbl_col_neo4j_records = self._execute_cypher_query(
-            statement=column_level_query, param_dict={'tbl_key': table_uri})
+            statement=column_level_query, param_dict={'tbl_key': key})
         cols = []
         for tbl_col_neo4j_record in tbl_col_neo4j_records:
             # Getting last record from this for loop as Neo4j's result's random access is O(n) operation.
@@ -124,12 +124,12 @@ class Neo4jProxy(BaseProxy):
             cols.append(col)
 
         if not cols:
-            raise NotFoundException('Table URI( {table_uri} ) does not exist'.format(table_uri=table_uri))
+            raise NotFoundException('Table URI( {key} ) does not exist'.format(key=key))
 
         return (cols, last_neo4j_record)
 
     @timer_with_counter
-    def _exec_usage_query(self, table_uri: str) -> List[Reader]:
+    def _exec_usage_query(self, key: str) -> List[Reader]:
         # Return Value: List[Reader]
 
         usage_query = textwrap.dedent("""\
@@ -139,7 +139,7 @@ class Neo4jProxy(BaseProxy):
         """)
 
         usage_neo4j_records = self._execute_cypher_query(statement=usage_query,
-                                                         param_dict={'tbl_key': table_uri})
+                                                         param_dict={'tbl_key': key})
         readers = []  # type: List[Reader]
         for usage_neo4j_record in usage_neo4j_records:
             reader = Reader(user=User(email=usage_neo4j_record['email']),
@@ -149,7 +149,7 @@ class Neo4jProxy(BaseProxy):
         return readers
 
     @timer_with_counter
-    def _exec_table_query(self, table_uri: str) -> Tuple:
+    def _exec_table_query(self, key: str) -> Tuple:
         """
         Queries one Cypher record with watermark list, Application,
         ,timestamp, owner records and tag records.
@@ -174,7 +174,7 @@ class Neo4jProxy(BaseProxy):
         """)
 
         table_records = self._execute_cypher_query(statement=table_level_query,
-                                                   param_dict={'tbl_key': table_uri})
+                                                   param_dict={'tbl_key': key})
 
         table_records = table_records.single()
 
@@ -257,11 +257,11 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def get_table_description(self, *,
-                              table_uri: str) -> Union[str, None]:
+                              key: str) -> Union[str, None]:
         """
         Get the table description based on table uri. Any exception will propagate back to api server.
 
-        :param table_uri:
+        :param key:
         :return:
         """
 
@@ -271,7 +271,7 @@ class Neo4jProxy(BaseProxy):
         """)
 
         result = self._execute_cypher_query(statement=table_description_query,
-                                            param_dict={'tbl_key': table_uri})
+                                            param_dict={'tbl_key': key})
 
         table_descrpt = result.single()
 
@@ -281,15 +281,15 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def put_table_description(self, *,
-                              table_uri: str,
+                              key: str,
                               description: str) -> None:
         """
         Update table description with one from user
-        :param table_uri: Table uri (key in Neo4j)
+        :param key: Table uri (key in Neo4j)
         :param description: new value for table description
         """
         # start neo4j transaction
-        desc_key = table_uri + '/_description'
+        desc_key = key + '/_description'
 
         upsert_desc_query = textwrap.dedent("""
             MERGE (u:Description {key: $desc_key})
@@ -312,10 +312,10 @@ class Neo4jProxy(BaseProxy):
                                        'desc_key': desc_key})
 
             result = tx.run(upsert_desc_tab_relation_query, {'desc_key': desc_key,
-                                                             'tbl_key': table_uri})
+                                                             'tbl_key': key})
 
             if not result.single():
-                raise RuntimeError('Failed to update the table {tbl} description'.format(tbl=table_uri))
+                raise RuntimeError('Failed to update the table {tbl} description'.format(tbl=key))
 
             # end neo4j transaction
             tx.commit()
@@ -339,12 +339,12 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def get_column_description(self, *,
-                               table_uri: str,
+                               key: str,
                                column_name: str) -> Union[str, None]:
         """
         Get the column description based on table uri. Any exception will propagate back to api server.
 
-        :param table_uri:
+        :param key:
         :param column_name:
         :return:
         """
@@ -354,7 +354,7 @@ class Neo4jProxy(BaseProxy):
         """)
 
         result = self._execute_cypher_query(statement=column_description_query,
-                                            param_dict={'tbl_key': table_uri, 'column_name': column_name})
+                                            param_dict={'tbl_key': key, 'column_name': column_name})
 
         column_descrpt = result.single()
 
@@ -364,18 +364,18 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def put_column_description(self, *,
-                               table_uri: str,
+                               key: str,
                                column_name: str,
                                description: str) -> None:
         """
         Update column description with input from user
-        :param table_uri:
+        :param key:
         :param column_name:
         :param description:
         :return:
         """
 
-        column_uri = table_uri + '/' + column_name  # type: str
+        column_uri = key + '/' + column_name  # type: str
         desc_key = column_uri + '/_description'
 
         upsert_desc_query = textwrap.dedent("""
@@ -403,7 +403,7 @@ class Neo4jProxy(BaseProxy):
 
             if not result.single():
                 raise RuntimeError('Failed to update the table {tbl} '
-                                   'column {col} description'.format(tbl=table_uri,
+                                   'column {col} description'.format(tbl=key,
                                                                      col=column_uri))
 
             # end neo4j transaction
@@ -428,21 +428,20 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def add_owner(self, *,
-                  table_uri: str,
+                  key: str,
                   owner: str) -> None:
         """
         Update table owner informations.
-        1. Do a upsert of the owner(user) node.
+        1. Do a create if not exists query of the owner(user) node.
         2. Do a upsert of the owner/owned_by relation.
 
-        :param table_uri:
+        :param key:
         :param owner:
         :return:
         """
-        upsert_owner_query = textwrap.dedent("""
+        create_owner_query = textwrap.dedent("""
         MERGE (u:User {key: $user_email})
         on CREATE SET u={email: $user_email, key: $user_email}
-        on MATCH SET u={email: $user_email, key: $user_email}
         """)
 
         upsert_owner_relation_query = textwrap.dedent("""
@@ -454,14 +453,14 @@ class Neo4jProxy(BaseProxy):
         try:
             tx = self._driver.session().begin_transaction()
             # upsert the node
-            tx.run(upsert_owner_query, {'user_email': owner})
+            tx.run(create_owner_query, {'user_email': owner})
             result = tx.run(upsert_owner_relation_query, {'user_email': owner,
-                                                          'tbl_key': table_uri})
+                                                          'tbl_key': key})
 
             if not result.single():
                 raise RuntimeError('Failed to create relation between '
                                    'owner {owner} and table {tbl}'.format(owner=owner,
-                                                                          tbl=table_uri))
+                                                                          tbl=key))
         except Exception as e:
             if not tx.closed():
                 tx.rollback()
@@ -473,12 +472,12 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def delete_owner(self, *,
-                     table_uri: str,
+                     key: str,
                      owner: str) -> None:
         """
         Delete the owner / owned_by relationship.
 
-        :param table_uri:
+        :param key:
         :param owner:
         :return:
         """
@@ -489,7 +488,7 @@ class Neo4jProxy(BaseProxy):
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'user_email': owner,
-                                  'tbl_key': table_uri})
+                                  'tbl_key': key})
         except Exception as e:
             # propagate the exception back to api
             if not tx.closed():
@@ -501,18 +500,18 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def add_tag(self, *,
-                table_uri: str,
+                key: str,
                 tag: str) -> None:
         """
         Add new tag
         1. Create the node with type Tag if the node doesn't exist.
         2. Create the relation between tag and table if the relation doesn't exist.
 
-        :param table_uri:
+        :param key:
         :param tag:
         :return: None
         """
-        LOGGER.info('New tag {} for table_uri {}'.format(tag, table_uri))
+        LOGGER.info('New tag {} for key {}'.format(tag, key))
 
         table_validation_query = 'MATCH (t:Table {key: $tbl_key}) return t'
 
@@ -530,19 +529,19 @@ class Neo4jProxy(BaseProxy):
 
         try:
             tx = self._driver.session().begin_transaction()
-            tbl_result = tx.run(table_validation_query, {'tbl_key': table_uri})
+            tbl_result = tx.run(table_validation_query, {'tbl_key': key})
             if not tbl_result.single():
-                raise NotFoundException('table_uri {} does not exist'.format(table_uri))
+                raise NotFoundException('key {} does not exist'.format(key))
 
             # upsert the node. Currently the type for all the tags is default. We could change it later per UI.
             tx.run(upsert_tag_query, {'tag': tag,
                                       'tag_type': 'default'})
             result = tx.run(upsert_tag_relation_query, {'tag': tag,
-                                                        'tbl_key': table_uri})
+                                                        'tbl_key': key})
             if not result.single():
                 raise RuntimeError('Failed to create relation between '
                                    'tag {tag} and table {tbl}'.format(tag=tag,
-                                                                      tbl=table_uri))
+                                                                      tbl=key))
             tx.commit()
         except Exception as e:
             if not tx.closed():
@@ -554,19 +553,19 @@ class Neo4jProxy(BaseProxy):
                 tx.close()
 
     @timer_with_counter
-    def delete_tag(self, *, table_uri: str,
+    def delete_tag(self, *, key: str,
                    tag: str) -> None:
         """
         Deletes tag
         1. Delete the relation between table and the tag
         2. todo(Tao): need to think about whether we should delete the tag if it is an orphan tag.
 
-        :param table_uri:
+        :param key:
         :param tag:
         :return:
         """
 
-        LOGGER.info('Delete tag {} for table_uri {}'.format(tag, table_uri))
+        LOGGER.info('Delete tag {} for key {}'.format(tag, key))
         delete_query = textwrap.dedent("""
         MATCH (n1:Tag{key: $tag})-[r1:TAG]->(n2:Table {key: $tbl_key})-[r2:TAGGED_BY]->(n1) DELETE r1,r2
         """)
@@ -574,7 +573,7 @@ class Neo4jProxy(BaseProxy):
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'tag': tag,
-                                  'tbl_key': table_uri})
+                                  'tbl_key': key})
         except Exception as e:
             # propagate the exception back to api
             if not tx.closed():
@@ -662,13 +661,13 @@ class Neo4jProxy(BaseProxy):
         :return: Iterable of PopularTable
         """
 
-        table_uris = self._get_popular_tables_uris(num_entries)
-        if not table_uris:
+        keys = self._get_popular_tables_uris(num_entries)
+        if not keys:
             return []
 
         query = textwrap.dedent("""
         MATCH (db:Database)<-[:CLUSTER_OF]-(clstr:Cluster)<-[:SCHEMA_OF]-(schema:Schema)<-[:TABLE_OF]-(tbl:Table)
-        WHERE tbl.key IN $table_uris
+        WHERE tbl.key IN $keys
         WITH db.name as database_name, clstr.name as cluster_name, schema.name as schema_name, tbl
         OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(dscrpt:Description)
         RETURN database_name, cluster_name, schema_name, tbl.name as table_name,
@@ -676,7 +675,7 @@ class Neo4jProxy(BaseProxy):
         """)
 
         records = self._execute_cypher_query(statement=query,
-                                             param_dict={'table_uris': table_uris})
+                                             param_dict={'keys': keys})
 
         popular_tables = []
         for record in records:
@@ -684,6 +683,9 @@ class Neo4jProxy(BaseProxy):
                                          cluster=record['cluster_name'],
                                          schema=record['schema_name'],
                                          name=record['table_name'],
+                                         key='{0}://{1}.{2}/{3}'.format(record['database_name'], record['cluster_name'],
+                                                                        record['schema_name'], record['table_name']),
+                                         entity_type='table',
                                          description=self._safe_get(record, 'table_description'))
             popular_tables.append(popular_table)
         return popular_tables
@@ -699,16 +701,18 @@ class Neo4jProxy(BaseProxy):
 
         query = textwrap.dedent("""
         MATCH (user:User {key: $user_id})
-        OPTIONAL MATCH (user)-[:manage_by]->(manager:User)
+        OPTIONAL MATCH (user)-[:MANAGE_BY]->(manager:User)
         RETURN user as user_record, manager as manager_record
         """)
 
         record = self._execute_cypher_query(statement=query,
                                             param_dict={'user_id': user_id})
-        if not record:
+        single_result = record.single()
+
+        if not single_result:
             raise NotFoundException('User {user_id} '
                                     'not found in the graph'.format(user_id=user_id))
-        single_result = record.single()
+
         record = single_result.get('user_record', {})
         manager_record = single_result.get('manager_record', {})
         if manager_record:
@@ -777,12 +781,17 @@ class Neo4jProxy(BaseProxy):
                 cluster=last_neo4j_record['clstr']['name'],
                 schema=last_neo4j_record['schema']['name'],
                 name=last_neo4j_record['tbl']['name'],
+                key='{0}://{1}.{2}/{3}'.format(last_neo4j_record['db']['name'],
+                                               last_neo4j_record['clstr']['name'],
+                                               last_neo4j_record['schema']['name'],
+                                               last_neo4j_record['tbl']['name']),
+                entity_type='table',
                 description=self._safe_get(last_neo4j_record, 'tbl_dscrpt', 'description')))
         return {'table': results}
 
     @timer_with_counter
     def add_table_relation_by_user(self, *,
-                                   table_uri: str,
+                                   key: str,
                                    user_email: str,
                                    relation_type: UserResourceRel) -> None:
         """
@@ -790,7 +799,7 @@ class Neo4jProxy(BaseProxy):
         1. Do a upsert of the user node.
         2. Do a upsert of the relation/reverse-relation edge.
 
-        :param table_uri:
+        :param key:
         :param user_email:
         :param relation_type:
         :return:
@@ -804,7 +813,7 @@ class Neo4jProxy(BaseProxy):
         """)
 
         user_email = 'key: "{user_email}"'.format(user_email=user_email)
-        tbl_key = 'key: "{tbl_key}"'.format(tbl_key=table_uri)
+        tbl_key = 'key: "{tbl_key}"'.format(tbl_key=key)
 
         upsert_user_relation_query = textwrap.dedent("""
         MATCH (n1:User {{{user_email}}}), (n2:Table {{{tbl_key}}})
@@ -824,7 +833,7 @@ class Neo4jProxy(BaseProxy):
             if not result.single():
                 raise RuntimeError('Failed to create relation between '
                                    'user {user} and table {tbl}'.format(user=user_email,
-                                                                        tbl=table_uri))
+                                                                        tbl=key))
             tx.commit()
         except Exception as e:
             if not tx.closed():
@@ -836,13 +845,13 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def delete_table_relation_by_user(self, *,
-                                      table_uri: str,
+                                      key: str,
                                       user_email: str,
                                       relation_type: UserResourceRel) -> None:
         """
         Delete the relationship between user and resources.
 
-        :param table_uri:
+        :param key:
         :param user_email:
         :param relation_type:
         :return:
@@ -850,7 +859,7 @@ class Neo4jProxy(BaseProxy):
         relation, reverse_relation = self._get_relation_by_type(relation_type)
 
         user_email = 'key: "{user_email}"'.format(user_email=user_email)
-        tbl_key = 'key: "{tbl_key}"'.format(tbl_key=table_uri)
+        tbl_key = 'key: "{tbl_key}"'.format(tbl_key=key)
 
         delete_query = textwrap.dedent("""
         MATCH (n1:User {{{user_email}}})-[r1:{relation}]->

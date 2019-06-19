@@ -89,13 +89,13 @@ class TableDetailAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
 
-    def get(self, table_id: str) -> Iterable[Union[Mapping, int, None]]:
+    def get(self, key: str) -> Iterable[Union[Mapping, int, None]]:
         try:
-            table = self.client.get_table(table_id=table_id)
+            table = self.client.get_table(key=key)
             return marshal(table, table_detail_fields), HTTPStatus.OK
 
         except NotFoundException:
-            return {'message': 'table_id {} does not exist'.format(table_id)}, HTTPStatus.NOT_FOUND
+            return {'message': 'key {} does not exist'.format(key)}, HTTPStatus.NOT_FOUND
 
 
 class TableOwnerAPI(Resource):
@@ -106,27 +106,27 @@ class TableOwnerAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
 
-    def put(self, table_id: str, owner: str) -> Iterable[Union[Mapping, int, None]]:
+    def put(self, key: str, owner: str) -> Iterable[Union[Mapping, int, None]]:
         try:
-            self.client.add_owner(table_id=table_id, owner=owner)
-            return {'message': 'The owner {} for table_id {} '
+            self.client.add_owner(key=key, owner=owner)
+            return {'message': 'The owner {} for key {} '
                                'is added successfully'.format(owner,
-                                                              table_id)}, HTTPStatus.OK
+                                                              key)}, HTTPStatus.OK
         except Exception as e:
-            return {'message': 'The owner {} for table_id {} '
+            return {'message': 'The owner {} for key {} '
                                'is not added successfully'.format(owner,
-                                                                  table_id)}, HTTPStatus.INTERNAL_SERVER_ERROR
+                                                                  key)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def delete(self, table_id: str, owner: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, key: str, owner: str) -> Iterable[Union[Mapping, int, None]]:
         try:
-            self.client.delete_owner(table_id=table_id, owner=owner)
-            return {'message': 'The owner {} for table_id {} '
+            self.client.delete_owner(key=key, owner=owner)
+            return {'message': 'The owner {} for key {} '
                                'is deleted successfully'.format(owner,
-                                                                table_id)}, HTTPStatus.OK
+                                                                key)}, HTTPStatus.OK
         except Exception:
-            return {'message': 'The owner {} for table_id {} '
+            return {'message': 'The owner {} for key {} '
                                'is not deleted successfully'.format(owner,
-                                                                    table_id)}, HTTPStatus.INTERNAL_SERVER_ERROR
+                                                                    key)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 class TableDescriptionAPI(Resource):
@@ -141,33 +141,33 @@ class TableDescriptionAPI(Resource):
 
         super(TableDescriptionAPI, self).__init__()
 
-    def get(self, table_id: str) -> Iterable[Any]:
+    def get(self, key: str) -> Iterable[Any]:
         """
         Returns description in Neo4j endpoint
         """
         try:
-            description = self.client.get_table_description(table_id=table_id)
+            description = self.client.get_table_description(key=key)
             return {'description': description}, HTTPStatus.OK
 
         except NotFoundException:
-            return {'message': 'table_id {} does not exist'.format(table_id)}, HTTPStatus.NOT_FOUND
+            return {'message': 'key {} does not exist'.format(key)}, HTTPStatus.NOT_FOUND
 
         except Exception:
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def put(self, table_id: str, description_val: str) -> Iterable[Any]:
+    def put(self, key: str, description_val: str) -> Iterable[Any]:
         """
         Updates table description
-        :param table_id:
+        :param key:
         :param description_val:
         :return:
         """
         try:
-            self.client.put_table_description(table_id=table_id, description=description_val)
+            self.client.put_table_description(key=key, description=description_val)
             return None, HTTPStatus.OK
 
         except NotFoundException:
-            return {'message': 'table_id {} does not exist'.format(table_id)}, HTTPStatus.NOT_FOUND
+            return {'message': 'key {} does not exist'.format(key)}, HTTPStatus.NOT_FOUND
 
 
 class TableTagAPI(Resource):
@@ -182,42 +182,42 @@ class TableTagAPI(Resource):
         self.parser.add_argument('tag', type=str, location='json')
         super(TableTagAPI, self).__init__()
 
-    def put(self, table_id: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
+    def put(self, key: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
         """
         API to add a tag to existing table id.
 
-        :param table_id:
+        :param key:
         :param tag:
         :return:
         """
         try:
-            self.client.add_tag(table_id=table_id, tag=tag)
-            return {'message': 'The tag {} for table_id {} '
+            self.client.add_tag(key=key, tag=tag)
+            return {'message': 'The tag {} for key {} '
                                'is added successfully'.format(tag,
-                                                              table_id)}, HTTPStatus.OK
+                                                              key)}, HTTPStatus.OK
         except NotFoundException:
             return \
-                {'message': 'The tag {} for table_id {} '
+                {'message': 'The tag {} for key {} '
                             'is not added successfully'.format(tag,
-                                                               table_id)}, \
+                                                               key)}, \
                 HTTPStatus.NOT_FOUND
 
-    def delete(self, table_id: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, key: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
         """
         API to remove a association between a given tag and a table.
 
-        :param table_id:
+        :param key:
         :param tag:
         :return:
         """
         try:
-            self.client.delete_tag(table_id=table_id, tag=tag)
-            return {'message': 'The tag {} for table_id {} '
+            self.client.delete_tag(key=key, tag=tag)
+            return {'message': 'The tag {} for key {} '
                                'is deleted successfully'.format(tag,
-                                                                table_id)}, HTTPStatus.OK
+                                                                key)}, HTTPStatus.OK
         except NotFoundException:
             return \
-                {'message': 'The tag {} for table_id {} '
+                {'message': 'The tag {} for key {} '
                             'is not deleted successfully'.format(tag,
-                                                                 table_id)}, \
+                                                                 key)}, \
                 HTTPStatus.NOT_FOUND

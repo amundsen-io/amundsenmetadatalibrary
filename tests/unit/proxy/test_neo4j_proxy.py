@@ -116,7 +116,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.side_effect = [self.col_usage_return_value, [], self.table_level_return_value]
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table = neo4j_proxy.get_table(table_uri='dummy_uri')
+            table = neo4j_proxy.get_table(key='dummy_uri')
 
             expected = Table(database='hive', cluster='gold', schema='foo_schema', name='foo_table',
                              tags=[Tag(tag_name='test', tag_type='default')],
@@ -160,7 +160,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.side_effect = [col_usage_return_value, [], self.table_level_return_value]
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table = neo4j_proxy.get_table(table_uri='dummy_uri')
+            table = neo4j_proxy.get_table(key='dummy_uri')
 
             expected = Table(database='hive', cluster='gold', schema='foo_schema', name='foo_table',
                              tags=[Tag(tag_name='test', tag_type='default')],
@@ -204,7 +204,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = dict(description='sample description')
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table_description = neo4j_proxy.get_table_description(table_uri='test_table')
+            table_description = neo4j_proxy.get_table_description(key='test_table')
 
             table_description_query = textwrap.dedent("""
             MATCH (tbl:Table {key: $tbl_key})-[:DESCRIPTION]->(d:Description)
@@ -224,7 +224,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = None
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table_description = neo4j_proxy.get_table_description(table_uri='test_table')
+            table_description = neo4j_proxy.get_table_description(key='test_table')
 
             table_description_query = textwrap.dedent("""
             MATCH (tbl:Table {key: $tbl_key})-[:DESCRIPTION]->(d:Description)
@@ -253,7 +253,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.put_table_description(table_uri='test_table',
+            neo4j_proxy.put_table_description(key='test_table',
                                               description='test_description')
 
             self.assertEquals(mock_run.call_count, 2)
@@ -268,7 +268,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = dict(description='sample description')
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            col_description = neo4j_proxy.get_column_description(table_uri='test_table',
+            col_description = neo4j_proxy.get_column_description(key='test_table',
                                                                  column_name='test_column')
 
             column_description_query = textwrap.dedent("""
@@ -290,7 +290,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = None
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            col_description = neo4j_proxy.get_column_description(table_uri='test_table',
+            col_description = neo4j_proxy.get_column_description(key='test_table',
                                                                  column_name='test_column')
 
             column_description_query = textwrap.dedent("""
@@ -321,7 +321,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.put_column_description(table_uri='test_table',
+            neo4j_proxy.put_column_description(key='test_table',
                                                column_name='test_column',
                                                description='test_description')
 
@@ -342,7 +342,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.add_owner(table_uri='dummy_uri',
+            neo4j_proxy.add_owner(key='dummy_uri',
                                   owner='tester')
             # we call neo4j twice in add_owner call
             self.assertEquals(mock_run.call_count, 2)
@@ -362,7 +362,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.delete_owner(table_uri='dummy_uri',
+            neo4j_proxy.delete_owner(key='dummy_uri',
                                      owner='tester')
             # we only call neo4j once in delete_owner call
             self.assertEquals(mock_run.call_count, 1)
@@ -382,7 +382,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.add_tag(table_uri='dummy_uri',
+            neo4j_proxy.add_tag(key='dummy_uri',
                                 tag='hive')
             # we call neo4j twice in add_tag call
             self.assertEquals(mock_run.call_count, 3)
@@ -402,7 +402,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.delete_tag(table_uri='dummy_uri',
+            neo4j_proxy.delete_tag(key='dummy_uri',
                                    tag='hive')
             # we only call neo4j once in delete_tag call
             self.assertEquals(mock_run.call_count, 1)
@@ -474,8 +474,10 @@ class TestNeo4jProxy(unittest.TestCase):
             actual = neo4j_proxy.get_popular_tables(num_entries=2)
 
             expected = [
-                PopularTable(database='db', cluster='clstr', schema='sch', name='foo', description='test description'),
-                PopularTable(database='db', cluster='clstr', schema='sch', name='bar'),
+                PopularTable(database='db', cluster='clstr', schema='sch', name='foo',
+                             key='db://clstr.sch/foo', entity_type='table', description='test description'),
+                PopularTable(database='db', cluster='clstr', schema='sch', name='bar',
+                             key='db://clstr.sch/bar', entity_type='table'),
             ]
 
             self.assertEqual(actual.__repr__(), expected.__repr__())
@@ -510,7 +512,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = {
                 'table_records': [
                     {
-                        'key': 'table_uri',
+                        'key': 'key',
 
                     }
                 ]
@@ -554,7 +556,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.add_table_relation_by_user(table_uri='dummy_uri',
+            neo4j_proxy.add_table_relation_by_user(key='dummy_uri',
                                                    user_email='tester',
                                                    relation_type=UserResourceRel.follow)
             self.assertEquals(mock_run.call_count, 2)
@@ -574,7 +576,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.delete_table_relation_by_user(table_uri='dummy_uri',
+            neo4j_proxy.delete_table_relation_by_user(key='dummy_uri',
                                                       user_email='tester',
                                                       relation_type=UserResourceRel.follow)
             self.assertEquals(mock_run.call_count, 1)
