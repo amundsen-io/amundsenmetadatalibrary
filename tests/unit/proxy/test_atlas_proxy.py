@@ -26,7 +26,7 @@ class TestAtlasProxy(unittest.TestCase):
         self.cluster = 'TEST_CLUSTER'
         self.db = 'TEST_DB'
         self.name = 'TEST_TABLE'
-        self.key = '1'
+        self.table_key = '1'
 
         self.classification_entity = {
             'classifications': [
@@ -168,7 +168,7 @@ class TestAtlasProxy(unittest.TestCase):
 
         self.proxy._driver.entity_guid = MagicMock(
             return_value=entity_guid_response)
-        ent = self.proxy._get_table_entity(key=self.key)
+        ent = self.proxy._get_table_entity(table_key=self.table_key)
         self.assertEqual(ent.__repr__(), entity_guid_response.__repr__())
 
     def test_get_table(self):
@@ -177,7 +177,7 @@ class TestAtlasProxy(unittest.TestCase):
                       'cluster': self.cluster,
                       'db': self.db,
                       'name': self.name}
-        response = self.proxy.get_table(key=self.key, table_info=table_info)
+        response = self.proxy.get_table(table_key=self.table_key, table_info=table_info)
 
         classif_name = self.classification_entity['classifications'][0]['typeName']
         ent_attrs = self.entity1['attributes']
@@ -217,7 +217,7 @@ class TestAtlasProxy(unittest.TestCase):
                       'name': self.name}
         with self.assertRaises(NotFoundException):
             self.proxy._driver.entity_guid = MagicMock(side_effect=Exception('Boom!'))
-            self.proxy.get_table(key=self.key, table_info=table_info)
+            self.proxy.get_table(table_key=self.table_key, table_info=table_info)
 
     def test_get_table_missing_info(self):
         with self.assertRaises(BadRequest):
@@ -227,7 +227,7 @@ class TestAtlasProxy(unittest.TestCase):
             entity_guid_response.entity = local_entity
 
             self.proxy._driver.entity_guid = MagicMock(return_value=entity_guid_response)
-            self.proxy.get_table(key=self.key, table_info={})
+            self.proxy.get_table(table_key=self.table_key, table_info={})
 
     def test_get_popular_tables(self):
         entity1 = MagicMock()
@@ -314,12 +314,12 @@ class TestAtlasProxy(unittest.TestCase):
 
     def test_get_table_description(self):
         self._mock_get_table_entity()
-        response = self.proxy.get_table_description(key=self.key)
+        response = self.proxy.get_table_description(table_key=self.table_key)
         self.assertEqual(response, self.entity1['attributes']['description'])
 
     def test_put_table_description(self):
         self._mock_get_table_entity()
-        self.proxy.put_table_description(key=self.key,
+        self.proxy.put_table_description(table_key=self.table_key,
                                          description="DOESNT_MATTER")
 
     def test_get_tags(self):
@@ -342,7 +342,7 @@ class TestAtlasProxy(unittest.TestCase):
         self._mock_get_table_entity()
 
         with patch.object(self.proxy._driver.entity_bulk_classification, 'create') as mock_execute:
-            self.proxy.add_tag(key=self.key, tag=tag)
+            self.proxy.add_tag(table_key=self.table_key, tag=tag)
             mock_execute.assert_called_with(
                 data={'classification': {'typeName': tag}, 'entityGuids': [self.entity1['guid']]}
             )
@@ -354,20 +354,20 @@ class TestAtlasProxy(unittest.TestCase):
         self.proxy._driver.entity_guid = MagicMock(return_value=mocked_entity)
 
         with patch.object(mocked_entity.classifications(tag), 'delete') as mock_execute:
-            self.proxy.delete_tag(key=self.key, tag=tag)
+            self.proxy.delete_tag(table_key=self.table_key, tag=tag)
             mock_execute.assert_called_with()
 
     def test_add_owner(self):
         owner = "OWNER"
         entity = self._mock_get_table_entity()
         with patch.object(entity, 'update') as mock_execute:
-            self.proxy.add_owner(key=self.key, owner=owner)
+            self.proxy.add_owner(table_key=self.table_key, owner=owner)
             mock_execute.assert_called_with()
 
     def test_get_column(self):
         self._mock_get_table_entity()
         response = self.proxy._get_column(
-            key=self.key,
+            table_key=self.table_key,
             column_name=self.test_column['attributes']['qualifiedName']
         )
         self.assertDictEqual(response, self.test_column)
@@ -375,25 +375,25 @@ class TestAtlasProxy(unittest.TestCase):
     def test_get_column_wrong_guid(self):
         with self.assertRaises(NotFoundException):
             self._mock_get_table_entity()
-            self.proxy._get_column(key=self.key, column_name='FAKE')
+            self.proxy._get_column(table_key=self.table_key, column_name='FAKE')
 
     def test_get_column_no_referred_entities(self):
         with self.assertRaises(NotFoundException):
             local_entity = self.entity2
             local_entity['attributes']['columns'] = [{'guid': 'ent_2_col'}]
             self._mock_get_table_entity(local_entity)
-            self.proxy._get_column(key=self.key, column_name='FAKE')
+            self.proxy._get_column(table_key=self.table_key, column_name='FAKE')
 
     def test_get_column_description(self):
         self._mock_get_table_entity()
         response = self.proxy.get_column_description(
-            key=self.key,
+            table_key=self.table_key,
             column_name=self.test_column['attributes']['qualifiedName'])
         self.assertEqual(response, self.test_column['attributes'].get('description'))
 
     def test_put_column_description(self):
         self._mock_get_table_entity()
-        self.proxy.put_column_description(key=self.key,
+        self.proxy.put_column_description(table_key=self.table_key,
                                           column_name=self.test_column['attributes']['qualifiedName'],
                                           description='DOESNT_MATTER')
 

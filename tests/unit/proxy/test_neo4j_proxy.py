@@ -51,14 +51,14 @@ class TestNeo4jProxy(unittest.TestCase):
         table_level_results.single.return_value = {
             'wmk_records': [
                 {
-                    'key': 'hive://gold.test_schema/test_table/high_watermark/',
-                    'partition_key': 'ds',
+                    'table_key': 'hive://gold.test_schema/test_table/high_watermark/',
+                    'partition_table_key': 'ds',
                     'partition_value': 'fake_value',
                     'create_time': 'fake_time',
                 },
                 {
-                    'key': 'hive://gold.test_schema/test_table/low_watermark/',
-                    'partition_key': 'ds',
+                    'table_key': 'hive://gold.test_schema/test_table/low_watermark/',
+                    'partition_table_key': 'ds',
                     'partition_value': 'fake_value',
                     'create_time': 'fake_time',
                 }
@@ -72,19 +72,19 @@ class TestNeo4jProxy(unittest.TestCase):
             'last_updated_timestamp': 1,
             'owner_records': [
                 {
-                    'key': 'tester@lyft.com',
+                    'table_key': 'tester@lyft.com',
                     'email': 'tester@lyft.com'
                 }
             ],
             'tag_records': [
                 {
-                    'key': 'test',
+                    'table_key': 'test',
                     'tag_type': 'default'
                 }
             ],
             'src': {
                 'source': '/source_file_loc',
-                'key': 'some key',
+                'table_key': 'some table_key',
                 'source_type': 'github'
             }
         }
@@ -116,7 +116,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.side_effect = [self.col_usage_return_value, [], self.table_level_return_value]
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table = neo4j_proxy.get_table(key='dummy_uri')
+            table = neo4j_proxy.get_table(table_key='dummy_uri')
 
             expected = Table(database='hive', cluster='gold', schema='foo_schema', name='foo_table',
                              tags=[Tag(tag_name='test', tag_type='default')],
@@ -160,7 +160,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.side_effect = [col_usage_return_value, [], self.table_level_return_value]
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table = neo4j_proxy.get_table(key='dummy_uri')
+            table = neo4j_proxy.get_table(table_key='dummy_uri')
 
             expected = Table(database='hive', cluster='gold', schema='foo_schema', name='foo_table',
                              tags=[Tag(tag_name='test', tag_type='default')],
@@ -204,14 +204,14 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = dict(description='sample description')
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table_description = neo4j_proxy.get_table_description(key='test_table')
+            table_description = neo4j_proxy.get_table_description(table_key='test_table')
 
             table_description_query = textwrap.dedent("""
-            MATCH (tbl:Table {key: $tbl_key})-[:DESCRIPTION]->(d:Description)
+            MATCH (tbl:Table {table_key: $tbl_table_key})-[:DESCRIPTION]->(d:Description)
             RETURN d.description AS description;
             """)
             mock_execute.assert_called_with(statement=table_description_query,
-                                            param_dict={'tbl_key': 'test_table'})
+                                            param_dict={'tbl_table_key': 'test_table'})
 
             self.assertEquals(table_description, 'sample description')
 
@@ -224,14 +224,14 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = None
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            table_description = neo4j_proxy.get_table_description(key='test_table')
+            table_description = neo4j_proxy.get_table_description(table_key='test_table')
 
             table_description_query = textwrap.dedent("""
-            MATCH (tbl:Table {key: $tbl_key})-[:DESCRIPTION]->(d:Description)
+            MATCH (tbl:Table {table_key: $tbl_table_key})-[:DESCRIPTION]->(d:Description)
             RETURN d.description AS description;
             """)
             mock_execute.assert_called_with(statement=table_description_query,
-                                            param_dict={'tbl_key': 'test_table'})
+                                            param_dict={'tbl_table_key': 'test_table'})
 
             self.assertIsNone(table_description)
 
@@ -253,7 +253,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.put_table_description(key='test_table',
+            neo4j_proxy.put_table_description(table_key='test_table',
                                               description='test_description')
 
             self.assertEquals(mock_run.call_count, 2)
@@ -268,15 +268,15 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = dict(description='sample description')
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            col_description = neo4j_proxy.get_column_description(key='test_table',
+            col_description = neo4j_proxy.get_column_description(table_key='test_table',
                                                                  column_name='test_column')
 
             column_description_query = textwrap.dedent("""
-            MATCH (tbl:Table {key: $tbl_key})-[:COLUMN]->(c:Column {name: $column_name})-[:DESCRIPTION]->(d:Description)
+            MATCH (tbl:Table {table_key: $tbl_table_key})-[:COLUMN]->(c:Column {name: $column_name})-[:DESCRIPTION]->(d:Description)
             RETURN d.description AS description;
             """)
             mock_execute.assert_called_with(statement=column_description_query,
-                                            param_dict={'tbl_key': 'test_table',
+                                            param_dict={'tbl_table_key': 'test_table',
                                                         'column_name': 'test_column'})
 
             self.assertEquals(col_description, 'sample description')
@@ -290,15 +290,15 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = None
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            col_description = neo4j_proxy.get_column_description(key='test_table',
+            col_description = neo4j_proxy.get_column_description(table_key='test_table',
                                                                  column_name='test_column')
 
             column_description_query = textwrap.dedent("""
-            MATCH (tbl:Table {key: $tbl_key})-[:COLUMN]->(c:Column {name: $column_name})-[:DESCRIPTION]->(d:Description)
+            MATCH (tbl:Table {table_key: $tbl_table_key})-[:COLUMN]->(c:Column {name: $column_name})-[:DESCRIPTION]->(d:Description)
             RETURN d.description AS description;
             """)
             mock_execute.assert_called_with(statement=column_description_query,
-                                            param_dict={'tbl_key': 'test_table',
+                                            param_dict={'tbl_table_key': 'test_table',
                                                         'column_name': 'test_column'})
 
             self.assertIsNone(col_description)
@@ -321,7 +321,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.put_column_description(key='test_table',
+            neo4j_proxy.put_column_description(table_key='test_table',
                                                column_name='test_column',
                                                description='test_description')
 
@@ -342,7 +342,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.add_owner(key='dummy_uri',
+            neo4j_proxy.add_owner(table_key='dummy_uri',
                                   owner='tester')
             # we call neo4j twice in add_owner call
             self.assertEquals(mock_run.call_count, 2)
@@ -362,7 +362,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.delete_owner(key='dummy_uri',
+            neo4j_proxy.delete_owner(table_key='dummy_uri',
                                      owner='tester')
             # we only call neo4j once in delete_owner call
             self.assertEquals(mock_run.call_count, 1)
@@ -382,7 +382,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.add_tag(key='dummy_uri',
+            neo4j_proxy.add_tag(table_key='dummy_uri',
                                 tag='hive')
             # we call neo4j twice in add_tag call
             self.assertEquals(mock_run.call_count, 3)
@@ -402,7 +402,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.delete_tag(key='dummy_uri',
+            neo4j_proxy.delete_tag(table_key='dummy_uri',
                                    tag='hive')
             # we only call neo4j once in delete_tag call
             self.assertEquals(mock_run.call_count, 1)
@@ -412,8 +412,8 @@ class TestNeo4jProxy(unittest.TestCase):
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
 
             mock_execute.return_value = [
-                {'tag_name': {'key': 'tag1'}, 'tag_count': 2},
-                {'tag_name': {'key': 'tag2'}, 'tag_count': 1}
+                {'tag_name': {'table_key': 'tag1'}, 'tag_count': 2},
+                {'tag_name': {'table_key': 'tag2'}, 'tag_count': 1}
             ]
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
@@ -556,7 +556,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.add_table_relation_by_user(key='dummy_uri',
+            neo4j_proxy.add_table_relation_by_user(table_key='dummy_uri',
                                                    user_email='tester',
                                                    relation_type=UserResourceRel.follow)
             self.assertEquals(mock_run.call_count, 2)
@@ -576,7 +576,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_transaction.commit = mock_commit
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_proxy.delete_table_relation_by_user(key='dummy_uri',
+            neo4j_proxy.delete_table_relation_by_user(table_key='dummy_uri',
                                                       user_email='tester',
                                                       relation_type=UserResourceRel.follow)
             self.assertEquals(mock_run.call_count, 1)
