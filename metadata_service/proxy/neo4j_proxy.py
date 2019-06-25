@@ -440,8 +440,8 @@ class Neo4jProxy(BaseProxy):
         :return:
         """
         create_owner_query = textwrap.dedent("""
-        MERGE (u:User {table_key: $user_email})
-        on CREATE SET u={email: $user_email, table_key: $user_email}
+        MERGE (u:User {key: $user_email})
+        on CREATE SET u={email: $user_email, key: $user_email}
         """)
 
         upsert_owner_relation_query = textwrap.dedent("""
@@ -700,7 +700,7 @@ class Neo4jProxy(BaseProxy):
         """
 
         query = textwrap.dedent("""
-        MATCH (user:User {table_key: $user_id})
+        MATCH (user:User {key: $user_id})
         OPTIONAL MATCH (user)-[:MANAGE_BY]->(manager:User)
         RETURN user as user_record, manager as manager_record
         """)
@@ -807,9 +807,9 @@ class Neo4jProxy(BaseProxy):
         relation, reverse_relation = self._get_relation_by_type(relation_type)
 
         upsert_user_query = textwrap.dedent("""
-        MERGE (u:User {table_key: $user_email})
-        on CREATE SET u={email: $user_email, table_key: $user_email}
-        on MATCH SET u={email: $user_email, table_key: $user_email}
+        MERGE (u:User {key: $user_email})
+        on CREATE SET u={email: $user_email, key: $user_email}
+        on MATCH SET u={email: $user_email, key: $user_email}
         """)
 
         user_email = 'table_key: "{user_email}"'.format(user_email=user_email)
