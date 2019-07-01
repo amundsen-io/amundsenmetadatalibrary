@@ -523,21 +523,6 @@ class TestNeo4jProxy(unittest.TestCase):
                 }
             ]
 
-            # mock_col_query.return_value = 'not_related', {
-            #     'db': {
-            #         'name': 'db_name'
-            #     },
-            #     'clstr': {
-            #         'name': 'cluster'
-            #     },
-            #     'schema': {
-            #         'name': 'schema'
-            #     },
-            #     'tbl': {
-            #         'name': 'table_name'
-            #     }
-            # }
-
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             result = neo4j_proxy.get_table_by_user_relation(user_email='test_user',
                                                             relation_type=UserResourceRel.follow)
