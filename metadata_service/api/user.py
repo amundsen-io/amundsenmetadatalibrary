@@ -8,6 +8,8 @@ from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 from metadata_service.util import UserResourceRel
 
+import logging
+
 
 user_detail_fields = {
     'email': fields.String,
@@ -27,12 +29,16 @@ table_list_fields = {
 }
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class UserDetailAPI(Resource):
     """
     User detail API for people resources
     """
 
     def __init__(self) -> None:
+
         self.client = get_proxy_client()
 
     def get(self, user_id: str) -> Iterable[Union[Mapping, int, None]]:
@@ -69,6 +75,7 @@ class UserFollowAPI(Resource):
             return {'message': 'user_id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
 
         except Exception:
+            LOGGER.exception('UserFollowAPI Failed')
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
     def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
