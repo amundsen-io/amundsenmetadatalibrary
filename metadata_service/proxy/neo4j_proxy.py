@@ -776,6 +776,39 @@ RETURN db, clstr, schema, tbl, tbl_dscrpt""").format(relation=relation)
         return {'table': results}
 
     @timer_with_counter
+    def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
+        """
+        Retrieves all Table the resources per user on READ relation.
+
+        :param user_email: the email of the user
+        :return:
+        """
+
+        query = textwrap.dedent("""
+MATCH (user:User {{key: $query_key}})-[r:READ]->(tbl:Table)
+WHERE EXISTS(r.published_tag) AND r.published_tag IS NOT NULL
+WITH user, r, tbl ORDER BY r.published_tag DESC, r.total_reads DESC LIMIT 50
+MATCH (tbl:Table)-[:TABLE_OF]->(schema:Schema)-[:SCHEMA_OF]->(clstr:Cluster)-[:CLUSTER_OF]->(db:Database)
+OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(tbl_dscrpt:Description)
+RETURN db, clstr, schema, tbl, tbl_dscrpt
+""")
+
+        table_records = self._execute_cypher_query(statement=query, param_dict={'query_key': user_email})
+
+        if not table_records:
+            raise NotFoundException('User {user_id} does not READ any resources'.format(user_id=user_email))
+        results = []
+
+        for record in table_records:
+            results.append(PopularTable(
+                database=record['db']['name'],
+                cluster=record['clstr']['name'],
+                schema=record['schema']['name'],
+                name=record['tbl']['name'],
+                description=self._safe_get(record, 'tbl_dscrpt', 'description')))
+        return {'table': results}
+
+    @timer_with_counter
     def add_table_relation_by_user(self, *,
                                    table_uri: str,
                                    user_email: str,
