@@ -75,7 +75,7 @@ class UserFollowAPI(Resource):
             return {'message': 'user_id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
 
         except Exception:
-            LOGGER.exception('UserFollowAPI Failed')
+            LOGGER.exception('UserFollowAPI GET Failed')
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
     def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
@@ -95,6 +95,7 @@ class UserFollowAPI(Resource):
                                'is added successfully'.format(user_id,
                                                               table_uri)}, HTTPStatus.OK
         except Exception as e:
+            LOGGER.exception('UserFollowAPI PUT Failed')
             return {'message': 'The user {} for table_uri {} '
                                'is not added successfully'.format(user_id,
                                                                   table_uri)}, \
@@ -117,8 +118,9 @@ class UserFollowAPI(Resource):
                                'is added successfully'.format(user_id,
                                                               table_uri)}, HTTPStatus.OK
         except Exception as e:
+            LOGGER.exception('UserFollowAPI DELETE Failed')
             return {'message': 'The user {} for table_uri {} '
-                               'is not added successfully'.format(user_id,
+                               'is not deleted successfully'.format(user_id,
                                                                   table_uri)}, \
                 HTTPStatus.INTERNAL_SERVER_ERROR
 
@@ -149,6 +151,7 @@ class UserOwnAPI(Resource):
             return {'message': 'user_id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
 
         except Exception:
+            LOGGER.exception('UserOwnAPI GET Failed')
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
     def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
@@ -166,6 +169,7 @@ class UserOwnAPI(Resource):
                                'is added successfully'.format(user_id,
                                                               table_uri)}, HTTPStatus.OK
         except Exception as e:
+            LOGGER.exception('UserOwnAPI PUT Failed')
             return {'message': 'The owner {} for table_uri {} '
                                'is not added successfully'.format(user_id,
                                                                   table_uri)}, HTTPStatus.INTERNAL_SERVER_ERROR
@@ -177,6 +181,7 @@ class UserOwnAPI(Resource):
                                'is deleted successfully'.format(user_id,
                                                                 table_uri)}, HTTPStatus.OK
         except Exception:
+            LOGGER.exception('UserOwnAPI DELETE Failed')
             return {'message': 'The owner {} for table_uri {} '
                                'is not deleted successfully'.format(user_id,
                                                                     table_uri)}, HTTPStatus.INTERNAL_SERVER_ERROR
@@ -199,12 +204,12 @@ class UserReadAPI(Resource):
         :return:
         """
         try:
-            resources = self.client.get_table_by_user_relation(user_email=user_id,
-                                                               relation_type=UserResourceRel.read)
+            resources = self.client.get_frequently_used_tables(user_email=user_id)
             return marshal(resources, table_list_fields), HTTPStatus.OK
 
         except NotFoundException:
             return {'message': 'user_id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
 
         except Exception:
+            LOGGER.exception('UserReadAPI GET Failed')
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
