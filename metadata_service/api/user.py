@@ -121,7 +121,7 @@ class UserFollowAPI(Resource):
             LOGGER.exception('UserFollowAPI DELETE Failed')
             return {'message': 'The user {} for table_uri {} '
                                'is not deleted successfully'.format(user_id,
-                                                                  table_uri)}, \
+                                                                    table_uri)}, \
                 HTTPStatus.INTERNAL_SERVER_ERROR
 
 
