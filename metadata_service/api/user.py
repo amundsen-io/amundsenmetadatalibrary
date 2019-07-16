@@ -1,14 +1,30 @@
 from http import HTTPStatus
+import logging
 from typing import Iterable, Mapping, Union
 
+from flask import request
 from flask_restful import Resource, fields, marshal
+from marshmallow import UnmarshalResult, ValidationError
 
 from metadata_service.api.popular_tables import popular_table_fields
+from metadata_service.entity.user_detail import UserSchema
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 from metadata_service.util import UserResourceRel
 
-import logging
+
+LOGGER = logging.getLogger(__name__)
+
+
+def produce_not_found_response(user_id: str, exception: Exception) -> tuple:
+    msg = 'user_id {} does not exist'.format(user_id)
+    LOGGER.error(f'Not Found error caused by: {exception}')
+    return {'message': msg}, HTTPStatus.NOT_FOUND
+
+
+def produce_internal_server_error_response(exception: Exception) -> tuple:
+    LOGGER.error(f'Internal server error caused by: {exception}')
+    return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 user_detail_fields = {
@@ -22,6 +38,9 @@ user_detail_fields = {
     'team_name': fields.String,  # Optional
     'employee_type': fields.String,  # Optional
     'manager_fullname': fields.String,  # Optional
+    'profile_url': fields.String,  # Optional
+    'user_id': fields.String,  # Optional
+    'role_name': fields.String,  # Optional
 }
 
 table_list_fields = {
@@ -46,8 +65,50 @@ class UserDetailAPI(Resource):
             table = self.client.get_user_detail(user_id=user_id)
             return marshal(table, user_detail_fields), HTTPStatus.OK
 
-        except NotFoundException:
-            return {'message': 'User id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
+        except NotFoundException as e:
+            return produce_not_found_response(user_id, e)
+
+    def post(self) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Insert or updates users
+        """
+        try:
+            json_data = request.get_json()
+            if not json_data:
+                return {'message': 'No input data provided'}, HTTPStatus.BAD_REQUEST
+            # Validate and deserialize input
+            try:
+                schema = UserSchema(many=True, strict=True)
+                result: UnmarshalResult = schema.load(json_data)
+            except ValidationError as err:
+                return {'messages': err.messages}, HTTPStatus.UNPROCESSABLE_ENTITY
+            self.client.post_users(users=result.data)
+
+            return None, HTTPStatus.OK
+
+        except Exception as e:
+            return produce_internal_server_error_response(e)
+
+    def put(self, user_id: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Insert or updates a single user
+        """
+        try:
+            json_data = request.get_json()
+            if not json_data:
+                return {'message': 'No input data provided'}, HTTPStatus.BAD_REQUEST
+            # Validate and deserialize input
+            try:
+                schema = UserSchema(strict=True)
+                result: UnmarshalResult = schema.load(json_data)
+            except ValidationError as err:
+                return {'messages': err.messages}, HTTPStatus.UNPROCESSABLE_ENTITY
+            self.client.put_user(user=result.data)
+
+            return None, HTTPStatus.OK
+
+        except Exception as e:
+            return produce_not_found_response(user_id, e)
 
 
 class UserFollowAPI(Resource):

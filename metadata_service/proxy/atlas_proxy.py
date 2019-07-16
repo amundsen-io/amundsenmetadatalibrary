@@ -178,6 +178,12 @@ class AtlasProxy(BaseProxy):
     def get_user_detail(self, *, user_id: str) -> Union[UserEntity, None]:
         pass
 
+    def post_users(self, *, users: List[UserEntity]) -> None:
+        pass
+
+    def put_user(self, *, user: UserEntity) -> None:
+        pass
+
     def get_table(self, *, table_uri: str) -> Table:
         """
         Gathers all the information needed for the Table Detail Page.

@@ -25,6 +25,7 @@ _CACHE = CacheManager(**parse_cache_config_options({'cache.type': 'memory'}))
 _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
 LOGGER = logging.getLogger(__name__)
+PUBLISH_TAG_TIME_FORMAT: str = "%Y-%m-%d %H:%M"
 
 
 class Neo4jProxy(BaseProxy):
@@ -724,8 +725,66 @@ class Neo4jProxy(BaseProxy):
                             team_name=record.get('team_name'),
                             slack_id=record.get('slack_id'),
                             employee_type=record.get('employee_type'),
+                            profile_url=record.get('profile_url'),
+                            role_name=record.get('role_name'),
+                            user_id=record.get('user_id'),
                             manager_fullname=manager_name)
         return result
+
+    @timer_with_counter
+    def put_user(self, *, user: UserEntity) -> None:
+        """
+        Update user with supplied data.
+        :param user: new user to be added
+        """
+        self.insert_user(user=user)
+
+    @timer_with_counter
+    def post_users(self, *, users: List[UserEntity]) -> None:
+        """
+        Add or update users with supplied data.
+        :param users: users to be added or updated
+        """
+
+        for user in users:
+            self.insert_user(user=user)
+
+    def insert_user(self, *, user: UserEntity) -> None:
+        """
+        Add or update user with supplied data
+        :param user: user to be added or updated
+        """
+
+        data = user.__dict__
+        data['published_tag'] = time.strftime(PUBLISH_TAG_TIME_FORMAT)
+        data['key'] = data['email']
+
+        params = f'{{{", ".join([f"{param}: ${param}" for param in data.keys()])}}}'
+
+        # create table
+        upsert_user_query = textwrap.dedent(f"""
+            MERGE (u:User {{key: $key}})
+            on CREATE SET u={params}
+            on MATCH SET u={params}
+            """)
+
+        start: float = time.time()
+
+        try:
+            tx = self._driver.session().begin_transaction()
+            tx.run(upsert_user_query, data)
+            tx.commit()
+
+        except Exception as e:
+            LOGGER.exception(f'Failed to execute update process due to exception: {e}')
+            if not tx.closed():
+                tx.rollback()
+            # propagate exception back to api
+            raise e
+
+        finally:
+            tx.close()
+            LOGGER.debug(f'Update process elapsed for {time.time() - start} seconds')
 
     @staticmethod
     def _get_relation_by_type(relation_type: UserResourceRel) -> Tuple:

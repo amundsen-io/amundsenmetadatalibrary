@@ -11,6 +11,7 @@ from metadata_service.entity.popular_table import PopularTable
 from metadata_service.entity.table_detail import (Application, Column, Table, Tag,
                                                   Watermark, Source, Statistics, User)
 from metadata_service.entity.tag_detail import TagDetail
+from metadata_service.entity.user_detail import User as UserEntity
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy.neo4j_proxy import Neo4jProxy
 from metadata_service.util import UserResourceRel
@@ -577,6 +578,52 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = None
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             self.assertRaises(NotFoundException, neo4j_proxy.get_user_detail, user_id='invalid_email')
+
+    def test_put_user(self) -> None:
+        with patch.object(GraphDatabase, 'driver') as mock_driver:
+            mock_session = MagicMock()
+            mock_driver.return_value.session.return_value = mock_session
+
+            mock_transaction = MagicMock()
+            mock_session.begin_transaction.return_value = mock_transaction
+
+            mock_run = MagicMock()
+            mock_transaction.run = mock_run
+            mock_commit = MagicMock()
+            mock_transaction.commit = mock_commit
+
+            user: UserEntity = UserEntity(email='test@test.com', user_id='test@test.com', first_name='hi',
+                                          last_name='bye')
+            neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            neo4j_proxy.put_user(user=user)
+
+            # straightforward no additional deps
+            self.assertEquals(mock_run.call_count, 1)
+            self.assertEquals(mock_commit.call_count, 1)
+
+    def test_post_user(self) -> None:
+        with patch.object(GraphDatabase, 'driver') as mock_driver:
+            mock_session = MagicMock()
+            mock_driver.return_value.session.return_value = mock_session
+
+            mock_transaction = MagicMock()
+            mock_session.begin_transaction.return_value = mock_transaction
+
+            mock_run = MagicMock()
+            mock_transaction.run = mock_run
+            mock_commit = MagicMock()
+            mock_transaction.commit = mock_commit
+
+            user_one: UserEntity = UserEntity(email='test1@test.com', user_id='test1@test.com', first_name='hi',
+                                              last_name='bye')
+            user_two: UserEntity = UserEntity(email='test2@test.com', user_id='test2@test.com', first_name='bye',
+                                              last_name='hi')
+            neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            neo4j_proxy.post_users(users=[user_one, user_two])
+
+            # straightforward no additional deps
+            self.assertEquals(mock_run.call_count, 2)
+            self.assertEquals(mock_commit.call_count, 2)
 
 
 if __name__ == '__main__':
