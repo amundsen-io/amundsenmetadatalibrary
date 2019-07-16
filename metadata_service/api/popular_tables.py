@@ -7,6 +7,7 @@ from flask_restful import Resource, fields, marshal
 from metadata_service.proxy import get_proxy_client
 
 popular_table_fields = {
+    'key': fields.String,
     'database': fields.String,
     'cluster': fields.String,
     'schema': fields.String,

@@ -132,6 +132,7 @@ class Source:
 
 class Table:
     def __init__(self, *,
+                 key: str,
                  database: str,
                  cluster: str,
                  schema: str,
@@ -148,6 +149,7 @@ class Table:
                  is_view: Optional[bool] = None,
                  ) -> None:
 
+        self.key = key
         self.database = database
         self.cluster = cluster
         self.schema = schema

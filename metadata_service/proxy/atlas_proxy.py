@@ -30,11 +30,6 @@ class AtlasProxy(BaseProxy):
     ATTRS_KEY = 'attributes'
     REL_ATTRS_KEY = 'relationshipAttributes'
 
-    # Table Qualified Name Regex
-    TABLE_QN_REGEX = pattern = re.compile(r"""
-    ^(?P<db_name>.*?)\.(?P<table_name>.*)@(?P<cluster_name>.*?)$
-    """, re.X)
-
     def __init__(self, *,
                  host: str,
                  port: int,
@@ -44,6 +39,15 @@ class AtlasProxy(BaseProxy):
         Initiate the Apache Atlas client with the provided credentials
         """
         self._driver = Atlas(host=host, port=port, username=user, password=password)
+
+    def _parse_table_qualified_name(self, qualified_name: str) -> Dict:
+        # Table Qualified Name Regex
+        table_qn_regex = re.compile(r"""
+        ^(?P<db_name>.*?)\.(?P<table_name>.*)@(?P<cluster_name>.*?)$
+        """, re.X)
+
+        _regex_result = table_qn_regex.match(qualified_name)
+        return _regex_result.groupdict() if _regex_result else dict()
 
     def _get_ids_from_basic_search(self, *, params: Dict) -> List[str]:
         """
@@ -185,11 +189,16 @@ class AtlasProxy(BaseProxy):
         :return: A Table object with all the information available
         or gathered from different entities.
         """
-        entity, table_info = self._get_table_entity(table_uri=table_uri)
+        entity = self._driver.entity_guid(table_uri)
+        # entity, table_info = self._get_table_entity(table_uri=table_uri)
         table_details = entity.entity
 
         try:
             attrs = table_details[self.ATTRS_KEY]
+
+            table_qn = self._parse_table_qualified_name(
+                qualified_name=attrs.get(self.QN_KEY)
+            )
 
             tags = []
             # Using or in case, if the key 'classifications' is there with a None
@@ -203,15 +212,17 @@ class AtlasProxy(BaseProxy):
 
             columns = self._serialize_columns(entity=entity)
 
-            table = Table(database=table_info['entity'],
-                          cluster=table_info['cluster'],
-                          schema=table_info['db'],
-                          name=table_info['name'],
-                          tags=tags,
-                          description=attrs.get('description'),
-                          owners=[User(email=attrs.get('owner'))],
-                          columns=columns,
-                          last_updated_timestamp=table_details.get('updateTime'))
+            table = Table(
+                key=table_uri,
+                database=table_details.get('typeName'),
+                cluster=table_qn.get('cluster_name'),
+                schema=table_qn.get('db_name'),
+                name=attrs.get(self.NAME_ATTRIBUTE) or table_qn.get("table_name", ''),
+                tags=tags,
+                description=attrs.get('description'),
+                owners=[User(email=attrs.get('owner'))],
+                columns=columns,
+                last_updated_timestamp=table_details.get('updateTime'))
 
             return table
         except KeyError as ex:
@@ -351,19 +362,22 @@ class AtlasProxy(BaseProxy):
                 table = metadata.relationshipAttributes.get("parentEntity")
                 table_attrs = table.get(self.ATTRS_KEY)
 
-                _regex_result = self.TABLE_QN_REGEX.match(table_attrs.get(self.QN_KEY))
-                table_qn = _regex_result.groupdict() if _regex_result else dict()
+                table_qn = self._parse_table_qualified_name(
+                    qualified_name=table_attrs.get(self.QN_KEY)
+                )
 
                 # Hardcoded empty strings as default, because these values are not optional
                 table_name = table_attrs.get(self.NAME_ATTRIBUTE) or table_qn.get("table_name", '')
                 db_name = table_qn.get("db_name", '')
                 db_cluster = table_qn.get("cluster_name", '')
 
-                popular_table = PopularTable(database=table.get("typeName"),
-                                             cluster=db_cluster,
-                                             schema=db_name,
-                                             name=table_name,
-                                             description=table_attrs.get('description'))
+                popular_table = PopularTable(
+                    key=table.get('guid'),
+                    database=table.get("typeName"),
+                    cluster=db_cluster,
+                    schema=db_name,
+                    name=table_name,
+                    description=table_attrs.get('description'))
                 popular_tables.append(popular_table)
 
         return popular_tables
