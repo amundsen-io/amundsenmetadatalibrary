@@ -47,7 +47,7 @@ $ docker run -p 5000:5000 amundsendev/amundsen-metadata
 $ curl -v http://localhost:5000/healthcheck
 ```
 
-## Instructions to start the service with gunicorn (production use case)
+## Instructions to start the service from Docker image with gunicorn (production use case)
 Note that there below command uses default config of gunicorn. Please visit [Gunicorn homepage](https://gunicorn.org/ "Gunicorn") for more information.
 ```bash
 $ docker pull amundsendev/amundsen-metadata:latest
