@@ -1,24 +1,19 @@
 from typing import Optional
 
+import attr
+from marshmallow_annotations.ext.attrs import AttrsSchema
 
+
+@attr.s(auto_attribs=True, kw_only=True)
 class PopularTable:
+    database: str = attr.ib()
+    cluster: str = attr.ib()
+    schema: str = attr.ib()
+    name: str = attr.ib()
+    description: Optional[str] = None
 
-    def __init__(self, *,
-                 key: str,
-                 database: str,
-                 cluster: str,
-                 schema: str,
-                 name: str,
-                 description: Optional[str] = None) -> None:
-        self.key = key
-        self.database = database
-        self.cluster = cluster
-        self.schema = schema
-        self.name = name
-        self.description = description
 
-    def __repr__(self) -> str:
-        return """Table(key={!r}, database={!r}, cluster={!r}, 
-        schema={!r}, name={!r}, description={!r})""".format(
-            self.key, self.database, self.cluster,
-            self.schema, self.name, self.description)
+class PopularTableSchema(AttrsSchema):
+    class Meta:
+        target = PopularTable
+        register_as_scheme = True
