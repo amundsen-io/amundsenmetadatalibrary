@@ -6,6 +6,7 @@ from marshmallow_annotations.ext.attrs import AttrsSchema
 
 @attr.s(auto_attribs=True, kw_only=True)
 class PopularTable:
+    key: str = attr.ib()
     database: str = attr.ib()
     cluster: str = attr.ib()
     schema: str = attr.ib()

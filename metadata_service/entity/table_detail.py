@@ -154,14 +154,15 @@ def default_if_none(arg: Optional[bool]) -> bool:
 
 @attr.s(auto_attribs=True, kw_only=True)
 class Table:
+    key: str = attr.ib()
     database: str = attr.ib()
     cluster: str = attr.ib()
     schema: str = attr.ib()
     name: str = attr.ib()
+    columns: List[Column] = attr.ib()
     tags: List[Tag] = []
     table_readers: List[Reader] = []
     description: Optional[str] = None
-    columns: List[Column] = attr.ib()
     owners: List[User] = []
     watermarks: List[Watermark] = []
     table_writer: Optional[Application] = None
