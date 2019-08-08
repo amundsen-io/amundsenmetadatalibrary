@@ -85,42 +85,6 @@ class ColumnSchema(AttrsSchema):
 
 
 @attr.s(auto_attribs=True, kw_only=True)
-class PiiDetail:
-    pii_semantic_type: Optional[str] = None
-    pii_forget_type: Optional[str] = None
-
-
-class PiiDetailSchema(AttrsSchema):
-    class Meta:
-        target = PiiDetail
-        register_as_scheme = True
-
-
-@attr.s(auto_attribs=True, kw_only=True)
-class ForeignKey:
-    table_uri: Optional[str] = None
-    column_name: Optional[str] = None
-
-
-class ForeignKeySchema(AttrsSchema):
-    class Meta:
-        target = ForeignKey
-        register_as_scheme = True
-
-
-@attr.s(auto_attribs=True, kw_only=True)
-class DataDetail:
-    data_semantic_type: Optional[str] = None
-    data_semantic_reference: Optional[str] = None
-
-
-class DataDetailchema(AttrsSchema):
-    class Meta:
-        target = DataDetail
-        register_as_scheme = True
-
-
-@attr.s(auto_attribs=True, kw_only=True)
 class Application:
     application_url: str = attr.ib()
     description: str = attr.ib()
@@ -158,10 +122,10 @@ class Table:
     cluster: str = attr.ib()
     schema: str = attr.ib()
     name: str = attr.ib()
-    columns: List[Column] = attr.ib()
     tags: List[Tag] = []
     table_readers: List[Reader] = []
     description: Optional[str] = None
+    columns: List[Column] = attr.ib()
     owners: List[User] = []
     watermarks: List[Watermark] = []
     table_writer: Optional[Application] = None
