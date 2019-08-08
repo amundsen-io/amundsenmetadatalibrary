@@ -44,9 +44,12 @@ typing==3.6.4
 Flask-RESTful==0.3.6
 Flask==1.0.2
 aniso8601==3.0.0
+attrs==19.1.0
 click==6.7
 itsdangerous==0.24
 Jinja2>=2.10.1
+marshmallow==2.15.3
+marshmallow-annotations==2.4.0
 MarkupSafe==1.0
 pytz==2018.4
 six==1.11.0
@@ -56,4 +59,5 @@ neo4j-driver==1.6.0
 neotime==1.0.0
 pytz==2018.4
 statsd==3.2.1
-atlasclient==0.1.7
+atlasclient==0.1.8
+beaker>=1.10.0
