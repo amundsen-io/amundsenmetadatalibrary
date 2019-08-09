@@ -5,6 +5,7 @@ from typing import Union, List, Dict, Any, Tuple
 from atlasclient.client import Atlas
 from atlasclient.exceptions import BadRequest
 from atlasclient.models import EntityUniqueAttribute
+from atlasclient.utils import parse_table_qualified_name, make_table_qualified_name
 from flask import current_app as app
 
 from metadata_service.entity.popular_table import PopularTable
@@ -39,30 +40,6 @@ class AtlasProxy(BaseProxy):
         Initiate the Apache Atlas client with the provided credentials
         """
         self._driver = Atlas(host=host, port=port, username=user, password=password)
-
-    def _parse_table_qualified_name(self, qualified_name: str) -> Dict:
-        """
-        Parses the Atlas' table qualified name
-        :param qualified_name: Qualified Name of the table
-        :return: A dictionary consisting of database name,
-        table name and cluster name of the table
-        """
-        table_qn_regex = re.compile(r"""
-        ^(?P<db_name>.*?)\.(?P<table_name>.*)@(?P<cluster_name>.*?)$
-        """, re.X)
-
-        _regex_result = table_qn_regex.match(qualified_name)
-        return _regex_result.groupdict() if _regex_result else dict()
-
-    def _make_table_qualified_name(self, db: str, table_name: str, cluster: str) -> str:
-        """
-        Based on the given parameters, generate the Atlas' table qualified Name
-        :param db: Database Name of the table
-        :param table_name: Table Name
-        :param cluster: Cluster Name of the table
-        :return: A string i.e., Qualified Name of the table
-        """
-        return f'{db}.{table_name}@{cluster}'
 
     def _get_ids_from_basic_search(self, *, params: Dict) -> List[str]:
         """
@@ -125,9 +102,10 @@ class AtlasProxy(BaseProxy):
         :return: A tuple of Table entity and parsed information of table qualified name
         """
         table_info = self._extract_info_from_uri(table_uri=table_uri)
-        table_qn = '{db}.{name}@{cluster}'.format(db=table_info.get('db'),
-                                                  name=table_info.get('name'),
-                                                  cluster=table_info.get('cluster'))
+        table_qn = make_table_qualified_name(table_info.get('name'),
+                                             table_info.get('cluster'),
+                                             table_info.get('db')
+                                             )
 
         try:
             return self._driver.entity_unique_attribute(
@@ -211,7 +189,7 @@ class AtlasProxy(BaseProxy):
         try:
             attrs = table_details[self.ATTRS_KEY]
 
-            table_qn = self._parse_table_qualified_name(
+            table_qn = parse_table_qualified_name(
                 qualified_name=attrs.get(self.QN_KEY)
             )
 
@@ -376,7 +354,7 @@ class AtlasProxy(BaseProxy):
                 table = metadata.relationshipAttributes.get("parentEntity")
                 table_attrs = table.get(self.ATTRS_KEY)
 
-                table_qn = self._parse_table_qualified_name(
+                table_qn = parse_table_qualified_name(
                     qualified_name=table_attrs.get(self.QN_KEY)
                 )
 

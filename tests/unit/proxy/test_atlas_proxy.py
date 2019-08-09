@@ -165,7 +165,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
         meta2 = copy.deepcopy(self.metadata2)
 
         for meta in [meta1, meta2]:
-            meta['relationshipAttributes']['parentEntity']['attributes']['qualifiedName'] = 'dummy'
+            meta['relationshipAttributes']['parentEntity']['attributes']['qualifiedName'] = \
+                meta['relationshipAttributes']['parentEntity']['attributes']['name']
 
         metadata1 = self.to_class(meta1)
         metadata2 = self.to_class(meta2)
@@ -180,9 +181,9 @@ class TestAtlasProxy(unittest.TestCase, Data):
         ent2_attrs = self.entity2['attributes']
 
         expected = [
-            PopularTable(database=self.entity_type, cluster='', schema='',
+            PopularTable(database=self.entity_type, cluster='default', schema='default',
                          name=ent1_attrs['name'], description=ent1_attrs['description']),
-            PopularTable(database=self.entity_type, cluster='', schema='',
+            PopularTable(database=self.entity_type, cluster='default', schema='default',
                          name=ent2_attrs['name'], description=ent1_attrs['description']),
         ]
 
