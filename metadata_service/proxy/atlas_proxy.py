@@ -7,6 +7,9 @@ from atlasclient.exceptions import BadRequest
 from atlasclient.models import EntityUniqueAttribute
 from atlasclient.utils import parse_table_qualified_name, make_table_qualified_name
 from flask import current_app as app
+from beaker.cache import CacheManager
+from beaker.util import parse_cache_config_options
+from random import randint
 
 from metadata_service.entity.popular_table import PopularTable
 from metadata_service.entity.table_detail import Table, User, Tag, Column, Statistics
@@ -15,6 +18,11 @@ from metadata_service.entity.user_detail import User as UserEntity
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import BaseProxy
 from metadata_service.util import UserResourceRel
+
+_CACHE = CacheManager(**parse_cache_config_options({'cache.type': 'memory'}))
+
+# Expire cache every 11 hours + jitter
+_GET_POPULAR_TABLE_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -325,23 +333,29 @@ class AtlasProxy(BaseProxy):
             column_name=column_name)
         return column_detail[self.ATTRS_KEY].get('description')
 
+    @_CACHE.cache('_get_metadata_collection', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
+    def _get_metadata_collection(self, dsl_param: dict) -> List:
+        try:
+            # Fetch the metadata entities based on popularity score
+            metadata_ids = self._get_flat_values_from_dsl(dsl_param=dsl_param)
+            metadata_collection = self._driver.entity_bulk(guid=metadata_ids)
+            return metadata_collection
+        except KeyError as ex:
+            LOGGER.exception(f'DSL Search query failed: {ex}')
+            raise BadRequest('Unable to fetch popular tables. '
+                             'Please check your configurations.')
+
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
         """
         :param num_entries: Number of popular tables to fetch
         :return: A List of popular tables instances
         """
         popular_tables = list()
-        try:
-            # Fetch the metadata entities based on popularity score
-            query_metadata_ids = {'query': f'FROM Table SELECT metadata.__guid '
-                                           f'ORDERBY popularityScore desc '
-                                           f'LIMIT {num_entries}'}
-            metadata_ids = self._get_flat_values_from_dsl(dsl_param=query_metadata_ids)
-            metadata_collection = self._driver.entity_bulk(guid=metadata_ids)
-        except KeyError as ex:
-            LOGGER.exception(f'DSL Search query failed: {ex}')
-            raise BadRequest('Unable to fetch popular tables. '
-                             'Please check your configurations.')
+        query_metadata_ids = {'query': f'FROM Table SELECT metadata.__guid '
+                                       f'ORDERBY popularityScore desc '
+                                       f'LIMIT {num_entries}'}
+
+        metadata_collection = self._get_metadata_collection(query_metadata_ids)
 
         if not metadata_collection:
             raise NotFoundException('Unable to fetch popular tables. '
