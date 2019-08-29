@@ -19,12 +19,14 @@ from metadata_service.exception import NotFoundException
 from metadata_service.proxy import BaseProxy
 from metadata_service.util import UserResourceRel
 
-_CACHE = CacheManager(**parse_cache_config_options({'cache.type': 'memory'}))
+LOGGER = logging.getLogger(__name__)
 
 # Expire cache every 11 hours + jitter
-_GET_POPULAR_TABLE_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
+_ATLAS_PROXY_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
-LOGGER = logging.getLogger(__name__)
+_CACHE = CacheManager(**parse_cache_config_options({'cache.regions': 'atlas_proxy',
+                                                    'cache.atlas_proxy.type': 'memory',
+                                                    'cache.atlas_proxy.expire': _ATLAS_PROXY_CACHE_EXPIRY_SEC}))
 
 
 # noinspection PyMethodMayBeStatic
@@ -333,17 +335,23 @@ class AtlasProxy(BaseProxy):
             column_name=column_name)
         return column_detail[self.ATTRS_KEY].get('description')
 
-    @_CACHE.cache('_get_metadata_collection', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
-    def _get_metadata_collection(self, dsl_param: dict) -> List:
+    @_CACHE.region('atlas_proxy', '_get_metadata_entities')
+    def _get_metadata_entities(self, dsl_param: dict) -> List:
         try:
             # Fetch the metadata entities based on popularity score
             metadata_ids = self._get_flat_values_from_dsl(dsl_param=dsl_param)
             metadata_collection = self._driver.entity_bulk(guid=metadata_ids)
-            return metadata_collection
-        except KeyError as ex:
+
+            metadata_entities: List = list()
+            for _collection in metadata_collection:
+                metadata_entities.extend(_collection.entities_with_relationships(attributes=["parentEntity"]))
+
+            return metadata_entities
+
+        except (KeyError, TypeError) as ex:
             LOGGER.exception(f'DSL Search query failed: {ex}')
-            raise BadRequest('Unable to fetch popular tables. '
-                             'Please check your configurations.')
+            raise NotFoundException('Unable to fetch popular tables. '
+                                    'Please check your configurations.')
 
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
         """
@@ -355,34 +363,27 @@ class AtlasProxy(BaseProxy):
                                        f'ORDERBY popularityScore desc '
                                        f'LIMIT {num_entries}'}
 
-        metadata_collection = self._get_metadata_collection(query_metadata_ids)
+        metadata_entities = self._get_metadata_entities(query_metadata_ids)
 
-        if not metadata_collection:
-            raise NotFoundException('Unable to fetch popular tables. '
-                                    'Please check your configurations.')
+        for metadata in metadata_entities:
+            table = metadata.relationshipAttributes.get("parentEntity")
+            table_attrs = table.get(self.ATTRS_KEY)
 
-        for _collection in metadata_collection:
-            metadata_entities = _collection.entities_with_relationships(attributes=["parentEntity"])
+            table_qn = parse_table_qualified_name(
+                qualified_name=table_attrs.get(self.QN_KEY)
+            )
 
-            for metadata in metadata_entities:
-                table = metadata.relationshipAttributes.get("parentEntity")
-                table_attrs = table.get(self.ATTRS_KEY)
+            table_name = table_qn.get("table_name") or table_attrs.get('name')
+            db_name = table_qn.get("db_name", '')
+            db_cluster = table_qn.get("cluster_name", '')
 
-                table_qn = parse_table_qualified_name(
-                    qualified_name=table_attrs.get(self.QN_KEY)
-                )
-
-                table_name = table_qn.get("table_name") or table_attrs.get('name')
-                db_name = table_qn.get("db_name", '')
-                db_cluster = table_qn.get("cluster_name", '')
-
-                popular_table = PopularTable(
-                    database=table.get("typeName"),
-                    cluster=db_cluster,
-                    schema=db_name,
-                    name=table_name,
-                    description=table_attrs.get('description'))
-                popular_tables.append(popular_table)
+            popular_table = PopularTable(
+                database=table.get("typeName"),
+                cluster=db_cluster,
+                schema=db_name,
+                name=table_name,
+                description=table_attrs.get('description'))
+            popular_tables.append(popular_table)
 
         return popular_tables
 
