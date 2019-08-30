@@ -1,4 +1,5 @@
 import json
+from flask import current_app
 from http import HTTPStatus
 from typing import Any, Iterable, Mapping, Union
 
@@ -10,6 +11,7 @@ from flask_restful import Resource, reqparse
 
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
+from metadata_service.proxy.search_proxy import SearchProxy
 
 
 class TableDetailAPI(Resource):
@@ -111,6 +113,7 @@ class TableTagAPI(Resource):
 
     def __init__(self) -> None:
         self.client = get_proxy_client()
+        self.search_client = SearchProxy(config=current_app.config)
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('tag_type', type=str, required=False, default='default')
         super(TableTagAPI, self).__init__()
@@ -150,9 +153,10 @@ class TableTagAPI(Resource):
                     HTTPStatus.CONFLICT
 
         try:
-            self.client.add_tag(table_uri=table_uri,
-                                tag=tag,
-                                tag_type=tag_type)
+            self.client.add_tag(table_uri=table_uri, tag=tag, tag_type=tag_type)
+            if app.config.get('SHOULD_UPDATE_ELASTIC'):
+                search_document = self.client.get_table_search_document(table_uri=table_uri)
+                self.search_client.update_elastic(table_uri=table_uri, data=search_document)
             return {'message': 'The tag {} for table_uri {} with type {} '
                                'is added successfully'.format(tag,
                                                               table_uri,

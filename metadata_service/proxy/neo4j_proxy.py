@@ -589,6 +589,23 @@ class Neo4jProxy(BaseProxy):
             if not tx.closed():
                 tx.close()
 
+    def get_table_search_document(self, *, table_uri: str) -> Dict[str, Any]:
+        query = textwrap.dedent("""
+        MATCH (tbl:Table {key: $tbl_key})
+        OPTIONAL MATCH (tbl)-[:COLUMN]->(col:Column)
+        OPTIONAL MATCH (tbl)<-[:TAG]-(tag:Tag)
+        OPTIONAL MATCH (tbl)<-[:TABLE]-(schema:Schema)<-[:SCHEMA]-(cluster:Cluster)<-[:CLUSTER]-(db:Database)
+        OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(desc:Description)
+        OPTIONAL MATCH (col)-[:DESCRIPTION]->(col_desc:Description)
+        RETURN tbl.name as name, schema.name as schema_name, desc.description as description,
+        collect(distinct col.name) as column_names, collect(distinct tag.key) as tags,
+        collect(distinct col_desc.description) as column_descriptions,
+        cluster.name as cluster, db.name as database, tbl.key as key
+        """)
+
+        record = self._execute_cypher_query(statement=query, param_dict={'tbl_key': table_uri})
+        return record.single()
+
     @timer_with_counter
     def delete_tag(self, *, table_uri: str,
                    tag: str,

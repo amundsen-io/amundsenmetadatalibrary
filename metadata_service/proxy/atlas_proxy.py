@@ -577,3 +577,6 @@ class AtlasProxy(BaseProxy):
         entity = self._get_reader_entity(table_uri=table_uri, user_id=user_email)
         entity.entity[self.ATTRS_KEY][self.BKMARKS_KEY] = False
         entity.update()
+
+    def get_table_search_document(self, *, table_uri: str) -> Dict[str, Any]:
+        pass

@@ -1,6 +1,8 @@
 import os
 from typing import List
 
+from typing import Dict, Optional
+
 # PROXY configuration keys
 PROXY_HOST = 'PROXY_HOST'
 PROXY_PORT = 'PROXY_PORT'
@@ -30,6 +32,13 @@ class Config:
     PROXY_USER = os.environ.get('CREDENTIALS_PROXY_USER', 'neo4j')
     PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', 'test')
 
+    LOCAL_HOST: str = '0.0.0.0'
+    SEARCH_PORT: str = '60479'
+    SEARCHSERVICE_BASE: str = os.environ.get('SEARCHSERVICE_BASE', f'http://{LOCAL_HOST}:{SEARCH_PORT}')
+    SEARCHSERVICE_REQUEST_CLIENT: Optional[object] = None
+    SEARCHSERVICE_REQUEST_HEADERS: Optional[Dict[str, str]] = None
+    REQUEST_HEADERS_METHOD = None
+
     IS_STATSD_ON = False
 
     # Used to differentiate tables with other entities in Atlas. For more details:
@@ -43,6 +52,8 @@ class Config:
     WHITELIST_BADGES: List[str] = []
 
     SWAGGER_ENABLED = False
+
+    SHOULD_UPDATE_ELASTIC = False
 
 
 class LocalConfig(Config):

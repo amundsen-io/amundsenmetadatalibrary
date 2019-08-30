@@ -154,6 +154,9 @@ class AbstractGremlinProxy(BaseProxy):
                                       relation_type: UserResourceRel) -> None:
         pass
 
+    def get_table_search_document(self, *, table_uri: str) -> Dict[str, Any]:
+        pass
+
 
 class GenericGremlinProxy(AbstractGremlinProxy):
     """
