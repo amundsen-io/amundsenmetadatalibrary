@@ -207,8 +207,17 @@ class TestAtlasProxy(unittest.TestCase, Data):
             entities_collection = MagicMock()
             entities_collection.entities = [self.to_class(entity1), self.to_class(entity2)]
 
-            self.proxy._driver.entity_bulk = MagicMock(return_value=[entities_collection])
+            # Invalidate the cache to test the cache functionality
+            popular_query_params = {'typeName': 'Metadata',
+                                    'sortBy': 'popularityScore',
+                                    'sortOrder': 'DESCENDING',
+                                    'limit': 2,
+                                    'attributes': ['parentEntity']}
+            self.proxy._CACHE.region_invalidate(self.proxy._get_metadata_entities,
+                                                None, '_get_metadata_entities',
+                                                popular_query_params)
 
+            self.proxy._driver.entity_bulk = MagicMock(return_value=[entities_collection])
             response = self.proxy.get_popular_tables(num_entries=2)
 
             # Call multiple times for cache test.
@@ -217,7 +226,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
             self.proxy.get_popular_tables(num_entries=2)
             self.proxy.get_popular_tables(num_entries=2)
 
-            self.assertEqual(self.proxy._driver.entity_bulk.call_count, 1)
+            self.assertEqual(1, self.proxy._driver.entity_bulk.call_count)
 
             ent1_attrs = self.entity1['attributes']
             ent2_attrs = self.entity2['attributes']

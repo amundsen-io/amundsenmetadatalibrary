@@ -24,10 +24,6 @@ LOGGER = logging.getLogger(__name__)
 # Expire cache every 11 hours + jitter
 _ATLAS_PROXY_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
-_CACHE = CacheManager(**parse_cache_config_options({'cache.regions': 'atlas_proxy',
-                                                    'cache.atlas_proxy.type': 'memory',
-                                                    'cache.atlas_proxy.expire': _ATLAS_PROXY_CACHE_EXPIRY_SEC}))
-
 
 # noinspection PyMethodMayBeStatic
 class AtlasProxy(BaseProxy):
@@ -40,6 +36,9 @@ class AtlasProxy(BaseProxy):
     QN_KEY = 'qualifiedName'
     ATTRS_KEY = 'attributes'
     REL_ATTRS_KEY = 'relationshipAttributes'
+    _CACHE = CacheManager(**parse_cache_config_options({'cache.regions': 'atlas_proxy',
+                                                        'cache.atlas_proxy.type': 'memory',
+                                                        'cache.atlas_proxy.expire': _ATLAS_PROXY_CACHE_EXPIRY_SEC}))
 
     def __init__(self, *,
                  host: str,
@@ -356,7 +355,7 @@ class AtlasProxy(BaseProxy):
             return table_entities
 
         except (KeyError, TypeError) as ex:
-            LOGGER.exception(f'DSL Search query failed: {ex}')
+            LOGGER.exception(f'_get_metadata_entities Failed : {ex}')
             raise NotFoundException('Unable to fetch popular tables. '
                                     'Please check your configurations.')
 
