@@ -211,6 +211,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
             popular_query_params = {'typeName': 'Metadata',
                                     'sortBy': 'popularityScore',
                                     'sortOrder': 'DESCENDING',
+                                    'excludeDeletedEntities': True,
                                     'limit': 2,
                                     'attributes': ['parentEntity']}
             self.proxy._CACHE.region_invalidate(self.proxy._get_metadata_entities,

@@ -368,6 +368,7 @@ class AtlasProxy(BaseProxy):
         popular_query_params = {'typeName': 'Metadata',
                                 'sortBy': 'popularityScore',
                                 'sortOrder': 'DESCENDING',
+                                'excludeDeletedEntities': True,
                                 'limit': num_entries,
                                 'attributes': ['parentEntity']}
 
