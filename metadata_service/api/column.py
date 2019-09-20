@@ -21,16 +21,18 @@ class ColumnDescriptionAPI(Resource):
 
     def put(self,
             table_uri: str,
-            column_name: str,
-            description_val: str) -> Iterable[Union[dict, tuple, int, None]]:
+            column_name: str) -> Iterable[Union[dict, tuple, int, None]]:
         """
-        Updates column description
+        Updates column description (passed as a request body)
+        :param table_uri:
+        :param column_name:
+        :return:
         """
         try:
+            description = self.parser.parse_args()['description']
             self.client.put_column_description(table_uri=table_uri,
                                                column_name=column_name,
-                                               description=description_val)
-
+                                               description=description)
             return None, HTTPStatus.OK
 
         except NotFoundException:

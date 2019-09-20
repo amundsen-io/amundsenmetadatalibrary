@@ -155,15 +155,15 @@ class TableDescriptionAPI(Resource):
         except Exception:
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def put(self, table_uri: str, description_val: str) -> Iterable[Any]:
+    def put(self, table_uri: str) -> Iterable[Any]:
         """
-        Updates table description
+        Updates table description (passed as a request body)
         :param table_uri:
-        :param description_val:
         :return:
         """
         try:
-            self.client.put_table_description(table_uri=table_uri, description=description_val)
+            description = self.parser.parse_args()['description']
+            self.client.put_table_description(table_uri=table_uri, description=description)
             return None, HTTPStatus.OK
 
         except NotFoundException:
