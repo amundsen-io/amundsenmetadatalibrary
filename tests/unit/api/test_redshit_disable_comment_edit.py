@@ -4,6 +4,7 @@ from http import HTTPStatus
 from mock import patch
 from tests.unit.test_basics import BasicTestCase
 
+
 class RedshiftCommentEditDisableTest(BasicTestCase):
 
     def test_table_comment_edit(self) -> None:
@@ -20,6 +21,7 @@ class RedshiftCommentEditDisableTest(BasicTestCase):
             url = '/table/' + table_uri + '/column/' + column_name + '/description'
             response = self.app.test_client().put(url, json=json.dumps({'description': 'test column'}))
             self.assertEqual(response.status_code, HTTPStatus.OK)
+
 
 if __name__ == '__main__':
     unittest.main()
