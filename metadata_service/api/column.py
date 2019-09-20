@@ -1,7 +1,9 @@
+import json
 from http import HTTPStatus
 from typing import Iterable, Union
 
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource
 
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
@@ -13,10 +15,6 @@ class ColumnDescriptionAPI(Resource):
     """
     def __init__(self) -> None:
         self.client = get_proxy_client()
-
-        self.parser = reqparse.RequestParser()
-        self.parser.add_argument('description', type=str, location='json')
-
         super(ColumnDescriptionAPI, self).__init__()
 
     def put(self,
@@ -29,7 +27,7 @@ class ColumnDescriptionAPI(Resource):
         :return:
         """
         try:
-            description = self.parser.parse_args()['description']
+            description = json.loads(request.json).get('description')
             self.client.put_column_description(table_uri=table_uri,
                                                column_name=column_name,
                                                description=description)
