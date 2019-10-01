@@ -160,7 +160,8 @@ class TableDescriptionAPI(Resource):
         :return:
         """
         try:
-            description = json.loads(request.json).get('description')
+            print(request.data, type(request.data))
+            description = json.loads(request.data).get('description')
             self.client.put_table_description(table_uri=table_uri, description=description)
             return None, HTTPStatus.OK
 
