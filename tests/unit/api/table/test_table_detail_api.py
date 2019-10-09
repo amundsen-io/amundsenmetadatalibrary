@@ -5,121 +5,59 @@ from tests.unit.api.table.table_test_case import TableTestCase
 
 TABLE_URI = 'wizards'
 
-QUERY_RESPONSE = {
+STATS = [{'stat_type': 'requests', 'stat_val': '10', 'start_epoch': 1570581861, 'end_epoch': 1570581861}]
+READER = {'email': 'ssnape@hogwarts.com', 'first_name': 'severus', 'last_name': 'snape'}
+BASE = {
     'database': 'postgres',
     'cluster': 'postgres',
     'schema': 'hogwarts',
+    'tags': [{'tag_type': 'table', 'tag_name': 'wizards'}],
+    'owners': [{'email': 'mmcgonagall@hogwarts.com', 'first_name': 'minerva', 'last_name': 'mcgonagall'}],
+    'watermarks': [
+        {'watermark_type': 'type', 'partition_key': 'key', 'partition_value': 'value', 'create_time': '1570581861'}],
+    'table_writer': [{'application_url': 'table_writer_rul', 'name': 'table_writer_name', 'id': 'table_writer_id',
+                      'description': 'table_writer_description'}],
+    'last_updated_timestamp': 1570581861,
+    'source': {'source_type': 'type', 'source': 'source'},
+    'is_view': True
+}
+
+QUERY_RESPONSE = {
+    **BASE,
     'name': 'wizards',
     'description': 'all wizards at hogwarts',
-    'tags': [{
-        'tag_type': 'table',
-        'tag_name': 'wizards'
-    }],
     'table_readers': [{
-        'user': {
-            'email': 'ssnape@hogwarts.com',
-            'first_name': 'severus',
-            'last_name': 'snape'
-        },
+        'user': READER,
         'read_count': 10
-    }],
-    'owners': [{
-        'email': 'mmcgonagall@hogwarts.com',
-        'first_name': 'minerva',
-        'last_name': 'mcgonagall'
     }],
     'columns': [{
         'name': 'wizard_name',
         'description': 'full name of wizard',
         'col_type': 'String',
         'sort_order': 0,
-        'stats': [{
-            'stat_type': 'requests',
-            'stat_val': '10',
-            'start_epoch': 1570581861,
-            'end_epoch': 1570581861
-
-        }]
-    }],
-    'watermarks': [{
-        'watermark_type': 'type',
-        'partition_key': 'key',
-        'partition_value': 'value',
-        'create_time': '1570581861'
-    }],
-    'table_writer': [{
-        'application_url': 'table_writer_rul',
-        'name': 'table_writer_name',
-        'id': 'table_writer_id',
-        'description': 'table_writer_description'
-    }],
-    'last_updated_timestamp': 1570581861,
-    'source': {
-        'source_type': 'type',
-        'source': 'source'
-    },
-    'is_view': True
+        'stats': STATS
+    }]
 }
 
 API_RESPONSE = {
-    'database': 'postgres',
-    'cluster': 'postgres',
-    'schema': 'hogwarts',
+    **BASE,
     'table_name': 'wizards',
     'table_description': 'all wizards at hogwarts',
-    'tags': [{
-        'tag_type': 'table',
-        'tag_name': 'wizards'
-    }],
     'table_readers': [{
-        'reader': {
-            'email': 'ssnape@hogwarts.com',
-            'first_name': 'severus',
-            'last_name': 'snape'
-        },
+        'reader': READER,
         'read_count': 10
-    }],
-    'owners': [{
-        'email': 'mmcgonagall@hogwarts.com',
-        'first_name': 'minerva',
-        'last_name': 'mcgonagall'
     }],
     'columns': [{
         'name': 'wizard_name',
         'description': 'full name of wizard',
         'type': 'String',
         'sort_order': 0,
-        'stats': [{
-            'stat_type': 'requests',
-            'stat_val': '10',
-            'start_epoch': 1570581861,
-            'end_epoch': 1570581861
-
-        }]
-    }],
-    'watermarks': [{
-        'watermark_type': 'type',
-        'partition_key': 'key',
-        'partition_value': 'value',
-        'create_time': '1570581861'
-    }],
-    'table_writer': [{
-        'application_url': 'table_writer_rul',
-        'name': 'table_writer_name',
-        'id': 'table_writer_id',
-        'description': 'table_writer_description'
-    }],
-    'last_updated_timestamp': 1570581861,
-    'source': {
-        'source_type': 'type',
-        'source': 'source'
-    },
-    'is_view': True
+        'stats': STATS
+    }]
 }
 
 
 class TestTableDetailAPI(TableTestCase):
-
     def test_should_get_column_details(self) -> None:
         self.mock_proxy.get_table.return_value = QUERY_RESPONSE
 
