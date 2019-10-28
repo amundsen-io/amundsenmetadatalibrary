@@ -488,7 +488,7 @@ class AtlasProxy(BaseProxy):
         for record in search_results.entities:
             res = self._parse_reader_qn(record.displayText)
             results.append(PopularTable(
-                database="hive_table",
+                database='hive_table',
                 cluster=res['cluster'],
                 schema=res['db'],
                 name=res['table']))

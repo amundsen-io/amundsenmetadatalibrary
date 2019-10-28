@@ -340,6 +340,22 @@ class TestAtlasProxy(unittest.TestCase, Data):
                                           column_name=self.test_column['attributes']['name'],
                                           description='DOESNT_MATTER')
 
+    def test_get_table_by_user_relation(self):
+
+        reader1 = copy.deepcopy(self.reader_entity1)
+        reader1 = self.to_class(reader1)
+        reader_collection = MagicMock()
+        reader_collection.entities = [reader1]
+
+        self.proxy._driver.search_basic.create = MagicMock(return_value=reader_collection)
+        res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
+                                                    relation_type='follow')
+
+        expected = [PopularTable(database='hive_table', cluster=Data.cluster, schema=Data.db,
+                                 name='Table1', description=None)]
+
+        self.assertEqual(res, {'table': expected})
+
     def test_add_resource_relation_by_user(self):
         reader_entity = self._mock_get_reader_entity()
         with patch.object(reader_entity, 'update') as mock_execute:
