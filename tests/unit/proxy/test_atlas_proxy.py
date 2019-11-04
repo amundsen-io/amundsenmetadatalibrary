@@ -351,8 +351,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
         res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
                                                     relation_type='follow')
 
-        expected = [PopularTable(database='hive_table', cluster=Data.cluster, schema=Data.db,
-                                 name='Table1', description=None)]
+        expected = [PopularTable(database=Data.entity_type, cluster=Data.cluster, schema=Data.db,
+                                 name=Data.name, description=None)]
 
         self.assertEqual(res, {'table': expected})
 

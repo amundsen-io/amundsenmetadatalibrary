@@ -124,12 +124,13 @@ class Data:
         "typeName": "Reader",
         "attributes": {
             "isFollowing": True,
-            "qualifiedName": '{}.{}.metadata.{}.reader@{}'.format(db, 'Table1', 'test_user_id', cluster),
-            "count": 96
+            "qualifiedName": '{}.{}.metadata.{}.reader@{}'.format(db, name, 'test_user_id', cluster),
+            "count": 96,
+            "entityUri": table_uri,
         },
         "guid": "0fa40fd5-016c-472e-a72f-25a5013cc818",
         "status": "ACTIVE",
-        "displayText": '{}.{}.metadata.{}.reader@{}'.format(db, 'Table1', 'test_user_id', cluster),
+        "displayText": '{}.{}.metadata.{}.reader@{}'.format(db, name, 'test_user_id', cluster),
         "classificationNames": [],
         "meaningNames": [],
         "meanings": []

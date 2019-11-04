@@ -40,6 +40,7 @@ class AtlasProxy(BaseProxy):
     GUID_KEY = 'guid'
     ATTRS_KEY = 'attributes'
     REL_ATTRS_KEY = 'relationshipAttributes'
+    ENTITY_URI_KEY = 'entityUri'
     _CACHE = CacheManager(**parse_cache_config_options({'cache.regions': 'atlas_proxy',
                                                         'cache.atlas_proxy.type': 'memory',
                                                         'cache.atlas_proxy.expire': _ATLAS_PROXY_CACHE_EXPIRY_SEC}))
@@ -163,7 +164,7 @@ class AtlasProxy(BaseProxy):
             raise NotFoundException('(User {user_id}) does not exist'
                                     .format(user_id=user_id))
 
-    def _create_reader(self, metadata_guid: str, user_guid: str, reader_qn: str) -> None:
+    def _create_reader(self, metadata_guid: str, user_guid: str, reader_qn: str, table_uri: str) -> None:
         """
         Creates a reader entity for a specific user and table uri.
         :param metadata_guid: Table's metadata guid
@@ -172,12 +173,13 @@ class AtlasProxy(BaseProxy):
         :return:
         """
         reader_entity = {
-            'typeName': 'Reader',
+            'typeName': self.READER_TYPE,
             'attributes': {'qualifiedName': reader_qn,
                            'isFollowing': True,
                            'count': 0,
                            'entityMetadata': {'guid': metadata_guid},
-                           'user': {'guid': user_guid}}
+                           'user': {'guid': user_guid},
+                           'entityUri': table_uri}
         }
         self._driver.entity_bulk.create(data={'entities': [reader_entity]})
 
@@ -197,7 +199,7 @@ class AtlasProxy(BaseProxy):
 
         try:
             reader_entity = self._driver.entity_unique_attribute(
-                "Reader", qualifiedName=reader_qn)
+                self.READER_TYPE, qualifiedName=reader_qn)
             if not reader_entity.entity:
                 # Fetch the table entity from the uri for obtaining metadata guid.
                 table_entity, table_info = self._get_table_entity(table_uri=table_uri)
@@ -205,7 +207,7 @@ class AtlasProxy(BaseProxy):
                 user_entity = self._get_user_entity(user_id)
                 # Create reader entity with the metadata and user relation.
                 self._create_reader(table_entity.entity[self.ATTRS_KEY][self.METADATA_KEY][self.GUID_KEY],
-                                    user_entity.entity[self.GUID_KEY], reader_qn)
+                                    user_entity.entity[self.GUID_KEY], reader_qn, table_uri)
                 # Fetch reader entity after creating it.
                 reader_entity = self._driver.entity_unique_attribute(self.READER_TYPE, qualifiedName=reader_qn)
             return reader_entity
@@ -509,9 +511,9 @@ class AtlasProxy(BaseProxy):
 
     def get_table_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, Any]:
         params = {
-            'typeName': 'Reader',
+            'typeName': self.READER_TYPE,
             'offset': '0',
-            'limit': '1000',  # Fixme (yesh) Pagination needs to be implemented.
+            'limit': '1000',
             'entityFilters': {
                 'condition': 'AND',
                 'criterion': [
@@ -527,16 +529,17 @@ class AtlasProxy(BaseProxy):
                     }
                 ]
             },
-            'attributes': ['count', self.QN_KEY]
+            'attributes': ['count', self.QN_KEY, self.ENTITY_URI_KEY]
         }
         # Fetches the reader entities based on filters
         search_results = self._driver.search_basic.create(data=params)
 
         results = []
         for record in search_results.entities:
-            res = self._parse_reader_qn(record.displayText)
+            table_info = self._extract_info_from_uri(table_uri=record.attributes[self.ENTITY_URI_KEY])
+            res = self._parse_reader_qn(record.attributes[self.QN_KEY])
             results.append(PopularTable(
-                database='hive_table',
+                database=table_info['entity'],
                 cluster=res['cluster'],
                 schema=res['db'],
                 name=res['table']))
