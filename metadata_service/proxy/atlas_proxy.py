@@ -252,7 +252,8 @@ class AtlasProxy(BaseProxy):
         for column in entity.entity[self.REL_ATTRS_KEY].get('columns') or list():
             col_entity = entity.referredEntities[column['guid']]
             col_attrs = col_entity[self.ATTRS_KEY]
-            col_metadata = col_attrs.get('metadata')
+            col_rel_attrs = col_entity[self.REL_ATTRS_KEY]
+            col_metadata = col_rel_attrs.get('metadata')
             statistics = list()
 
             if col_metadata:
