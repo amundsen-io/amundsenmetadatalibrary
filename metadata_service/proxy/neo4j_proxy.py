@@ -515,16 +515,15 @@ class Neo4jProxy(BaseProxy):
 
         result = self._execute_cypher_query(statement=tag_query,
                                             param_dict={'tbl_key': table_uri,
-                                                        '$tag_type': tag_type})
+                                                        'tag_type': tag_type})
 
         tag_records = result.single()
         tags = []
         if tag_records:
-            for record in tag_records:
+            for record in tag_records.get('tag_records', []):
                 tag_result = Tag(tag_name=record['key'],
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
-
         return tags
 
     @timer_with_counter
@@ -607,7 +606,8 @@ class Neo4jProxy(BaseProxy):
 
         LOGGER.info('Delete tag {} for table_uri {} with type {}'.format(tag, table_uri, tag_type))
         delete_query = textwrap.dedent("""
-        MATCH (n1:Tag{key: $tag, tag_type: $tag_type})-[r1:TAG]->(n2:Table {key: $tbl_key})-[r2:TAGGED_BY]->(n1) DELETE r1,r2
+        MATCH (n1:Tag{key: $tag, tag_type: $tag_type})-
+        [r1:TAG]->(n2:Table {key: $tbl_key})-[r2:TAGGED_BY]->(n1) DELETE r1,r2
         """)
 
         if tag_type == 'badge':

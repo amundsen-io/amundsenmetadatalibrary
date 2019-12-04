@@ -188,7 +188,7 @@ class TableTagAPI(Resource):
         tag_type = args.get('tag_type', 'default')
         try:
             tags = self.client.get_tag(table_uri=table_uri, tag_type=tag_type)
-            return marshal(tags, table_detail_fields), HTTPStatus.OK
+            return marshal(tags, tag_fields), HTTPStatus.OK
 
         except NotFoundException:
             return {'message': 'table_uri {} does not exist'.format(table_uri)}, HTTPStatus.NOT_FOUND
