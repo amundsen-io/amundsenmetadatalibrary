@@ -557,6 +557,9 @@ class AtlasProxy(BaseProxy):
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
         pass
 
+    def get_tag(self, *, table_uri: str, tag_type: str) -> List:
+        pass
+
     def add_table_relation_by_user(self, *,
                                    table_uri: str,
                                    user_email: str,

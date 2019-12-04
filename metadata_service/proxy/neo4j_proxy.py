@@ -8,13 +8,14 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from neo4j.v1 import BoltStatementResult
 from neo4j.v1 import GraphDatabase, Driver  # noqa: F401
+from flask import current_app as app
 
 from metadata_service.entity.popular_table import PopularTable
 from metadata_service.entity.table_detail import Application, Column, Reader, Source, \
     Statistics, Table, Tag, User, Watermark
 from metadata_service.entity.tag_detail import TagDetail
 from metadata_service.entity.user_detail import User as UserEntity
-from metadata_service.exception import NotFoundException
+from metadata_service.exception import NotFoundException, BadgeNotInWhitelistException
 from metadata_service.proxy.base_proxy import BaseProxy
 from metadata_service.proxy.statsd_utilities import timer_with_counter
 from metadata_service.util import UserResourceRel
@@ -499,6 +500,34 @@ class Neo4jProxy(BaseProxy):
             tx.close()
 
     @timer_with_counter
+    def get_tag(self, *, table_uri: str, tag_type: str = 'default') -> List:
+        """
+        Return all the tag(or badge) for a table based on the table
+
+        :param table_uri:
+        :param tag_type:
+        :return:
+        """
+        tag_query = textwrap.dedent("""
+        MATCH (tbl:Table {key: $tbl_key})-[:TAGGED_BY]->(tag:Tag {tag_type: $tag_type})
+        RETURN collect(distinct tag) as tag_records;
+        """)
+
+        result = self._execute_cypher_query(statement=tag_query,
+                                            param_dict={'tbl_key': table_uri,
+                                                        '$tag_type': tag_type})
+
+        tag_records = result.single()
+        tags = []
+        if tag_records:
+            for record in tag_records:
+                tag_result = Tag(tag_name=record['key'],
+                                 tag_type=record['tag_type'])
+                tags.append(tag_result)
+
+        return tags
+
+    @timer_with_counter
     def add_tag(self, *,
                 table_uri: str,
                 tag: str,
@@ -528,6 +557,12 @@ class Neo4jProxy(BaseProxy):
         MERGE (n1)-[r1:TAG]->(n2)-[r2:TAGGED_BY]->(n1)
         RETURN n1.key, n2.key
         """)
+
+        if tag_type == 'badge':
+            # need to check whether the badge is part of the whitelist:
+            whitelist_badges = app.config.get('WHITELIST_BADGES', [])
+            if tag not in whitelist_badges:
+                raise BadgeNotInWhitelistException('Badge is not part of whitelist')
 
         try:
             tx = self._driver.session().begin_transaction()
@@ -574,6 +609,12 @@ class Neo4jProxy(BaseProxy):
         delete_query = textwrap.dedent("""
         MATCH (n1:Tag{key: $tag, tag_type: $tag_type})-[r1:TAG]->(n2:Table {key: $tbl_key})-[r2:TAGGED_BY]->(n1) DELETE r1,r2
         """)
+
+        if tag_type == 'badge':
+            # need to check whether the badge is part of the whitelist:
+            whitelist_badges = app.config.get('WHITELIST_BADGES', [])
+            if tag not in whitelist_badges:
+                raise BadgeNotInWhitelistException('Badge is not part of whitelist')
 
         try:
             tx = self._driver.session().begin_transaction()

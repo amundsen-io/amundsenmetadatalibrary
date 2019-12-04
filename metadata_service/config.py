@@ -34,6 +34,9 @@ class Config:
     # The relationalAttribute name of Atlas Entity that identifies the database entity.
     ATLAS_DB_ATTRIBUTE = 'db'
 
+    # whitelist badges
+    WHITELIST_BADGES = []
+
 
 class LocalConfig(Config):
     DEBUG = False
