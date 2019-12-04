@@ -8,14 +8,13 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from neo4j.v1 import BoltStatementResult
 from neo4j.v1 import GraphDatabase, Driver  # noqa: F401
-from flask import current_app as app
 
 from metadata_service.entity.popular_table import PopularTable
 from metadata_service.entity.table_detail import Application, Column, Reader, Source, \
     Statistics, Table, Tag, User, Watermark
 from metadata_service.entity.tag_detail import TagDetail
 from metadata_service.entity.user_detail import User as UserEntity
-from metadata_service.exception import NotFoundException, BadgeNotInWhitelistException
+from metadata_service.exception import NotFoundException
 from metadata_service.proxy.base_proxy import BaseProxy
 from metadata_service.proxy.statsd_utilities import timer_with_counter
 from metadata_service.util import UserResourceRel
@@ -67,13 +66,14 @@ class Neo4jProxy(BaseProxy):
 
         readers = self._exec_usage_query(table_uri)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source = self._exec_table_query(table_uri)
+        wmk_results, table_writer, timestamp_value, owners, tags, source, badges = self._exec_table_query(table_uri)
 
         table = Table(database=last_neo4j_record['db']['name'],
                       cluster=last_neo4j_record['clstr']['name'],
                       schema=last_neo4j_record['schema']['name'],
                       name=last_neo4j_record['tbl']['name'],
                       tags=tags,
+                      badges=badges,
                       description=self._safe_get(last_neo4j_record, 'tbl_dscrpt', 'description'),
                       columns=cols,
                       owners=owners,
@@ -163,19 +163,22 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (application:Application)-[:GENERATES]->(tbl)
         OPTIONAL MATCH (tbl)-[:LAST_UPDATED_AT]->(t:Timestamp)
         OPTIONAL MATCH (owner:User)<-[:OWNER]-(tbl)
-        OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_type})
+        OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
+        OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(badge:Tag{tag_type: $tag_badge_type})
         OPTIONAL MATCH (tbl)-[:SOURCE]->(src:Source)
         RETURN collect(distinct wmk) as wmk_records,
         application,
         t.last_updated_timestamp as last_updated_timestamp,
         collect(distinct owner) as owner_records,
         collect(distinct tag) as tag_records,
+        collect(distinct badge) as badge_records,
         src
         """)
 
         table_records = self._execute_cypher_query(statement=table_level_query,
                                                    param_dict={'tbl_key': table_uri,
-                                                               'tag_type': 'default'})
+                                                               'tag_normal_type': 'default',
+                                                               'tag_badge_type': 'badge'})
 
         table_records = table_records.single()
 
@@ -201,6 +204,14 @@ class Neo4jProxy(BaseProxy):
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
 
+        badges = []
+        if table_records.get('badge_records'):
+            badge_records = table_records['badge_records']
+            for record in badge_records:
+                badge_result = Tag(tag_name=record['key'],
+                                   tag_type=record['tag_type'])
+                badges.append(badge_result)
+
         application_record = table_records['application']
         if application_record is not None:
             table_writer = Application(
@@ -223,7 +234,7 @@ class Neo4jProxy(BaseProxy):
             src = Source(source_type=table_records['src']['source_type'],
                          source=table_records['src']['source'])
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges
 
     @no_type_check
     def _safe_get(self, dct, *keys):
@@ -557,12 +568,6 @@ class Neo4jProxy(BaseProxy):
         RETURN n1.key, n2.key
         """)
 
-        if tag_type == 'badge':
-            # need to check whether the badge is part of the whitelist:
-            whitelist_badges = app.config.get('WHITELIST_BADGES', [])
-            if tag not in whitelist_badges:
-                raise BadgeNotInWhitelistException('Badge is not part of whitelist')
-
         try:
             tx = self._driver.session().begin_transaction()
             tbl_result = tx.run(table_validation_query, {'tbl_key': table_uri})
@@ -609,12 +614,6 @@ class Neo4jProxy(BaseProxy):
         MATCH (n1:Tag{key: $tag, tag_type: $tag_type})-
         [r1:TAG]->(n2:Table {key: $tbl_key})-[r2:TAGGED_BY]->(n1) DELETE r1,r2
         """)
-
-        if tag_type == 'badge':
-            # need to check whether the badge is part of the whitelist:
-            whitelist_badges = app.config.get('WHITELIST_BADGES', [])
-            if tag not in whitelist_badges:
-                raise BadgeNotInWhitelistException('Badge is not part of whitelist')
 
         try:
             tx = self._driver.session().begin_transaction()

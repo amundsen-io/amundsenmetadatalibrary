@@ -38,17 +38,3 @@ class TestTableTagAPI(TableTestCase):
         response = self.app.test_client().delete(f'/table/{TABLE_URI}/tag/{TAG}')
 
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-
-    def test_should_get_tag(self) -> None:
-        response = self.app.test_client().get(f'/table/{TABLE_URI}/tag/?tag_type=default')
-
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.mock_proxy.get_tag.assert_called_with(table_uri=TABLE_URI,
-                                                   tag_type='default')
-
-    def test_should_fail_to_get_tag_when_table_not_found(self) -> None:
-        self.mock_proxy.get_tag.side_effect = NotFoundException(message='cannot find table')
-
-        response = self.app.test_client().get(f'/table/{TABLE_URI}/tag/')
-
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
