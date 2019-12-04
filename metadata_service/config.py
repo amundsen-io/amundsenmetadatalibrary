@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 # PROXY configuration keys
 PROXY_HOST = 'PROXY_HOST'
@@ -35,7 +36,7 @@ class Config:
     ATLAS_DB_ATTRIBUTE = 'db'
 
     # whitelist badges
-    WHITELIST_BADGES = []
+    WHITELIST_BADGES: List[str] = []
 
 
 class LocalConfig(Config):
