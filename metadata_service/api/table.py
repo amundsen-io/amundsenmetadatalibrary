@@ -195,14 +195,16 @@ class TableTagAPI(Resource):
             self.client.add_tag(table_uri=table_uri,
                                 tag=tag,
                                 tag_type=tag_type)
-            return {'message': 'The tag {} for table_uri {} '
+            return {'message': 'The tag {} for table_uri {} with type {} '
                                'is added successfully'.format(tag,
-                                                              table_uri)}, HTTPStatus.OK
+                                                              table_uri,
+                                                              tag_type)}, HTTPStatus.OK
         except NotFoundException:
             return \
-                {'message': 'The tag {} for table_uri {} '
+                {'message': 'The tag {} for table_uri {} with type {} '
                             'is not added successfully'.format(tag,
-                                                               table_uri)}, \
+                                                               table_uri,
+                                                               tag_type)}, \
                 HTTPStatus.NOT_FOUND
 
     def delete(self, table_uri: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
@@ -219,13 +221,13 @@ class TableTagAPI(Resource):
             self.client.delete_tag(table_uri=table_uri,
                                    tag=tag,
                                    tag_type=tag_type)
-            return {'message': 'The tag {} for table_uri {} with type {}'
+            return {'message': 'The tag {} for table_uri {} with type {} '
                                'is deleted successfully'.format(tag,
                                                                 table_uri,
                                                                 tag_type)}, HTTPStatus.OK
         except NotFoundException:
             return \
-                {'message': 'The tag {} for table_uri {} with type {}'
+                {'message': 'The tag {} for table_uri {} with type {} '
                             'is not deleted successfully'.format(tag,
                                                                  table_uri,
                                                                  tag_type)}, \
