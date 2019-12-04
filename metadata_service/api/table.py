@@ -177,7 +177,7 @@ class TableTagAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
-        self.parser.add_argument('tag', type=str, location='json')
+        self.parser.add_argument('tag_type', type=str, required=False, default='default')
         super(TableTagAPI, self).__init__()
 
     def put(self, table_uri: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
@@ -188,8 +188,13 @@ class TableTagAPI(Resource):
         :param tag:
         :return:
         """
+        args = self.parser.parse_args()
+        # use tag_type to distinguish between tag and badge
+        tag_type = args.get('tag_type', 'default')
         try:
-            self.client.add_tag(table_uri=table_uri, tag=tag)
+            self.client.add_tag(table_uri=table_uri,
+                                tag=tag,
+                                tag_type=tag_type)
             return {'message': 'The tag {} for table_uri {} '
                                'is added successfully'.format(tag,
                                                               table_uri)}, HTTPStatus.OK
@@ -208,14 +213,20 @@ class TableTagAPI(Resource):
         :param tag:
         :return:
         """
+        args = self.parser.parse_args()
+        tag_type = args.get('tag_type', 'default')
         try:
-            self.client.delete_tag(table_uri=table_uri, tag=tag)
-            return {'message': 'The tag {} for table_uri {} '
+            self.client.delete_tag(table_uri=table_uri,
+                                   tag=tag,
+                                   tag_type=tag_type)
+            return {'message': 'The tag {} for table_uri {} with type {}'
                                'is deleted successfully'.format(tag,
-                                                                table_uri)}, HTTPStatus.OK
+                                                                table_uri,
+                                                                tag_type)}, HTTPStatus.OK
         except NotFoundException:
             return \
-                {'message': 'The tag {} for table_uri {} '
+                {'message': 'The tag {} for table_uri {} with type {}'
                             'is not deleted successfully'.format(tag,
-                                                                 table_uri)}, \
+                                                                 table_uri,
+                                                                 tag_type)}, \
                 HTTPStatus.NOT_FOUND
