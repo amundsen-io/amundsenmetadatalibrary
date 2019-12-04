@@ -2,10 +2,11 @@ import json
 from http import HTTPStatus
 from typing import Iterable, Mapping, Union, Any
 
+from flask import current_app as app
 from flask import request
 from flask_restful import Resource, fields, reqparse, marshal
 
-from metadata_service.exception import NotFoundException, BadgeNotInWhitelistException
+from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 
 
@@ -68,6 +69,7 @@ table_detail_fields = {
     'table_name': fields.String(attribute='name'),
     'table_description': fields.String(attribute='description'),  # Optional
     'tags': fields.List(fields.Nested(tag_fields)),  # Can be an empty list
+    'badges': fields.List(fields.Nested(tag_fields)),  # Can be an empty list
     # Can be an empty list
     'table_readers': fields.List(fields.Nested(table_reader_fields)),
     # Can be an empty list
@@ -180,22 +182,6 @@ class TableTagAPI(Resource):
         self.parser.add_argument('tag_type', type=str, required=False, default='default')
         super(TableTagAPI, self).__init__()
 
-    def get(self, table_uri: str) -> Iterable[Any]:
-        """
-        Returns all the tags based on the type in Neo4j endpoint
-        """
-        args = self.parser.parse_args()
-        tag_type = args.get('tag_type', 'default')
-        try:
-            tags = self.client.get_tag(table_uri=table_uri, tag_type=tag_type)
-            return marshal(tags, tag_fields), HTTPStatus.OK
-
-        except NotFoundException:
-            return {'message': 'table_uri {} does not exist'.format(table_uri)}, HTTPStatus.NOT_FOUND
-
-        except Exception:
-            return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
-
     def put(self, table_uri: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
         """
         API to add a tag to existing table uri.
@@ -207,6 +193,18 @@ class TableTagAPI(Resource):
         args = self.parser.parse_args()
         # use tag_type to distinguish between tag and badge
         tag_type = args.get('tag_type', 'default')
+        if tag_type == 'badge':
+            # need to check whether the badge is part of the whitelist:
+            whitelist_badges = app.config.get('WHITELIST_BADGES', [])
+            if tag not in whitelist_badges:
+                return \
+                    {'message': 'The tag {} for table_uri {} with type {} '
+                                'is not added successfully as badge '
+                                'is not part of the whitelist'.format(tag,
+                                                                      table_uri,
+                                                                      tag_type)}, \
+                    HTTPStatus.NOT_FOUND
+
         try:
             self.client.add_tag(table_uri=table_uri,
                                 tag=tag,
@@ -222,14 +220,6 @@ class TableTagAPI(Resource):
                                                                table_uri,
                                                                tag_type)}, \
                 HTTPStatus.NOT_FOUND
-        except BadgeNotInWhitelistException:
-            return \
-                {'message': 'The tag {} for table_uri {} with type {} '
-                            'is not added successfully as badge '
-                            'is not part of the whitelist'.format(tag,
-                                                                  table_uri,
-                                                                  tag_type)}, \
-                HTTPStatus.NOT_FOUND
 
     def delete(self, table_uri: str, tag: str) -> Iterable[Union[Mapping, int, None]]:
         """
@@ -241,6 +231,7 @@ class TableTagAPI(Resource):
         """
         args = self.parser.parse_args()
         tag_type = args.get('tag_type', 'default')
+
         try:
             self.client.delete_tag(table_uri=table_uri,
                                    tag=tag,
@@ -255,12 +246,4 @@ class TableTagAPI(Resource):
                             'is not deleted successfully'.format(tag,
                                                                  table_uri,
                                                                  tag_type)}, \
-                HTTPStatus.NOT_FOUND
-        except BadgeNotInWhitelistException:
-            return \
-                {'message': 'The tag {} for table_uri {} with type {} '
-                            'is not added successfully as badge '
-                            'is not part of the whitelist'.format(tag,
-                                                                  table_uri,
-                                                                  tag_type)}, \
                 HTTPStatus.NOT_FOUND
