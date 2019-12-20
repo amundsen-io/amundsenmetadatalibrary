@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = '1.1.6'
+__version__ = '1.1.7'
 
 
 requirements_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'requirements.txt')
@@ -19,4 +19,7 @@ setup(
     packages=find_packages(exclude=['tests*']),
     dependency_links=[],
     install_requires=requirements,
+    extras_require={
+        'oidc': ['flaskoidc==0.0.2']
+    },
 )
