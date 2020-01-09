@@ -10,6 +10,7 @@ from metadata_service import create_app
 from metadata_service.entity.popular_table import PopularTable
 from metadata_service.entity.table_detail import (Application, Column, Table, Tag,
                                                   Watermark, Source, Statistics, User)
+from metadata_service.entity.user_detail import UserSchema
 from metadata_service.entity.tag_detail import TagDetail
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy.neo4j_proxy import Neo4jProxy
@@ -489,7 +490,7 @@ class TestNeo4jProxy(unittest.TestCase):
 
             self.assertEqual(actual.__repr__(), expected.__repr__())
 
-    def test_get_users(self) -> None:
+    def test_get_user(self) -> None:
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.return_value = {
                 'user_record': {
@@ -508,8 +509,27 @@ class TestNeo4jProxy(unittest.TestCase):
                 }
             }
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_user = neo4j_proxy.get_user_detail(user_id='test_email')
+            neo4j_user = neo4j_proxy.get_user(user_id='test_email')
             self.assertEquals(neo4j_user.email, 'test_email')
+
+    def test_get_users(self) -> None:
+        with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
+            test_user = {
+                'employee_type': 'teamMember',
+                'full_name': 'test_full_name',
+                'is_active': True,
+                'github_username': 'test-github',
+                'slack_id': 'test_id',
+                'last_name': 'test_last_name',
+                'first_name': 'test_first_name',
+                'team_name': 'test_team',
+                'email': 'test_email',
+                'manager_fullname': ''
+            }
+            mock_execute.return_value.single.return_value = {'users': [test_user]}
+            neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            users = neo4j_proxy.get_users()
+            self.assertEquals(users, UserSchema(many=True).load([test_user]).data)
 
     def test_get_resources_by_user_relation(self) -> None:
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
@@ -584,7 +604,7 @@ class TestNeo4jProxy(unittest.TestCase):
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.return_value = None
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            self.assertRaises(NotFoundException, neo4j_proxy.get_user_detail, user_id='invalid_email')
+            self.assertRaises(NotFoundException, neo4j_proxy.get_user, user_id='invalid_email')
 
 
 if __name__ == '__main__':
