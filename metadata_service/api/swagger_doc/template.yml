@@ -13,6 +13,29 @@ components:
           type: string
           description: 'A description of the column'
           example: '(for a user_id for example) Used to uniquely identify a user'
+    PopularTables:
+      type: object
+      properties:
+        popular_tables:
+          type: array
+          items:
+            type: object
+            properties:
+              database:
+                description: Database name
+                type: string
+              cluster:
+                description: Cluster name
+                type: string
+              schema:
+                description: Schema name
+                type: string
+              table_name:
+                description: Table name
+                type: string
+              table_description:
+                description: Table description
+                type: string
     ErrorResponse:
       type: object
       properties:
