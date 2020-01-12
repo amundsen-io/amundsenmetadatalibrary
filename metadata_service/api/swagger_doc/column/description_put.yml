@@ -1,0 +1,37 @@
+Updates column description (passed as a request body)
+---
+tags:
+  - 'column'
+parameters:
+  - name: table_uri
+    in: path
+    type: string
+    schema:
+      type: string
+    required: true
+  - name: column_name
+    in: path
+    type: string
+    schema:
+      type: string
+    required: true
+requestBody:
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/ColumnDescription'
+        description: Column description
+        required: true
+responses:
+  200:
+    description: Empty json response
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/EmptyResponse'
+  404:
+    description: Table uri with this column not found
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'

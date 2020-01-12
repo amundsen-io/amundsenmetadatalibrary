@@ -1,0 +1,25 @@
+openapi: '3.0.2'
+info:
+  title: 'Metadata Service'
+  description: 'Used to provide and update metadata, such as table & column description, stored in either neo4j or apache atlas.'
+  version: '1.1.7'
+
+components:
+  schemas:
+    ColumnDescription:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 'A description of the column'
+          example: '(for a user_id for example) Used to uniquely identify a user'
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 'A simple description of what went wrong'
+          example: 'An Exception encountered while processing your request'
+    EmptyResponse:
+      type: object
+      properties: {}
