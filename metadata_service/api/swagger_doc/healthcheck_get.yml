@@ -4,7 +4,7 @@ tags:
   - 'healthcheck'
 responses:
   200:
-    description: Empty response
+    description: 'Empty response'
     content:
       application/json:
         schema:
