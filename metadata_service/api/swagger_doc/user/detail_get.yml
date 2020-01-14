@@ -1,0 +1,24 @@
+Gets the user details
+---
+tags:
+  - 'user'
+parameters:
+  - name: user_id
+    in: path
+    type: string
+    schema:
+      type: string
+    required: true
+responses:
+  200:
+    description: 'Table description'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/UserDetailFields'
+  404:
+    description: 'User not found'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'

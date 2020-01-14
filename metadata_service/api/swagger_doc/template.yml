@@ -14,26 +14,23 @@ components:
     PopularTables:
       type: object
       properties:
-        popular_tables:
-          type: array
-          items:
-            type: object
-            properties:
-              database:
-                description: 'Database name'
-                type: string
-              cluster:
-                description: 'Cluster name'
-                type: string
-              schema:
-                description: 'Schema name'
-                type: string
-              table_name:
-                description: 'Table name'
-                type: string
-              table_description:
-                description: 'Table description'
-                type: string
+        type: object
+        properties:
+          database:
+            description: 'Database name'
+            type: string
+          cluster:
+            description: 'Cluster name'
+            type: string
+          schema:
+            description: 'Schema name'
+            type: string
+          table_name:
+            description: 'Table name'
+            type: string
+          table_description:
+            description: 'Table description'
+            type: string
     TagFields:
       type: object
       properties:
@@ -72,6 +69,39 @@ components:
         last_name:
           type: string
           description: 'User last name'
+    UserDetailFields:
+      type: object
+      properties:
+        email:
+          type: string
+          description: 'User email'
+        first_name:
+          type: string
+          description: 'User first name'
+        last_name:
+          type: string
+          description: 'User last name'
+        full_name:
+          type: string
+          description: 'User full name'
+        is_active:
+          type: boolean
+          description: 'Is user active'
+        github_username:
+          type: string
+          description: 'User github'
+        slack_id:
+          type: string
+          description: 'User slack'
+        team_name:
+          type: string
+          description: 'User team name'
+        employee_type:
+          type: string
+          description: 'User type'
+        manager_fullname:
+          type: string
+          description: 'User manager full name'
     ColumnFields:
       type: object
       properties:

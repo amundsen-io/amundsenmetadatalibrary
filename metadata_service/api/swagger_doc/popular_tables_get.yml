@@ -16,4 +16,9 @@ responses:
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/PopularTables'
+          type: object
+          properties:
+            popular_tables:
+              type: array
+              items:
+                $ref: '#/components/schemas/PopularTables'

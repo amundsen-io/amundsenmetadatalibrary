@@ -2,6 +2,7 @@ from http import HTTPStatus
 from typing import Iterable, Mapping, Union
 
 from flask_restful import Resource, fields, marshal
+from flasgger import swag_from
 
 from metadata_service.api.popular_tables import popular_table_fields
 from metadata_service.exception import NotFoundException
@@ -41,6 +42,7 @@ class UserDetailAPI(Resource):
 
         self.client = get_proxy_client()
 
+    @swag_from('swagger_doc/user/detail_get.yml')
     def get(self, user_id: str) -> Iterable[Union[Mapping, int, None]]:
         try:
             table = self.client.get_user_detail(user_id=user_id)
@@ -114,8 +116,8 @@ class UserFollowAPI(Resource):
             self.client.delete_table_relation_by_user(table_uri=table_uri,
                                                       user_email=user_id,
                                                       relation_type=UserResourceRel.follow)
-            return {'message': 'The user {} for table_uri {} '
-                               'is added successfully'.format(user_id,
+            return {'message': 'The user following {} for table_uri {} '
+                               'is deleted successfully'.format(user_id,
                                                               table_uri)}, HTTPStatus.OK
         except Exception as e:
             LOGGER.exception('UserFollowAPI DELETE Failed')
