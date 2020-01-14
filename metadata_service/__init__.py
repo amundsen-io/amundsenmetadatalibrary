@@ -74,7 +74,7 @@ def create_app(*, config_module_class: str) -> Flask:
 
     api = Api(api_bp)
 
-    api.add_resource(PopularTablesAPI, '/popular_tables/')
+    api.add_resource(PopularTablesAPI, '/popular_tables')
     api.add_resource(TableDetailAPI, '/table/<path:table_uri>')
     api.add_resource(TableDescriptionAPI,
                      '/table/<path:table_uri>/description')

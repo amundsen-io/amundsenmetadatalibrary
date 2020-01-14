@@ -3,15 +3,16 @@ Gets information about popular tables
 tags:
   - 'popular_tables'
 parameters:
-  - name: limit
-    in: query
-    type: int
-    schema:
-      type: int
+  - in: query
+    name: limit
     required: false
+    type: integer
+    schema:
+      type: integer
+      default: 10
 responses:
   200:
-    description: Popular tables
+    description: 'Popular tables'
     content:
       application/json:
         schema:
