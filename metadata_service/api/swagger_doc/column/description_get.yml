@@ -9,27 +9,29 @@ parameters:
     schema:
       type: string
     required: true
+    example: 'dynamo://gold.test_schema/test_table2'
   - name: column_name
     in: path
     type: string
     schema:
       type: string
     required: true
+    example: 'col2'
 responses:
   200:
-    description: Column description
+    description: 'Column description'
     content:
       application/json:
         schema:
           $ref: '#/components/schemas/ColumnDescription'
   404:
-    description: Table uri with this column not found
+    description: 'Table uri with this column not found'
     content:
       application/json:
         schema:
           $ref: '#/components/schemas/ErrorResponse'
   500:
-    description: Internal error fetching the column description
+    description: 'Internal error fetching the column description'
     content:
       application/json:
         schema:
