@@ -1,10 +1,11 @@
-Delete the user following information
+Delete the user owner information
 ---
 tags:
   - 'user'
 parameters:
   - name: user_id
     in: path
+    example: 'roald9@example.org'
     type: string
     schema:
       type: string

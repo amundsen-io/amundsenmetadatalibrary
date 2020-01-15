@@ -5,6 +5,7 @@ tags:
 parameters:
   - name: user_id
     in: path
+    example: 'roald9@example.org'
     type: string
     schema:
       type: string
