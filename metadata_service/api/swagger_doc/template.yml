@@ -14,23 +14,21 @@ components:
     PopularTables:
       type: object
       properties:
-        type: object
-        properties:
-          database:
-            description: 'Database name'
-            type: string
-          cluster:
-            description: 'Cluster name'
-            type: string
-          schema:
-            description: 'Schema name'
-            type: string
-          table_name:
-            description: 'Table name'
-            type: string
-          table_description:
-            description: 'Table description'
-            type: string
+        database:
+          description: 'Database name'
+          type: string
+        cluster:
+          description: 'Cluster name'
+          type: string
+        schema:
+          description: 'Schema name'
+          type: string
+        table_name:
+          description: 'Table name'
+          type: string
+        table_description:
+          description: 'Table description'
+          type: string
     TagFields:
       type: object
       properties:
