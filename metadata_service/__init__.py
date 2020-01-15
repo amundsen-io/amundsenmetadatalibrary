@@ -17,7 +17,7 @@ from metadata_service.api.system import Neo4jDetailAPI
 from metadata_service.api.table \
     import TableDetailAPI, TableOwnerAPI, TableTagAPI, TableDescriptionAPI
 from metadata_service.api.tag import TagAPI
-from metadata_service.api.user import UserDetailAPI, UserFollowAPI, UserOwnAPI, UserReadAPI
+from metadata_service.api.user import UserDetailAPI, UserFollowAPI, UserFollowsAPI, UserOwnsAPI, UserOwnAPI, UserReadsAPI
 
 # For customized flask use below arguments to override.
 FLASK_APP_MODULE_NAME = os.getenv('FLASK_APP_MODULE_NAME')
@@ -90,15 +90,16 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/tags/')
     api.add_resource(UserDetailAPI,
                      '/user/<path:user_id>')
+    api.add_resource(UserFollowsAPI,
+                     '/user/<path:user_id>/follow/')
     api.add_resource(UserFollowAPI,
-                     '/user/<path:user_id>/follow/',
                      '/user/<path:user_id>/follow/<resource_type>/<path:table_uri>')
+    api.add_resource(UserOwnsAPI,
+                     '/user/<path:user_id>/own/')
     api.add_resource(UserOwnAPI,
-                     '/user/<path:user_id>/own/',
                      '/user/<path:user_id>/own/<resource_type>/<path:table_uri>')
-    api.add_resource(UserReadAPI,
-                     '/user/<path:user_id>/read/',
-                     '/user/<path:user_id>/read/<resource_type>/<path:table_uri>')
+    api.add_resource(UserReadsAPI,
+                     '/user/<path:user_id>/read/')
     app.register_blueprint(api_bp)
 
     if app.config.get('SWAGGER_ENABLED'):
