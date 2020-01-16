@@ -90,7 +90,6 @@ class UserFollowAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
 
-
     @swag_from('swagger_doc/user/follow_put.yml')
     def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         """
@@ -131,7 +130,7 @@ class UserFollowAPI(Resource):
                                                       relation_type=UserResourceRel.follow)
             return {'message': 'The user following {} for table_uri {} '
                                'is deleted successfully'.format(user_id,
-                                                              table_uri)}, HTTPStatus.OK
+                                                                table_uri)}, HTTPStatus.OK
         except Exception as e:
             LOGGER.exception('UserFollowAPI DELETE Failed')
             return {'message': 'The user {} for table_uri {} '
@@ -178,7 +177,6 @@ class UserOwnAPI(Resource):
 
     def __init__(self) -> None:
         self.client = get_proxy_client()
-
 
     @swag_from('swagger_doc/user/own_put.yml')
     def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:

@@ -23,7 +23,11 @@ responses:
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/ColumnDescription'
+          type: object
+          properties:
+            description:
+              type: string
+              example: 'Identifies a user'
   404:
     description: 'Table uri with this column not found'
     content:

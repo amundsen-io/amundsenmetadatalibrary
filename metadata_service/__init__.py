@@ -17,7 +17,9 @@ from metadata_service.api.system import Neo4jDetailAPI
 from metadata_service.api.table \
     import TableDetailAPI, TableOwnerAPI, TableTagAPI, TableDescriptionAPI
 from metadata_service.api.tag import TagAPI
-from metadata_service.api.user import UserDetailAPI, UserFollowAPI, UserFollowsAPI, UserOwnsAPI, UserOwnAPI, UserReadsAPI
+from metadata_service.api.user import (UserDetailAPI, UserFollowAPI,
+                                       UserFollowsAPI, UserOwnsAPI,
+                                       UserOwnAPI, UserReadsAPI)
 
 # For customized flask use below arguments to override.
 FLASK_APP_MODULE_NAME = os.getenv('FLASK_APP_MODULE_NAME')
