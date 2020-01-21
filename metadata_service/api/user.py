@@ -4,10 +4,10 @@ from typing import Iterable, Mapping, Optional, Union
 
 from flask_restful import Resource, fields, marshal
 from flasgger import swag_from
+from amundsen_common.models.user import UserSchema
 from metadata_service.api import BaseAPI
 from metadata_service.api.popular_tables import popular_table_fields
 from metadata_service.entity.popular_table import PopularTableSchema
-from metadata_service.entity.user_detail import UserSchema
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 from metadata_service.util import UserResourceRel

@@ -3,14 +3,16 @@ import textwrap
 import unittest
 from typing import Any, Dict  # noqa: F401
 
-from mock import patch, MagicMock
+from amundsen_common.models.table import (Application, Column, Source,
+                                          Statistics, Table, Tag, User,
+                                          Watermark)
+from amundsen_common.models.user import UserSchema
+
+from mock import MagicMock, patch
 from neo4j.v1 import GraphDatabase
 
 from metadata_service import create_app
 from metadata_service.entity.popular_table import PopularTable
-from metadata_service.entity.table_detail import (Application, Column, Table, Tag,
-                                                  Watermark, Source, Statistics, User)
-from metadata_service.entity.user_detail import UserSchema
 from metadata_service.entity.tag_detail import TagDetail
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy.neo4j_proxy import Neo4jProxy
