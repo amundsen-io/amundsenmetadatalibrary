@@ -7,7 +7,7 @@ from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
 
 from amundsen_common.models.table import (Application, Column, Reader, Source,
                                           Statistics, Table, Tag, User,
-                                          Watermark)
+                                          Watermark, ProgrammaticDescription)
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -67,7 +67,7 @@ class Neo4jProxy(BaseProxy):
 
         readers = self._exec_usage_query(table_uri)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source, badges = self._exec_table_query(table_uri)
+        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, prog_descs = self._exec_table_query(table_uri)
 
         table = Table(database=last_neo4j_record['db']['name'],
                       cluster=last_neo4j_record['clstr']['name'],
@@ -83,7 +83,9 @@ class Neo4jProxy(BaseProxy):
                       table_writer=table_writer,
                       last_updated_timestamp=timestamp_value,
                       source=source,
-                      is_view=self._safe_get(last_neo4j_record, 'tbl', 'is_view'))
+                      is_view=self._safe_get(last_neo4j_record, 'tbl', 'is_view'),
+                      programmatic_descriptions = prog_descs
+                      )
 
         return table
 
@@ -168,13 +170,15 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
         OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(badge:Tag{tag_type: $tag_badge_type})
         OPTIONAL MATCH (tbl)-[:SOURCE]->(src:Source)
+        OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(prog_descriptions:Programmatic_Description)
         RETURN collect(distinct wmk) as wmk_records,
         application,
         t.last_updated_timestamp as last_updated_timestamp,
         collect(distinct owner) as owner_records,
         collect(distinct tag) as tag_records,
         collect(distinct badge) as badge_records,
-        src
+        src,
+        collect(distinct prog_descriptions) as prog_descriptions
         """)
 
         table_records = self._execute_cypher_query(statement=table_level_query,
@@ -236,7 +240,15 @@ class Neo4jProxy(BaseProxy):
             src = Source(source_type=table_records['src']['source_type'],
                          source=table_records['src']['source'])
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges
+        # TODO consider ordering prog descriptions here.
+        prog_descriptions = []
+        for prog_description in table_records['prog_descriptions']:
+            LOGGER.info(prog_description)
+            prog_descriptions.append(ProgrammaticDescription(source = prog_description['description_source'],
+                                                             text = prog_description['description'],
+                                                             is_editable = prog_description['description_editable']))
+
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
 
     @no_type_check
     def _safe_get(self, dct, *keys):
@@ -287,6 +299,24 @@ class Neo4jProxy(BaseProxy):
         result = self._execute_cypher_query(statement=table_description_query,
                                             param_dict={'tbl_key': table_uri})
 
+        table_descrpt = result.single()
+
+        table_description = table_descrpt['description'] if table_descrpt else None
+
+        return table_description
+
+    @timer_with_counter
+    def get_programmatic_descriptions(self, *,
+                                      table_uri: str) -> Union[List[str], None]:
+        table_description_query = textwrap.dedent("""
+        MATCH (tbl:Table {key: $tbl_key})-[:DESCRIPTION]->(d:Programmatic_Description)
+        RETURN d.description AS description;
+        """)
+
+        result = self._execute_cypher_query(statement=table_description_query,
+                                            param_dict={'tbl_key': table_uri})
+
+        #TODO handle multiple programmatics
         table_descrpt = result.single()
 
         table_description = table_descrpt['description'] if table_descrpt else None
