@@ -1,12 +1,12 @@
 import copy
 import textwrap
 import unittest
-from typing import Any, Dict  # noqa: F401
+from typing import Any, Dict, Tuple  # noqa: F401
 
 from amundsen_common.models.table import (Application, Column, Source,
                                           Statistics, Table, Tag, User,
                                           Watermark, ProgrammaticDescription)
-from amundsen_common.models.user import UserSchema
+from amundsen_common.models.user import UserSchema, User as UserEntity
 
 from mock import MagicMock, patch
 from neo4j.v1 import GraphDatabase
@@ -17,6 +17,22 @@ from metadata_service.entity.tag_detail import TagDetail
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy.neo4j_proxy import Neo4jProxy
 from metadata_service.util import UserResourceRel
+
+
+def create_mock_transaction() -> Tuple[MagicMock, MagicMock, MagicMock]:
+    """
+    :return: transaction, statement result, commit call, in that order
+    """
+    mock_transaction = MagicMock()
+
+    mock_run = MagicMock()
+    mock_transaction.run = mock_run
+    mock_record = MagicMock()
+    mock_record.get.side_effect = [1, 1, 1, 1]
+    mock_run.return_value.data.return_value = [mock_record]
+    mock_commit = MagicMock()
+    mock_transaction.commit = mock_commit
+    return mock_transaction, mock_run, mock_commit
 
 
 class TestNeo4jProxy(unittest.TestCase):
@@ -277,14 +293,7 @@ class TestNeo4jProxy(unittest.TestCase):
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
-
-            mock_transaction = MagicMock()
-            mock_session.begin_transaction.return_value = mock_transaction
-
-            mock_run = MagicMock()
-            mock_transaction.run = mock_run
-            mock_commit = MagicMock()
-            mock_transaction.commit = mock_commit
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.put_table_description(table_uri='test_table',
@@ -345,14 +354,7 @@ class TestNeo4jProxy(unittest.TestCase):
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
-
-            mock_transaction = MagicMock()
-            mock_session.begin_transaction.return_value = mock_transaction
-
-            mock_run = MagicMock()
-            mock_transaction.run = mock_run
-            mock_commit = MagicMock()
-            mock_transaction.commit = mock_commit
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.put_column_description(table_uri='test_table',
@@ -362,38 +364,39 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEquals(mock_run.call_count, 2)
             self.assertEquals(mock_commit.call_count, 1)
 
+    def test_add_owner_doesnt_exist(self) -> None:
+        with patch.object(GraphDatabase, 'driver'),\
+                patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
+            mock_execute.return_value.single.return_value = None
+
+            neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            self.assertRaises(NotFoundException, neo4j_proxy.add_owner,
+                              table_uri='dummy_uri',
+                              owner='tester')
+
     def test_add_owner(self) -> None:
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
-
-            mock_transaction = MagicMock()
-            mock_session.begin_transaction.return_value = mock_transaction
-
-            mock_run = MagicMock()
-            mock_transaction.run = mock_run
-            mock_commit = MagicMock()
-            mock_transaction.commit = mock_commit
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            neo4j_proxy.put_user(data=UserEntity(email='tester'))
+            # commit because of inserting user
+            self.assertEquals(mock_commit.call_count, 1)
+
             neo4j_proxy.add_owner(table_uri='dummy_uri',
                                   owner='tester')
-            # we call neo4j twice in add_owner call
+            # two calls because user exists
             self.assertEquals(mock_run.call_count, 2)
-            self.assertEquals(mock_commit.call_count, 1)
+            # second commit for persisting owner relationship
+            self.assertEquals(mock_commit.call_count, 2)
 
     def test_delete_owner(self) -> None:
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
-
-            mock_transaction = MagicMock()
-            mock_session.begin_transaction.return_value = mock_transaction
-
-            mock_run = MagicMock()
-            mock_transaction.run = mock_run
-            mock_commit = MagicMock()
-            mock_transaction.commit = mock_commit
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.delete_owner(table_uri='dummy_uri',
@@ -406,34 +409,20 @@ class TestNeo4jProxy(unittest.TestCase):
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
-
-            mock_transaction = MagicMock()
-            mock_session.begin_transaction.return_value = mock_transaction
-
-            mock_run = MagicMock()
-            mock_transaction.run = mock_run
-            mock_commit = MagicMock()
-            mock_transaction.commit = mock_commit
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.add_tag(table_uri='dummy_uri',
                                 tag='hive')
             # we call neo4j twice in add_tag call
-            self.assertEquals(mock_run.call_count, 3)
+            self.assertEquals(mock_run.call_count, 2)
             self.assertEquals(mock_commit.call_count, 1)
 
     def test_delete_tag(self) -> None:
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
-
-            mock_transaction = MagicMock()
-            mock_session.begin_transaction.return_value = mock_transaction
-
-            mock_run = MagicMock()
-            mock_transaction.run = mock_run
-            mock_commit = MagicMock()
-            mock_transaction.commit = mock_commit
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.delete_tag(table_uri='dummy_uri',
@@ -554,6 +543,33 @@ class TestNeo4jProxy(unittest.TestCase):
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             users = neo4j_proxy.get_users()
             self.assertEquals(users, UserSchema(many=True).load([test_user]).data)
+
+    def test_post_users(self) -> None:
+        with patch.object(GraphDatabase, 'driver') as mock_driver:
+            mock_session = MagicMock()
+            mock_driver.return_value.session.return_value = mock_session
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
+
+            user_one: UserEntity = UserEntity(email='test1@test.com', first_name='hi', last_name='bye')
+            user_two: UserEntity = UserEntity(email='test2@test.com', first_name='bye', last_name='hi')
+            neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            neo4j_proxy.post_users(data=[user_one, user_two])
+
+            self.assertEquals(mock_run.call_count, 1)
+            self.assertEquals(mock_commit.call_count, 1)
+
+    def test_put_user(self) -> None:
+        with patch.object(GraphDatabase, 'driver') as mock_driver:
+            mock_session = MagicMock()
+            mock_driver.return_value.session.return_value = mock_session
+            mock_session.begin_transaction.return_value, mock_run, mock_commit = create_mock_transaction()
+
+            user: UserEntity = UserEntity(email='test@test.com', first_name='hi', last_name='bye')
+            neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            neo4j_proxy.put_user(data=user)
+
+            self.assertEquals(mock_run.call_count, 1)
+            self.assertEquals(mock_commit.call_count, 1)
 
     def test_get_resources_by_user_relation(self) -> None:
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:

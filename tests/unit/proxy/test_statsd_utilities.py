@@ -45,9 +45,22 @@ class TestStatsdUtilities(unittest.TestCase):
             self.assertEqual(mock_statsd_init.call_count, 2)
 
     def test_with_neo4j_proxy(self) -> None:
-        with patch.object(GraphDatabase, 'driver'), \
+        with patch.object(GraphDatabase, 'driver') as mock_driver, \
                 patch.object(Neo4jProxy, '_execute_cypher_query'), \
                 patch.object(statsd_utilities, '_get_statsd_client') as mock_statsd_client:
+
+            mock_session = MagicMock()
+            mock_driver.return_value.session.return_value = mock_session
+            mock_transaction = MagicMock()
+            mock_session.begin_transaction.return_value = mock_transaction
+
+            mock_run = MagicMock()
+            mock_transaction.run = mock_run
+            mock_record = MagicMock()
+            mock_record.get.return_value = 1
+            mock_run.return_value.data.return_value = [mock_record]
+            mock_commit = MagicMock()
+            mock_transaction.commit = mock_commit
 
             mock_success_incr = MagicMock()
             mock_statsd_client.return_value.incr = mock_success_incr

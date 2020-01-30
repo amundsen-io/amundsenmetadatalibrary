@@ -28,6 +28,22 @@ class UserDetailAPITest(unittest.TestCase):
         self.assertEqual(list(response)[1], HTTPStatus.OK)
         self.mock_client.get_users.assert_called_once()
 
+    @mock.patch('metadata_service.api.request')
+    def test_post(self, mock_request: MagicMock) -> None:
+        mock_request.get_json.return_value = [dict(email='username@example.com', is_active=True)]
+        self.mock_client.post_users.return_value = {}
+        response = self.api.post()
+        self.assertEqual(list(response)[1], HTTPStatus.OK)
+        self.mock_client.post_users.assert_called_once()
+
+    @mock.patch('metadata_service.api.request')
+    def test_put(self, mock_request: MagicMock) -> None:
+        mock_request.get_json.return_value = dict(email='username@example.com', is_active=True)
+        self.mock_client.put_user.return_value = {}
+        response = self.api.put(id='username')
+        self.assertEqual(list(response)[1], HTTPStatus.OK)
+        self.mock_client.put_user.assert_called_once()
+
 
 class UserFollowsAPITest(unittest.TestCase):
 

@@ -1,8 +1,9 @@
 import logging
 import textwrap
 import time
+from enum import Enum
 from random import randint
-from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
+from typing import (Any, Dict, Generator, List, Optional, Tuple, Union,  # noqa: F401
                     no_type_check)
 
 from amundsen_common.models.table import (Application, Column, Reader, Source,
@@ -11,7 +12,8 @@ from amundsen_common.models.table import (Application, Column, Reader, Source,
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
-from neo4j.v1 import BoltStatementResult, Driver, GraphDatabase  # noqa: F401
+from neo4j.v1 import (WRITE_ACCESS, BoltStatementResult, Driver, GraphDatabase,
+                      Session, StatementResult, Transaction)  # noqa: F401
 
 from metadata_service.entity.popular_table import PopularTable
 from metadata_service.entity.tag_detail import TagDetail
@@ -26,6 +28,226 @@ _CACHE = CacheManager(**parse_cache_config_options({'cache.type': 'memory'}))
 _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
 LOGGER = logging.getLogger(__name__)
+PUBLISH_TAG_TIME_FORMAT: str = "%Y-%m-%d %H:%M"
+QUERY_TIMEOUT_LIMIT: int = 5
+
+
+def batch(*, iterable: Any, n: int = 1) -> Generator:
+    """
+    Helper method for running batched code. It can be used like:
+
+    for batched_subsection_of_data in batch(iterable=data, n=100):
+        do_something(with=batched_subsection_of_data)
+
+    Read more about this implementation here:
+    https://stackoverflow.com/questions/8290397/how-to-split-an-iterable-in-constant-size-chunks
+
+    :param iterable:
+    :param n:
+    :return:
+    """
+    length = len(iterable)
+    for ndx in range(0, length, n):
+        yield iterable[ndx:min(ndx + n, length)]
+
+
+class Direction(Enum):
+    """
+    Helper Enum class for node to node relationship direction (i.e. from node one
+    to node two -->, or from node two to node one <--)
+    """
+    ONE_TO_TWO = 1
+    TWO_TO_ONE = 2
+
+
+class Query:
+    def __init__(self, *, statement: str, params: Optional[Dict[str, Any]] = None) -> None:
+        self.statement: str = statement
+        self.params: Dict[str, Any] = params or {}
+
+
+class LocalTransaction:
+    """
+    LocalTransaction is a nice wrapper to make it easier to remember proper commit and rollback semantics when
+    performing neo4j queries, by wrapping it in a context. To understand better the pattern here,
+    see http://effbot.org/zone/python-with-statement.htm and
+    https://docs.python.org/3/reference/datamodel.html#object.__exit__
+
+    This also encourages us to avoid situations where we tangle in unnecessary python code into a neo4j execution
+    context.
+
+    """
+
+    def __init__(self, *, driver: Driver, commit_every_run: bool = True) -> None:
+        """
+
+        :param driver: GraphDriver i.e. Neo4J driver
+        :param commit_every_run: true if you want to commit after every local query, false if commit only at the end
+        of the context
+        """
+        self.commit_every_run: bool = commit_every_run
+        # TODO possible slowdowns exist from reusing sessions after many many queries
+        # see https://gist.github.com/friendtocephalopods/14c5b59f3ace8772ca2d502c928bb641#file-stresstest-py-L37
+        self.session: Session = driver.session(access_mode=WRITE_ACCESS)
+
+    def __enter__(self) -> 'LocalTransaction':
+        self.start: float = time.time()
+        self.tx: Transaction = self.session.begin_transaction()
+        self.query: Query = Query(statement='')
+        return self
+
+    # exc_val and traceback are required arguments in this method, even if we never use them
+    def __exit__(self, exc_type: Any, exc_val: Any, traceback: Any) -> bool:
+        if not self.commit_every_run and exc_type is None:
+            try:
+                self.tx.commit()
+            except Exception as e:
+                exc_type = e
+        if exc_val is not None:
+            self.rollback(message=f'Encountered {exc_val.__class__.__name__} while executing {self.query.statement}')
+
+        if not self.tx.closed():
+            self.tx.close()
+        if not self.session.closed():
+            self.session.close()
+        total = time.time() - self.start
+        LOGGER.debug(f'Update process elapsed for {total} seconds')
+        if total > QUERY_TIMEOUT_LIMIT:
+            LOGGER.warning(f'Transaction took {total} > {QUERY_TIMEOUT_LIMIT} seconds '
+                           f'to execute; most recent query is {self.query.statement}')
+        # If there was an exception, returning anything BUT true should bubble it up
+        return exc_type is None or exc_type is Warning
+
+    def rollback(self, *, message: str) -> None:
+        LOGGER.exception(message)
+        if not self.tx.closed():
+            self.tx.rollback()
+
+    def run(self, *queries: Query) -> List[List[Any]]:
+        if len(queries) == 0:
+            raise RuntimeWarning('zero queries specified; is this intentional?')
+        # We create a list of lists of records that map 1-1 to the queries being sent in to execute
+        records_list: List[List[Any]] = []
+        for self.query in queries:
+            result: StatementResult = self.tx.run(self.query.statement, self.query.params)
+            records: List[Any] = result.data()
+            records_list.append(records)
+        if self.commit_every_run:
+            self.tx.commit()
+        return records_list
+
+    @staticmethod
+    def _get_node_as_dict(*, node: Any, node_type: Optional[str] = None, key: Optional[str] = None,
+                          exclude: Optional[List[str]] = None) -> Tuple[str, Dict[str, Any]]:
+        if type(node) is dict and node_type is None and not hasattr(node, '__dict__'):
+            raise RuntimeError('Unable to determine node type to upsert')
+
+        if node_type is None:
+            node_type = node.__class__.__name__
+
+        params: Dict[str, Any] = node.__dict__ if type(node) is not dict else node
+        if 'key' not in params and key is None:
+            raise RuntimeError(f'No key specified in node type {node_type}')
+        elif key is not None:
+            if key not in params:
+                raise RuntimeError(f'Key {key} is missing in node type {node_type}')
+            params['key'] = params[key]
+
+        if exclude is not None:
+            params = {element: params[element] for element in params if element not in exclude}
+        params['published_tag'] = time.strftime(PUBLISH_TAG_TIME_FORMAT)
+
+        return node_type, params
+
+    def upsert(self, *, node: Any, node_type: Optional[str] = None, key: Optional[str] = None,
+               exclude: Optional[List[str]] = None) -> None:
+        node_type, params = self._get_node_as_dict(node=node, node_type=node_type, key=key, exclude=exclude)
+
+        param_str = f'{{{", ".join([f"{param}: ${param}" for param in params.keys()])}}}'
+
+        statement: str = f'''MERGE (n:{node_type} {{key: $key}})
+                            on CREATE SET n={param_str}
+                            on MATCH SET n={param_str}
+                            '''
+
+        self.run(Query(statement=statement, params=params))
+
+    def _get_direction_str(self, *, direction: Direction, relation_name: str, params: Dict[str, Any] = {}) -> str:
+        param_str = ", ".join([f"{pair[0]}: '{pair[1]}'" for pair in params.items()])
+        if direction == Direction.ONE_TO_TWO:
+            return f'-[rel:{relation_name} {{{param_str}}}]->'
+        else:
+            return f'<-[rel:{relation_name} {{{param_str}}}]-'
+
+    def link(self, *,
+             node1: Any = None,
+             node_type1: Optional[str] = None,
+             key1: Optional[str] = None,
+             node_query1: Optional[str] = None,
+             node2: Any = None,
+             node_type2: Optional[str] = None,
+             key2: Optional[str] = None,
+             node_query2: Optional[str] = None,
+             params: Optional[Dict[str, str]] = None,
+             relation_name: str,
+             direction: Direction = Direction.ONE_TO_TWO) -> None:
+        if node_query1 is None:
+            params1: Optional[Dict[str, Any]]
+            node_type1, params1 = self._get_node_as_dict(node=node1, node_type=node_type1, key=key1)
+            node_query1 = f'(n1:{node_type1} {{key: $key1}})'
+        else:
+            params1 = None
+        if node_query2 is None:
+            params2: Optional[Dict[str, Any]]
+            node_type2, params2 = self._get_node_as_dict(node=node2, node_type=node_type2, key=key2)
+            node_query2 = f'(n2:{node_type2} {{key: $key2}})'
+        else:
+            params2 = None
+
+        if params is None:
+            params = {}
+        if params1 is not None:
+            params['key1'] = params1['key']
+        if params2 is not None:
+            params['key2'] = params2['key']
+
+        direction_str = self._get_direction_str(direction=direction,
+                                                relation_name=relation_name,
+                                                params={})
+        link_statement: str = f'''MATCH {node_query1}
+            MATCH {node_query2}
+            MERGE (n1){direction_str}(n2)
+            RETURN n1.key, n2.key'''
+        results = self.run(Query(statement=link_statement, params=params))
+
+        # if no results were returned, then there was no match, which means the nodes don't exist
+        check = results[0]
+        if check is None or len(check) == 0:
+            message: str = f'Unable to create link {link_statement}'
+            # we raise a NotFoundException which should bubble up
+            raise NotFoundException(message)
+
+    def upsert_batch(self, *, nodes: List[Any], node_type: Optional[str] = None, key: Optional[str] = None,
+                     exclude: Optional[List[str]] = None) -> None:
+        if len(nodes) == 0:
+            raise RuntimeWarning('zero nodes specified; is this intentional?')
+        tuples = [self._get_node_as_dict(node=node, node_type=node_type, key=key, exclude=exclude) for node in nodes]
+        node_types = [t[0] for t in tuples]
+        node_type = node_types[0]
+        for possible_node_type in node_types:
+            if possible_node_type != node_type:
+                raise RuntimeError(f'mismatch in node type! {node_type} != {possible_node_type}; either set it '
+                                   f'explicitly or make all nodes the same class')
+        params = [t[1] for t in tuples]
+        param_str = f'{{{", ".join([f"{param}: row.{param}" for param in params[0].keys()])}}}'
+
+        statement: str = f'''UNWIND $batch as row
+            MERGE (n:{node_type} {{ key: row.key }})
+            on CREATE SET n={param_str}
+            on MATCH SET n={param_str}
+            RETURN n.key'''
+
+        self.run(Query(statement=statement, params={'batch': params}))
 
 
 class Neo4jProxy(BaseProxy):
@@ -323,53 +545,14 @@ class Neo4jProxy(BaseProxy):
         :param description: new value for table description
         """
         # start neo4j transaction
-        desc_key = table_uri + '/_description'
+        desc_key = f'{table_uri}/_description'
 
-        upsert_desc_query = textwrap.dedent("""
-            MERGE (u:Description {key: $desc_key})
-            on CREATE SET u={description: $description, key: $desc_key}
-            on MATCH SET u={description: $description, key: $desc_key}
-            """)
-
-        upsert_desc_tab_relation_query = textwrap.dedent("""
-            MATCH (n1:Description {key: $desc_key}), (n2:Table {key: $tbl_key})
-            MERGE (n2)-[r2:DESCRIPTION]->(n1)
-            RETURN n1.key, n2.key
-            """)
-
-        start = time.time()
-
-        try:
-            tx = self._driver.session().begin_transaction()
-
-            tx.run(upsert_desc_query, {'description': description,
-                                       'desc_key': desc_key})
-
-            result = tx.run(upsert_desc_tab_relation_query, {'desc_key': desc_key,
-                                                             'tbl_key': table_uri})
-
-            if not result.single():
-                raise RuntimeError('Failed to update the table {tbl} description'.format(tbl=table_uri))
-
-            # end neo4j transaction
-            tx.commit()
-
-        except Exception as e:
-
-            LOGGER.exception('Failed to execute update process')
-
-            if not tx.closed():
-                tx.rollback()
-
-            # propagate exception back to api
-            raise e
-
-        finally:
-
-            tx.close()
-
-            if LOGGER.isEnabledFor(logging.DEBUG):
-                LOGGER.debug('Update process elapsed for {} seconds'.format(time.time() - start))
+        with LocalTransaction(driver=self._driver, commit_every_run=False) as ltx:
+            ltx.upsert(node={'description': description, 'key': desc_key},
+                       node_type='Description')
+            ltx.link(node1={'key': desc_key}, node_type1='Description',
+                     node2={'key': table_uri}, node_type2='Table', direction=Direction.TWO_TO_ONE,
+                     relation_name='DESCRIPTION')
 
     @timer_with_counter
     def get_column_description(self, *,
@@ -391,9 +574,7 @@ class Neo4jProxy(BaseProxy):
                                             param_dict={'tbl_key': table_uri, 'column_name': column_name})
 
         column_descrpt = result.single()
-
         column_description = column_descrpt['description'] if column_descrpt else None
-
         return column_description
 
     @timer_with_counter
@@ -412,53 +593,12 @@ class Neo4jProxy(BaseProxy):
         column_uri = table_uri + '/' + column_name  # type: str
         desc_key = column_uri + '/_description'
 
-        upsert_desc_query = textwrap.dedent("""
-            MERGE (u:Description {key: $desc_key})
-            on CREATE SET u={description: $description, key: $desc_key}
-            on MATCH SET u={description: $description, key: $desc_key}
-            """)
-
-        upsert_desc_col_relation_query = textwrap.dedent("""
-            MATCH (n1:Description {key: $desc_key}), (n2:Column {key: $column_key})
-            MERGE (n2)-[r2:DESCRIPTION]->(n1)
-            RETURN n1.key, n2.key
-            """)
-
-        start = time.time()
-
-        try:
-            tx = self._driver.session().begin_transaction()
-
-            tx.run(upsert_desc_query, {'description': description,
-                                       'desc_key': desc_key})
-
-            result = tx.run(upsert_desc_col_relation_query, {'desc_key': desc_key,
-                                                             'column_key': column_uri})
-
-            if not result.single():
-                raise RuntimeError('Failed to update the table {tbl} '
-                                   'column {col} description'.format(tbl=table_uri,
-                                                                     col=column_uri))
-
-            # end neo4j transaction
-            tx.commit()
-
-        except Exception as e:
-
-            LOGGER.exception('Failed to execute update process')
-
-            if not tx.closed():
-                tx.rollback()
-
-            # propagate error to api
-            raise e
-
-        finally:
-
-            tx.close()
-
-            if LOGGER.isEnabledFor(logging.DEBUG):
-                LOGGER.debug('Update process elapsed for {} seconds'.format(time.time() - start))
+        with LocalTransaction(driver=self._driver, commit_every_run=False) as ltx:
+            ltx.upsert(node={'description': description, 'key': desc_key},
+                       node_type='Description')
+            ltx.link(node1={'key': column_uri}, node_type1='Column',
+                     node2={'key': desc_key}, node_type2='Description', direction=Direction.ONE_TO_TWO,
+                     relation_name='DESCRIPTION')
 
     @timer_with_counter
     def add_owner(self, *,
@@ -473,36 +613,11 @@ class Neo4jProxy(BaseProxy):
         :param owner:
         :return:
         """
-        create_owner_query = textwrap.dedent("""
-        MERGE (u:User {key: $user_email})
-        on CREATE SET u={email: $user_email, key: $user_email}
-        """)
 
-        upsert_owner_relation_query = textwrap.dedent("""
-        MATCH (n1:User {key: $user_email}), (n2:Table {key: $tbl_key})
-        MERGE (n2)-[r2:OWNER]->(n1)
-        RETURN n1.key, n2.key
-        """)
-
-        try:
-            tx = self._driver.session().begin_transaction()
-            # upsert the node
-            tx.run(create_owner_query, {'user_email': owner})
-            result = tx.run(upsert_owner_relation_query, {'user_email': owner,
-                                                          'tbl_key': table_uri})
-
-            if not result.single():
-                raise RuntimeError('Failed to create relation between '
-                                   'owner {owner} and table {tbl}'.format(owner=owner,
-                                                                          tbl=table_uri))
-        except Exception as e:
-            if not tx.closed():
-                tx.rollback()
-            # propagate the exception back to api
-            raise e
-        finally:
-            tx.commit()
-            tx.close()
+        with LocalTransaction(driver=self._driver, commit_every_run=False) as ltx:
+            ltx.link(node1={'key': owner}, node_type1='User',
+                     node2={'key': table_uri}, node_type2='Table', relation_name='OWNER',
+                     direction=Direction.TWO_TO_ONE)
 
     @timer_with_counter
     def delete_owner(self, *,
@@ -549,45 +664,13 @@ class Neo4jProxy(BaseProxy):
         """
         LOGGER.info('New tag {} for table_uri {} with type {}'.format(tag, table_uri, tag_type))
 
-        table_validation_query = 'MATCH (t:Table {key: $tbl_key}) return t'
-
-        upsert_tag_query = textwrap.dedent("""
-        MERGE (u:Tag {key: $tag})
-        on CREATE SET u={tag_type: $tag_type, key: $tag}
-        on MATCH SET u={tag_type: $tag_type, key: $tag}
-        """)
-
-        upsert_tag_relation_query = textwrap.dedent("""
-        MATCH (n1:Tag {key: $tag, tag_type: $tag_type}), (n2:Table {key: $tbl_key})
-        MERGE (n1)-[r1:TAG]->(n2)-[r2:TAGGED_BY]->(n1)
-        RETURN n1.key, n2.key
-        """)
-
-        try:
-            tx = self._driver.session().begin_transaction()
-            tbl_result = tx.run(table_validation_query, {'tbl_key': table_uri})
-            if not tbl_result.single():
-                raise NotFoundException('table_uri {} does not exist'.format(table_uri))
-
-            # upsert the node. Currently the type for all the tags is default. We could change it later per UI.
-            tx.run(upsert_tag_query, {'tag': tag,
-                                      'tag_type': tag_type})
-            result = tx.run(upsert_tag_relation_query, {'tag': tag,
-                                                        'tbl_key': table_uri,
-                                                        'tag_type': tag_type})
-            if not result.single():
-                raise RuntimeError('Failed to create relation between '
-                                   'tag {tag} and table {tbl}'.format(tag=tag,
-                                                                      tbl=table_uri))
-            tx.commit()
-        except Exception as e:
-            if not tx.closed():
-                tx.rollback()
-            # propagate the exception back to api
-            raise e
-        finally:
-            if not tx.closed():
-                tx.close()
+        with LocalTransaction(driver=self._driver, commit_every_run=False) as ltx:
+            ltx.upsert(node={'tag_type': 'default',
+                             'key': tag},
+                       node_type='Tag')
+            ltx.link(node1={'key': tag}, node_type1='Tag',
+                     node2={'key': table_uri}, node_type2='Table', relation_name='TAG',
+                     direction=Direction.ONE_TO_TWO)
 
     @timer_with_counter
     def delete_tag(self, *, table_uri: str,
@@ -783,6 +866,25 @@ class Neo4jProxy(BaseProxy):
                           slack_id=record.get('slack_id'),
                           employee_type=record.get('employee_type'),
                           manager_fullname=manager_name)
+
+    @timer_with_counter
+    def put_user(self, *, data: UserEntity) -> None:
+        """
+        Update user with supplied data.
+        :param data: new user to be added
+        """
+        with LocalTransaction(driver=self._driver) as ltx:
+            ltx.upsert(node=data, key='email')
+
+    @timer_with_counter
+    def post_users(self, *, data: List[UserEntity]) -> None:
+        """
+        Add or update users with supplied data.
+        :param data: users to be added or updated
+        """
+        for batched_users in batch(iterable=data, n=100):
+            with LocalTransaction(driver=self._driver) as ltx:
+                ltx.upsert_batch(nodes=batched_users, key='email')
 
     @staticmethod
     def _get_user_table_relationship_clause(relation_type: UserResourceRel, tbl_key: str = None,

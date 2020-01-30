@@ -1,0 +1,17 @@
+Posts user details
+---
+tags:
+  - 'user'
+responses:
+  200:
+    description: 'Successfully posted user details'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/MessageResponse'
+  500:
+    description: 'Internal Server Error'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'

@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Iterable, Mapping, Optional, Union
+from typing import Iterable, List, Mapping, Optional, Union
 
 from flask_restful import Resource, fields, marshal
 from flasgger import swag_from
@@ -46,6 +46,14 @@ class UserDetailAPI(BaseAPI):
     @swag_from('swagger_doc/user/detail_get.yml')
     def get(self, *, id: Optional[str] = None) -> Iterable[Union[Mapping, int, None]]:
         return super().get(id=id)
+
+    @swag_from('swagger_doc/user/detail_put.yml')
+    def put(self, *, id: str = '') -> Iterable[Union[Mapping, int, None]]:
+        return super().put(id=id)
+
+    @swag_from('swagger_doc/user/detail_post.yml')
+    def post(self) -> Iterable[Union[List, Mapping, int, None]]:
+        return super().post()
 
 
 class UserFollowsAPI(Resource):
