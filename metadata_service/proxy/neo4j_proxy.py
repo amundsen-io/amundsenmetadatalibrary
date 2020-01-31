@@ -7,7 +7,7 @@ from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
 
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (Application, Column, Reader, Source,
-                                          Statistics, Table, Tag, User,
+                                          Stat, Table, Tag, User,
                                           Watermark, ProgrammaticDescription)
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
@@ -111,7 +111,7 @@ class Neo4jProxy(BaseProxy):
             # Getting last record from this for loop as Neo4j's result's random access is O(n) operation.
             col_stats = []
             for stat in tbl_col_neo4j_record['col_stats']:
-                col_stat = Statistics(
+                col_stat = Stat(
                     stat_type=stat['stat_name'],
                     stat_val=stat['stat_val'],
                     start_epoch=int(float(stat['start_epoch'])),

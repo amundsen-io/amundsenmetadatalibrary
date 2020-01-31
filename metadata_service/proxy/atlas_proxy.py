@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from flask import current_app as app
 
-from amundsen_common.models.table import Column, Statistics, Table, Tag, User
+from amundsen_common.models.table import Column, Stat, Table, Tag, User
 from amundsen_common.models.user import User as UserEntity
 from atlasclient.client import Atlas
 from atlasclient.exceptions import BadRequest
@@ -243,7 +243,7 @@ class AtlasProxy(BaseProxy):
             Union[List[Column], List]:
         """
         Helper function to fetch the columns from entity and serialize them
-        using Column and Statistics model.
+        using Column and Stat model.
         :param entity: EntityUniqueAttribute object,
         along with relationshipAttributes
         :return: A list of Column objects, if there are any columns available,
@@ -263,7 +263,7 @@ class AtlasProxy(BaseProxy):
                 for stats in col_metadata['attributes'].get('statistics') or list():
                     stats_attrs = stats['attributes']
                     statistics.append(
-                        Statistics(
+                        Stat(
                             stat_type=stats_attrs.get('stat_name'),
                             stat_val=stats_attrs.get('stat_val'),
                             start_epoch=stats_attrs.get('start_epoch'),
