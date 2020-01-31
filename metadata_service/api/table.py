@@ -64,7 +64,7 @@ source_fields = {
 }
 
 programmatic_description_fields = {
-    'source': fields.String,
+    'source_id': fields.String,
     'text': fields.String,
     'is_editable': fields.Boolean
 }

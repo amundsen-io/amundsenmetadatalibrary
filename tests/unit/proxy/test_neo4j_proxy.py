@@ -5,7 +5,7 @@ from typing import Any, Dict  # noqa: F401
 
 from amundsen_common.models.table import (Application, Column, Source,
                                           Statistics, Table, Tag, User,
-                                          Watermark)
+                                          Watermark, ProgrammaticDescription)
 from amundsen_common.models.user import UserSchema
 
 from mock import MagicMock, patch
@@ -96,7 +96,19 @@ class TestNeo4jProxy(unittest.TestCase):
                 'source': '/source_file_loc',
                 'key': 'some key',
                 'source_type': 'github'
-            }
+            },
+            'prog_descriptions': [
+                {
+                    'description_source': 's3_crawler',
+                    'description': 'Test Test Test',
+                    'description_editable': 'false'
+                },
+                {
+                    'description_source': 'quality_report',
+                    'description': 'Test Test',
+                    'description_editable': 'true'
+                }
+            ]
         }
 
         table_writer = {
@@ -158,7 +170,11 @@ class TestNeo4jProxy(unittest.TestCase):
                              last_updated_timestamp=1,
                              source=Source(source='/source_file_loc',
                                            source_type='github'),
-                             is_view=False)
+                             is_view=False,
+                             programmatic_descriptions= [
+                                 ProgrammaticDescription(source_id='quality_report', text = 'Test Test', is_editable = 'true'),
+                                 ProgrammaticDescription(source_id='s3_crawler', text = 'Test Test Test', is_editable = 'false')
+                             ])
 
             self.assertEqual(str(expected), str(table))
 
@@ -203,7 +219,11 @@ class TestNeo4jProxy(unittest.TestCase):
                              last_updated_timestamp=1,
                              source=Source(source='/source_file_loc',
                                            source_type='github'),
-                             is_view=True)
+                             is_view=True,
+                             programmatic_descriptions= [
+                                 ProgrammaticDescription(source_id='quality_report', text = 'Test Test', is_editable = 'true'),
+                                 ProgrammaticDescription(source_id='s3_crawler', text = 'Test Test Test', is_editable = 'false')
+                             ])
 
             self.assertEqual(str(expected), str(table))
 

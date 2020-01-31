@@ -242,12 +242,13 @@ class Neo4jProxy(BaseProxy):
 
         # TODO consider ordering prog descriptions here.
         prog_descriptions = []
-        for prog_description in table_records['prog_descriptions']:
+        for prog_description in table_records.get('prog_descriptions', []):
             LOGGER.info(prog_description)
-            prog_descriptions.append(ProgrammaticDescription(source = prog_description['description_source'],
-                                                             text = prog_description['description'],
-                                                             is_editable = prog_description['description_editable']))
-
+            source_id = prog_description['description_source']
+            prog_descriptions.append(ProgrammaticDescription(source_id = source_id,
+                                                                 text = prog_description['description'],
+                                                                 is_editable = prog_description['description_editable']))
+        prog_descriptions.sort(key = lambda x: x.source_id)
         return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
 
     @no_type_check
