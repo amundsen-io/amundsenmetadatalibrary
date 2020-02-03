@@ -171,9 +171,11 @@ class TestNeo4jProxy(unittest.TestCase):
                              source=Source(source='/source_file_loc',
                                            source_type='github'),
                              is_view=False,
-                             programmatic_descriptions= [
-                                 ProgrammaticDescription(source_id='quality_report', text = 'Test Test', is_editable = 'true'),
-                                 ProgrammaticDescription(source_id='s3_crawler', text = 'Test Test Test', is_editable = 'false')
+                             programmatic_descriptions=[
+                                 ProgrammaticDescription(source_id='quality_report',
+                                                         text='Test Test', is_editable='true'),
+                                 ProgrammaticDescription(source_id='s3_crawler',
+                                                         text='Test Test Test', is_editable='false')
                              ])
 
             self.assertEqual(str(expected), str(table))
@@ -220,9 +222,11 @@ class TestNeo4jProxy(unittest.TestCase):
                              source=Source(source='/source_file_loc',
                                            source_type='github'),
                              is_view=True,
-                             programmatic_descriptions= [
-                                 ProgrammaticDescription(source_id='quality_report', text = 'Test Test', is_editable = 'true'),
-                                 ProgrammaticDescription(source_id='s3_crawler', text = 'Test Test Test', is_editable = 'false')
+                             programmatic_descriptions=[
+                                 ProgrammaticDescription(source_id='quality_report',
+                                                         text='Test Test', is_editable='true'),
+                                 ProgrammaticDescription(source_id='s3_crawler',
+                                                         text='Test Test Test', is_editable='false')
                              ])
 
             self.assertEqual(str(expected), str(table))

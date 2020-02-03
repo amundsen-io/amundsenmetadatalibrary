@@ -38,12 +38,6 @@ class BaseProxy(metaclass=ABCMeta):
                               table_uri: str) -> Union[str, None]:
         pass
 
-    #TODO determine if this is needed. If so, needs to be implemented
-    @abstractmethod
-    def get_programmatic_descriptions(self, *,
-                                      table_uri: str) -> Union[List[str], None]:
-        pass
-
     @abstractmethod
     def put_table_description(self, *,
                               table_uri: str,

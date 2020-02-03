@@ -67,7 +67,8 @@ class Neo4jProxy(BaseProxy):
 
         readers = self._exec_usage_query(table_uri)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, prog_descs = self._exec_table_query(table_uri)
+        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, prog_descs = \
+            self._exec_table_query(table_uri)
 
         table = Table(database=last_neo4j_record['db']['name'],
                       cluster=last_neo4j_record['clstr']['name'],
@@ -84,7 +85,7 @@ class Neo4jProxy(BaseProxy):
                       last_updated_timestamp=timestamp_value,
                       source=source,
                       is_view=self._safe_get(last_neo4j_record, 'tbl', 'is_view'),
-                      programmatic_descriptions = prog_descs
+                      programmatic_descriptions=prog_descs
                       )
 
         return table
@@ -240,16 +241,20 @@ class Neo4jProxy(BaseProxy):
             src = Source(source_type=table_records['src']['source_type'],
                          source=table_records['src']['source'])
 
-        # TODO consider ordering prog descriptions here.
+        prog_descriptions = self._extract_programmatic_descriptions_from_query(table_records)
+
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
+
+    def _extract_programmatic_descriptions_from_query(self, table_records: dict) -> list:
         prog_descriptions = []
         for prog_description in table_records.get('prog_descriptions', []):
             LOGGER.info(prog_description)
             source_id = prog_description['description_source']
-            prog_descriptions.append(ProgrammaticDescription(source_id = source_id,
-                                                                 text = prog_description['description'],
-                                                                 is_editable = prog_description['description_editable']))
-        prog_descriptions.sort(key = lambda x: x.source_id)
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
+            prog_descriptions.append(ProgrammaticDescription(source_id=source_id,
+                                                             text=prog_description['description'],
+                                                             is_editable=prog_description['description_editable']))
+        prog_descriptions.sort(key=lambda x: x.source_id)
+        return prog_descriptions
 
     @no_type_check
     def _safe_get(self, dct, *keys):
@@ -300,24 +305,6 @@ class Neo4jProxy(BaseProxy):
         result = self._execute_cypher_query(statement=table_description_query,
                                             param_dict={'tbl_key': table_uri})
 
-        table_descrpt = result.single()
-
-        table_description = table_descrpt['description'] if table_descrpt else None
-
-        return table_description
-
-    @timer_with_counter
-    def get_programmatic_descriptions(self, *,
-                                      table_uri: str) -> Union[List[str], None]:
-        table_description_query = textwrap.dedent("""
-        MATCH (tbl:Table {key: $tbl_key})-[:DESCRIPTION]->(d:Programmatic_Description)
-        RETURN d.description AS description;
-        """)
-
-        result = self._execute_cypher_query(statement=table_description_query,
-                                            param_dict={'tbl_key': table_uri})
-
-        #TODO handle multiple programmatics
         table_descrpt = result.single()
 
         table_description = table_descrpt['description'] if table_descrpt else None
