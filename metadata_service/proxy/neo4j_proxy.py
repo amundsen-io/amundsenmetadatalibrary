@@ -251,8 +251,7 @@ class Neo4jProxy(BaseProxy):
             LOGGER.info(prog_description)
             source_id = prog_description['description_source']
             prog_descriptions.append(ProgrammaticDescription(source_id=source_id,
-                                                             text=prog_description['description'],
-                                                             is_editable=prog_description['description_editable']))
+                                                             text=prog_description['description']))
         prog_descriptions.sort(key=lambda x: x.source_id)
         return prog_descriptions
 

@@ -100,13 +100,11 @@ class TestNeo4jProxy(unittest.TestCase):
             'prog_descriptions': [
                 {
                     'description_source': 's3_crawler',
-                    'description': 'Test Test Test',
-                    'description_editable': 'false'
+                    'description': 'Test Test Test'
                 },
                 {
                     'description_source': 'quality_report',
-                    'description': 'Test Test',
-                    'description_editable': 'true'
+                    'description': 'Test Test'
                 }
             ]
         }
@@ -173,9 +171,9 @@ class TestNeo4jProxy(unittest.TestCase):
                              is_view=False,
                              programmatic_descriptions=[
                                  ProgrammaticDescription(source_id='quality_report',
-                                                         text='Test Test', is_editable='true'),
+                                                         text='Test Test'),
                                  ProgrammaticDescription(source_id='s3_crawler',
-                                                         text='Test Test Test', is_editable='false')
+                                                         text='Test Test Test')
                              ])
 
             self.assertEqual(str(expected), str(table))
@@ -224,9 +222,9 @@ class TestNeo4jProxy(unittest.TestCase):
                              is_view=True,
                              programmatic_descriptions=[
                                  ProgrammaticDescription(source_id='quality_report',
-                                                         text='Test Test', is_editable='true'),
+                                                         text='Test Test'),
                                  ProgrammaticDescription(source_id='s3_crawler',
-                                                         text='Test Test Test', is_editable='false')
+                                                         text='Test Test Test')
                              ])
 
             self.assertEqual(str(expected), str(table))
