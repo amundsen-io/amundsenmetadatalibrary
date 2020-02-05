@@ -57,22 +57,22 @@ class UserFollowsAPI(Resource):
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/follow_get.yml')
-    def get(self, user_id: str) -> Iterable[Union[Mapping, int, None]]:
+    def get(self, id: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Return a list of resources that user has followed
 
-        :param user_id:
+        :param id:
         :return:
         """
         try:
-            resources = self.client.get_table_by_user_relation(user_email=user_id,
+            resources = self.client.get_table_by_user_relation(user_email=id,
                                                                relation_type=UserResourceRel.follow)
             if len(resources['table']) > 0:
                 return {'table': PopularTableSchema(many=True).dump(resources['table']).data}, HTTPStatus.OK
             return {'table': []}, HTTPStatus.OK
 
         except NotFoundException:
-            return {'message': 'user_id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
+            return {'message': f'user_id {id} does not exist'}, HTTPStatus.NOT_FOUND
 
         except Exception:
             LOGGER.exception('UserFollowAPI GET Failed')
@@ -89,52 +89,46 @@ class UserFollowAPI(Resource):
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/follow_put.yml')
-    def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
+    def put(self, id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Create the follow relationship between user and resources.
         todo: It will need to refactor all neo4j proxy api to take a type argument.
 
-        :param user_id:
+        :param id:
         :param table_uri:
         :return:
         """
         try:
             self.client.add_table_relation_by_user(table_uri=table_uri,
-                                                   user_email=user_id,
+                                                   user_email=id,
                                                    relation_type=UserResourceRel.follow)
-            return {'message': 'The user {} for table_uri {} '
-                               'is added successfully'.format(user_id,
-                                                              table_uri)}, HTTPStatus.OK
+            return {'message': f'The user {id} for table_uri {table_uri} '
+                               'is added successfully'}, HTTPStatus.OK
         except Exception as e:
             LOGGER.exception('UserFollowAPI PUT Failed')
-            return {'message': 'The user {} for table_uri {} '
-                               'is not added successfully'.format(user_id,
-                                                                  table_uri)}, \
-                HTTPStatus.INTERNAL_SERVER_ERROR
+            return {'message': f'The user {id} for table_uri {table_uri} '
+                               'is not added successfully'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
     @swag_from('swagger_doc/user/follow_delete.yml')
-    def delete(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Delete the follow relationship between user and resources.
         todo: It will need to refactor all neo4j proxy api to take a type argument.
 
-        :param user_id:
+        :param id:
         :param table_uri:
         :return:
         """
         try:
             self.client.delete_table_relation_by_user(table_uri=table_uri,
-                                                      user_email=user_id,
+                                                      user_email=id,
                                                       relation_type=UserResourceRel.follow)
-            return {'message': 'The user following {} for table_uri {} '
-                               'is deleted successfully'.format(user_id,
-                                                                table_uri)}, HTTPStatus.OK
+            return {'message': f'The user following {id} for table_uri {table_uri} '
+                               'is deleted successfully'}, HTTPStatus.OK
         except Exception as e:
             LOGGER.exception('UserFollowAPI DELETE Failed')
-            return {'message': 'The user {} for table_uri {} '
-                               'is not deleted successfully'.format(user_id,
-                                                                    table_uri)}, \
-                HTTPStatus.INTERNAL_SERVER_ERROR
+            return {'message': f'The user {id} for table_uri {table_uri} '
+                               'is not deleted successfully'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 class UserOwnsAPI(Resource):
@@ -146,22 +140,22 @@ class UserOwnsAPI(Resource):
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/own_get.yml')
-    def get(self, user_id: str) -> Iterable[Union[Mapping, int, None]]:
+    def get(self, id: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Return a list of resources that user has owned
 
-        :param user_id:
+        :param id:
         :return:
         """
         try:
-            resources = self.client.get_table_by_user_relation(user_email=user_id,
+            resources = self.client.get_table_by_user_relation(user_email=id,
                                                                relation_type=UserResourceRel.own)
             if len(resources['table']) > 0:
                 return {'table': PopularTableSchema(many=True).dump(resources['table']).data}, HTTPStatus.OK
             return {'table': []}, HTTPStatus.OK
 
         except NotFoundException:
-            return {'message': 'user_id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
+            return {'message': f'user_id {id} does not exist'}, HTTPStatus.NOT_FOUND
 
         except Exception:
             LOGGER.exception('UserOwnAPI GET Failed')
@@ -179,38 +173,34 @@ class UserOwnAPI(Resource):
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/own_put.yml')
-    def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
+    def put(self, id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Create the follow relationship between user and resources.
 
-        :param user_id:
+        :param id:
         :param resource_type:
         :param table_uri:
         :return:
         """
         try:
-            self.client.add_owner(table_uri=table_uri, owner=user_id)
-            return {'message': 'The owner {} for table_uri {} '
-                               'is added successfully'.format(user_id,
-                                                              table_uri)}, HTTPStatus.OK
+            self.client.add_owner(table_uri=table_uri, owner=id)
+            return {'message': f'The owner {id} for table_uri {table_uri} '
+                               'is added successfully'}, HTTPStatus.OK
         except Exception as e:
             LOGGER.exception('UserOwnAPI PUT Failed')
-            return {'message': 'The owner {} for table_uri {} '
-                               'is not added successfully'.format(user_id,
-                                                                  table_uri)}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return {'message': f'The owner {id} for table_uri {table_uri} '
+                               'is not added successfully'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
     @swag_from('swagger_doc/user/own_delete.yml')
-    def delete(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         try:
-            self.client.delete_owner(table_uri=table_uri, owner=user_id)
-            return {'message': 'The owner {} for table_uri {} '
-                               'is deleted successfully'.format(user_id,
-                                                                table_uri)}, HTTPStatus.OK
+            self.client.delete_owner(table_uri=table_uri, owner=id)
+            return {'message': f'The owner {id} for table_uri {table_uri} '
+                               'is deleted successfully'}, HTTPStatus.OK
         except Exception:
             LOGGER.exception('UserOwnAPI DELETE Failed')
-            return {'message': 'The owner {} for table_uri {} '
-                               'is not deleted successfully'.format(user_id,
-                                                                    table_uri)}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return {'message': f'The owner {id} for table_uri {table_uri} '
+                               'is not deleted successfully'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 class UserReadsAPI(Resource):
@@ -222,19 +212,19 @@ class UserReadsAPI(Resource):
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/read_get.yml')
-    def get(self, user_id: str) -> Iterable[Union[Mapping, int, None]]:
+    def get(self, id: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Return a list of resources that user has read
 
-        :param user_id:
+        :param id:
         :return:
         """
         try:
-            resources = self.client.get_frequently_used_tables(user_email=user_id)
+            resources = self.client.get_frequently_used_tables(user_email=id)
             return marshal(resources, table_list_fields), HTTPStatus.OK
 
         except NotFoundException:
-            return {'message': 'user_id {} does not exist'.format(user_id)}, HTTPStatus.NOT_FOUND
+            return {'message': f'user_id {id} does not exist'}, HTTPStatus.NOT_FOUND
 
         except Exception:
             LOGGER.exception('UserReadsAPI GET Failed')

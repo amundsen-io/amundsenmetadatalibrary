@@ -94,15 +94,15 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/user',
                      '/user/<path:id>')
     api.add_resource(UserFollowsAPI,
-                     '/user/<path:user_id>/follow/')
+                     '/user/<path:id>/follow/')
     api.add_resource(UserFollowAPI,
-                     '/user/<path:user_id>/follow/<resource_type>/<path:table_uri>')
+                     '/user/<path:id>/follow/<resource_type>/<path:table_uri>')
     api.add_resource(UserOwnsAPI,
-                     '/user/<path:user_id>/own/')
+                     '/user/<path:id>/own/')
     api.add_resource(UserOwnAPI,
-                     '/user/<path:user_id>/own/<resource_type>/<path:table_uri>')
+                     '/user/<path:id>/own/<resource_type>/<path:table_uri>')
     api.add_resource(UserReadsAPI,
-                     '/user/<path:user_id>/read/')
+                     '/user/<path:id>/read/')
     app.register_blueprint(api_bp)
 
     if app.config.get('SWAGGER_ENABLED'):
