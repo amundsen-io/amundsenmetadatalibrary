@@ -91,8 +91,7 @@ def create_app(*, config_module_class: str) -> Flask:
     api.add_resource(TagAPI,
                      '/tags/')
     api.add_resource(UserDetailAPI,
-                     '/user',
-                     '/user/<path:id>')
+                     '/user/<path:user_id>')
     api.add_resource(UserFollowsAPI,
                      '/user/<path:user_id>/follow/')
     api.add_resource(UserFollowAPI,
