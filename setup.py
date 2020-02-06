@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = '1.1.9rc4'
+__version__ = '1.1.9rc5'
 
 
 requirements_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'requirements.txt')
