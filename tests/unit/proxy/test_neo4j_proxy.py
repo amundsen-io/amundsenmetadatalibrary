@@ -170,9 +170,9 @@ class TestNeo4jProxy(unittest.TestCase):
                                            source_type='github'),
                              is_view=False,
                              programmatic_descriptions=[
-                                 ProgrammaticDescription(source_id='quality_report',
+                                 ProgrammaticDescription(source='quality_report',
                                                          text='Test Test'),
-                                 ProgrammaticDescription(source_id='s3_crawler',
+                                 ProgrammaticDescription(source='s3_crawler',
                                                          text='Test Test Test')
                              ])
 
@@ -221,9 +221,9 @@ class TestNeo4jProxy(unittest.TestCase):
                                            source_type='github'),
                              is_view=True,
                              programmatic_descriptions=[
-                                 ProgrammaticDescription(source_id='quality_report',
+                                 ProgrammaticDescription(source='quality_report',
                                                          text='Test Test'),
-                                 ProgrammaticDescription(source_id='s3_crawler',
+                                 ProgrammaticDescription(source='s3_crawler',
                                                          text='Test Test Test')
                              ])
 

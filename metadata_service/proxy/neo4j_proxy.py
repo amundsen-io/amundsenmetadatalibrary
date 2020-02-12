@@ -249,10 +249,10 @@ class Neo4jProxy(BaseProxy):
         prog_descriptions = []
         for prog_description in table_records.get('prog_descriptions', []):
             LOGGER.info(prog_description)
-            source_id = prog_description['description_source']
-            prog_descriptions.append(ProgrammaticDescription(source_id=source_id,
+            source = prog_description['description_source']
+            prog_descriptions.append(ProgrammaticDescription(source=source,
                                                              text=prog_description['description']))
-        prog_descriptions.sort(key=lambda x: x.source_id)
+        prog_descriptions.sort(key=lambda x: x.source)
         return prog_descriptions
 
     @no_type_check
