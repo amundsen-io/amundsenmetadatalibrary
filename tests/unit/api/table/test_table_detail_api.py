@@ -65,7 +65,6 @@ class TestTableDetailAPI(TableTestCase):
         self.mock_proxy.get_table.return_value = QUERY_RESPONSE
 
         response = self.app.test_client().get(f'/table/{TABLE_URI}')
-        print(response.json)
         self.assertEqual(response.json, API_RESPONSE)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_proxy.get_table.assert_called_with(table_uri=TABLE_URI)

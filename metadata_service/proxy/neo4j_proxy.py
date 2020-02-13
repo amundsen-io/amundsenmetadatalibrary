@@ -241,17 +241,20 @@ class Neo4jProxy(BaseProxy):
             src = Source(source_type=table_records['src']['source_type'],
                          source=table_records['src']['source'])
 
-        prog_descriptions = self._extract_programmatic_descriptions_from_query(table_records)
+        prog_descriptions = self._extract_programmatic_descriptions_from_query(
+            table_records.get('prog_descriptions', [])
+        )
 
         return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
 
-    def _extract_programmatic_descriptions_from_query(self, table_records: dict) -> list:
+    def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
         prog_descriptions = []
-        for prog_description in table_records.get('prog_descriptions', []):
-            LOGGER.info(prog_description)
+        for prog_description in raw_prog_descriptions:
             source = prog_description['description_source']
-            prog_descriptions.append(ProgrammaticDescription(source=source,
-                                                             text=prog_description['description']))
+            if source is None:
+                LOGGER.error("A programmatic description with no source was found... skipping.")
+            else:
+                prog_descriptions.append(ProgrammaticDescription(source=source, text=prog_description['description']))
         prog_descriptions.sort(key=lambda x: x.source)
         return prog_descriptions
 
