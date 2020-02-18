@@ -511,7 +511,7 @@ class TestNeo4jProxy(unittest.TestCase):
                 }
             }
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            neo4j_user = neo4j_proxy.get_user(user_id='test_email')
+            neo4j_user = neo4j_proxy.get_user(id='test_email')
             self.assertEquals(neo4j_user.email, 'test_email')
 
     def test_get_users(self) -> None:
