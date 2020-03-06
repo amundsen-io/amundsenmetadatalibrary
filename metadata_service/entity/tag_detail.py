@@ -6,7 +6,6 @@ from marshmallow_annotations.ext.attrs import AttrsSchema
 class TagDetail:
     tag_name: str = attr.ib()
     tag_count: int = attr.ib()
-    tag_type: str = attr.ib()
 
 
 class TagDetailSchema(AttrsSchema):

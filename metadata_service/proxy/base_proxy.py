@@ -106,4 +106,3 @@ class BaseProxy(metaclass=ABCMeta):
                       dashboard_uri: str,
                       ) -> DashboardDetailEntity:
         pass
-

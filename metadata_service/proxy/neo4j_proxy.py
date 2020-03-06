@@ -970,7 +970,7 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def get_dashboard(self,
-                      dashboard_uri: str,
+                      id: str,
                       ) -> DashboardDetailEntity:
 
         get_dashboard_detail_query = textwrap.dedent(u"""
@@ -997,10 +997,10 @@ class Neo4jProxy(BaseProxy):
         """
                                                      )
         record = self._execute_cypher_query(statement=get_dashboard_detail_query,
-                                            param_dict={'query_key': dashboard_uri}).single()
+                                            param_dict={'query_key': id}).single()
 
         if not record:
-            raise NotFoundException('No dashboard exist with URI: {}'.format(dashboard_uri))
+            raise NotFoundException('No dashboard exist with URI: {}'.format(id))
 
         owners = [self._build_user_from_record(record=owner) for owner in record['owners']]
         tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in record['tags']]
