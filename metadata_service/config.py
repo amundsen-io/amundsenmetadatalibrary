@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional
+from typing import List, Optional   # noqa: F401
 
 # PROXY configuration keys
 PROXY_HOST = 'PROXY_HOST'

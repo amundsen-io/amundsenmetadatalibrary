@@ -32,6 +32,7 @@ class UserDetailAPI(BaseAPI):
                 return app.config['USER_DETAIL_METHOD'](id)
             except Exception:
                 LOGGER.exception('UserDetailAPI GET Failed - Using "USER_DETAIL_METHOD" config variable')
+                return {'message': 'user_id {} fetch failed'.format(id)}, HTTPStatus.NOT_FOUND
         else:
             return super().get(id=id)
 
