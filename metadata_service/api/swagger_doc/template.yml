@@ -279,17 +279,17 @@ components:
           type: array
           description: 'Users frequently view dashboard'
           items:
-            $ref: '#/components/schemas/UserFields'
+            $ref: '#/components/schemas/UserDetailFields'
         chart_names:
           type: array
           description: 'Chart names associated with the Dashboard'
           items:
-            $ref: '#/components/schemas/UserFields'
+            type: string
         query_names:
           type: array
           description: 'Chart names associated with the Dashboard'
           items:
-            $ref: '#/components/schemas/UserFields'
+            type: string
         tables:
           type: array
           description: 'Tables that is used in Dashboard'

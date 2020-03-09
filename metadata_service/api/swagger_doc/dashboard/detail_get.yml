@@ -18,7 +18,7 @@ responses:
         schema:
           $ref: '#/components/schemas/DashboardDetail'
   404:
-    description: 'Table not found'
+    description: 'Dashboard not found'
     content:
       application/json:
         schema:
