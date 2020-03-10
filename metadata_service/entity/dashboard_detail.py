@@ -28,6 +28,7 @@ class DashboardDetail:
     query_names: List[str] = attr.ib(factory=list)
     tables: List[PopularTable] = attr.ib(factory=list)
     tags: List[Tag] = attr.ib(factory=list)
+    badges: List[Tag] = attr.ib(factory=list)
 
 
 class DashboardSchema(AttrsSchema):

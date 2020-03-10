@@ -300,6 +300,11 @@ components:
           description: 'Tags tagged on Dashboard'
           items:
             $ref: '#/components/schemas/TagFields'
+        badges:
+            type: array
+            description: 'Badges associated with the Dashboard'
+            items:
+              $ref: '#/components/schemas/TagFields'
     ErrorResponse:
       type: object
       properties:
