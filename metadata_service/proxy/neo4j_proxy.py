@@ -304,7 +304,6 @@ class Neo4jProxy(BaseProxy):
         :param id:
         :return:
         """
-        LOGGER.info('resource_type: {}'.format(resource_type))
 
         description_query = textwrap.dedent("""
         MATCH (n:{node_label} {{key: $key}})-[:DESCRIPTION]->(d:Description)
@@ -343,16 +342,16 @@ class Neo4jProxy(BaseProxy):
         desc_key = uri + '/_description'
 
         upsert_desc_query = textwrap.dedent("""
-                MERGE (u:Description {key: $desc_key})
-                on CREATE SET u={description: $description, key: $desc_key}
-                on MATCH SET u={description: $description, key: $desc_key}
-                """)
+        MERGE (u:Description {key: $desc_key})
+        on CREATE SET u={description: $description, key: $desc_key}
+        on MATCH SET u={description: $description, key: $desc_key}
+        """)
 
         upsert_desc_tab_relation_query = textwrap.dedent("""
-                MATCH (n1:Description {{key: $desc_key}}), (n2:{node_label} {{key: $key}})
-                MERGE (n2)-[r2:DESCRIPTION]->(n1)
-                RETURN n1.key, n2.key
-                """.format(node_label=resource_type.name))
+        MATCH (n1:Description {{key: $desc_key}}), (n2:{node_label} {{key: $key}})
+        MERGE (n2)-[r2:DESCRIPTION]->(n1)
+        RETURN n1.key, n2.key
+        """.format(node_label=resource_type.name))
 
         start = time.time()
 
@@ -365,8 +364,6 @@ class Neo4jProxy(BaseProxy):
             result = tx.run(upsert_desc_tab_relation_query, {'desc_key': desc_key,
                                                              'key': uri})
 
-            LOGGER.info(result)
-            print(result)
             if not result.single():
                 raise RuntimeError('Failed to update the resource {uri} description'.format(uri=uri))
 

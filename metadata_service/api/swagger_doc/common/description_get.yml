@@ -13,7 +13,7 @@ parameters:
     example: 'dynamo://gold.test_schema/test_table2'
 responses:
   200:
-    description: 'Table description'
+    description: 'Resource description'
     content:
       application/json:
         schema:
