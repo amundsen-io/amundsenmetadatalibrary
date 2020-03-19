@@ -4,7 +4,7 @@ tags:
   - 'table'
   - 'dashboard'
 parameters:
-  - name: table_uri
+  - name: id
     in: path
     type: string
     schema:
