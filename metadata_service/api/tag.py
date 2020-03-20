@@ -20,6 +20,9 @@ tag_usage_fields = {
 }
 
 
+BADGE_TYPE = 'badge'
+
+
 class TagAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
@@ -51,7 +54,7 @@ class TagCommon:
         """
 
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
-        if tag_type == 'badge':
+        if tag_type == BADGE_TYPE:
             # need to check whether the badge is part of the whitelist:
             if tag not in whitelist_badges:
                 return \
