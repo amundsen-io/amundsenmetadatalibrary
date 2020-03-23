@@ -5,6 +5,7 @@ import logging.config
 import os
 import sys
 from typing import Dict, Any  # noqa: F401
+from flask_cors import CORS
 
 from flasgger import Swagger
 from flask import Flask, Blueprint
@@ -60,6 +61,7 @@ def create_app(*, config_module_class: str) -> Flask:
 
     else:
         app = Flask(__name__)
+        CORS(app)
 
     config_module_class = \
         os.getenv('METADATA_SVC_CONFIG_MODULE_CLASS') or config_module_class
