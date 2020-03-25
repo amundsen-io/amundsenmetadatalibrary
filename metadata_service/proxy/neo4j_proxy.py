@@ -822,6 +822,38 @@ class Neo4jProxy(BaseProxy):
                           manager_fullname=manager_name)
 
     @staticmethod
+    def _get_user_resource_relationship_clause(relation_type: UserResourceRel, id: str = None,
+                                               user_key: str = None,
+                                               resource_type: ResourceType = ResourceType.Table) -> str:
+        """
+        Returns the relationship clause of a cypher query between users and tables
+        The User node is 'usr', the table node is 'tbl', and the relationship is 'rel'
+        e.g. (usr:User)-[rel:READ]->(tbl:Table), (usr)-[rel:READ]->(tbl)
+        """
+        tbl_matcher: str = ''
+        user_matcher: str = ''
+
+        if id is not None:
+            tbl_matcher += ':{}'.format(resource_type.name)
+            if id != '':
+                tbl_matcher += ' {key: $resource_key}'
+
+        if user_key is not None:
+            user_matcher += ':User'
+            if user_key != '':
+                user_matcher += ' {key: $user_key}'
+
+        if relation_type == UserResourceRel.follow:
+            relation = f'(usr{user_matcher})-[rel:FOLLOW]->(tbl{tbl_matcher})'
+        elif relation_type == UserResourceRel.own:
+            relation = f'(usr{user_matcher})<-[rel:OWNER]-(tbl{tbl_matcher})'
+        elif relation_type == UserResourceRel.read:
+            relation = f'(usr{user_matcher})-[rel:READ]->(tbl{tbl_matcher})'
+        else:
+            raise NotImplementedError(f'The relation type {relation_type} is not defined!')
+        return relation
+
+    @staticmethod
     def _get_user_table_relationship_clause(relation_type: UserResourceRel, tbl_key: str = None,
                                             user_key: str = None) -> str:
         """
@@ -920,10 +952,11 @@ class Neo4jProxy(BaseProxy):
         return {'table': results}
 
     @timer_with_counter
-    def add_table_relation_by_user(self, *,
-                                   table_uri: str,
-                                   user_email: str,
-                                   relation_type: UserResourceRel) -> None:
+    def add_resource_relation_by_user(self, *,
+                                      id: str,
+                                      user_email: str,
+                                      relation_type: UserResourceRel,
+                                      resource_type: ResourceType) -> None:
         """
         Update table user informations.
         1. Do a upsert of the user node.
@@ -940,26 +973,28 @@ class Neo4jProxy(BaseProxy):
         on CREATE SET u={email: $user_email, key: $user_email}
         """)
 
-        user_email_clause = f'key: "{user_email}"'
-        tbl_key = f'key: "{table_uri}"'
+        rel_clause: str = self._get_user_resource_relationship_clause(relation_type=relation_type,
+                                                                      resource_type=resource_type)
+        LOGGER.info('rel_clause: {}'.format(rel_clause))
 
-        rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type)
-        upsert_user_relation_query = textwrap.dedent(f"""
-        MATCH (usr:User {{{user_email_clause}}}), (tbl:Table {{{tbl_key}}})
+        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type)
+        upsert_user_relation_query = textwrap.dedent("""
+        MATCH (usr:User {{key: $user_key}}), (tbl:{resource_type} {{key: $resource_key}})
         MERGE {rel_clause}
         RETURN usr.key, tbl.key
-        """)
+        """.format(resource_type=resource_type.name,
+                   rel_clause=rel_clause))
 
         try:
             tx = self._driver.session().begin_transaction()
             # upsert the node
             tx.run(upsert_user_query, {'user_email': user_email})
-            result = tx.run(upsert_user_relation_query, {})
+            result = tx.run(upsert_user_relation_query, {'user_key': user_email, 'resource_key': id})
 
             if not result.single():
                 raise RuntimeError('Failed to create relation between '
-                                   'user {user} and table {tbl}'.format(user=user_email,
-                                                                        tbl=table_uri))
+                                   'user {user} and resource {id}'.format(user=user_email,
+                                                                          id=id))
             tx.commit()
         except Exception as e:
             if not tx.closed():
@@ -969,11 +1004,67 @@ class Neo4jProxy(BaseProxy):
         finally:
             tx.close()
 
+    # @timer_with_counter
+    # def add_table_relation_by_user(self, *,
+    #                                table_uri: str,
+    #                                user_email: str,
+    #                                relation_type: UserResourceRel) -> None:
+    #
+    #     self.add_resource_relation_by_user(id=table_uri,
+    #                                        user_email=user_email,
+    #                                        relation_type=relation_type,
+    #                                        resource_type=ResourceType.Table)
+        # """
+        # Update table user informations.
+        # 1. Do a upsert of the user node.
+        # 2. Do a upsert of the relation/reverse-relation edge.
+        #
+        # :param table_uri:
+        # :param user_email:
+        # :param relation_type:
+        # :return:
+        # """
+        #
+        # upsert_user_query = textwrap.dedent("""
+        # MERGE (u:User {key: $user_email})
+        # on CREATE SET u={email: $user_email, key: $user_email}
+        # """)
+        #
+        # user_email_clause = f'key: "{user_email}"'
+        # tbl_key = f'key: "{table_uri}"'
+        #
+        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type)
+        # upsert_user_relation_query = textwrap.dedent(f"""
+        # MATCH (usr:User {{{user_email_clause}}}), (tbl:Table {{{tbl_key}}})
+        # MERGE {rel_clause}
+        # RETURN usr.key, tbl.key
+        # """)
+        #
+        # try:
+        #     tx = self._driver.session().begin_transaction()
+        #     # upsert the node
+        #     tx.run(upsert_user_query, {'user_email': user_email})
+        #     result = tx.run(upsert_user_relation_query, {})
+        #
+        #     if not result.single():
+        #         raise RuntimeError('Failed to create relation between '
+        #                            'user {user} and table {tbl}'.format(user=user_email,
+        #                                                                 tbl=table_uri))
+        #     tx.commit()
+        # except Exception as e:
+        #     if not tx.closed():
+        #         tx.rollback()
+        #     # propagate the exception back to api
+        #     raise e
+        # finally:
+        #     tx.close()
+
     @timer_with_counter
-    def delete_table_relation_by_user(self, *,
-                                      table_uri: str,
-                                      user_email: str,
-                                      relation_type: UserResourceRel) -> None:
+    def delete_resource_relation_by_user(self, *,
+                                         id: str,
+                                         user_email: str,
+                                         relation_type: UserResourceRel,
+                                         resource_type: ResourceType) -> None:
         """
         Delete the relationship between user and resources.
 
@@ -982,18 +1073,23 @@ class Neo4jProxy(BaseProxy):
         :param relation_type:
         :return:
         """
-        rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type,
-                                                                   user_key=user_email,
-                                                                   tbl_key=table_uri)
+        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type,
+        #                                                            user_key=user_email,
+        #                                                            tbl_key=table_uri)
+        rel_clause: str = self._get_user_resource_relationship_clause(relation_type=relation_type,
+                                                                      resource_type=resource_type,
+                                                                      user_key=user_email,
+                                                                      id=id
+                                                                      )
 
-        delete_query = textwrap.dedent(f"""
+        delete_query = textwrap.dedent("""
         MATCH {rel_clause}
         DELETE rel
-        """)
+        """.format(rel_clause=rel_clause))
 
         try:
             tx = self._driver.session().begin_transaction()
-            tx.run(delete_query, {})
+            tx.run(delete_query, {'user_key': user_email, 'resource_key': id})
             tx.commit()
         except Exception as e:
             # propagate the exception back to api
@@ -1002,6 +1098,45 @@ class Neo4jProxy(BaseProxy):
             raise e
         finally:
             tx.close()
+
+    # @timer_with_counter
+    # def delete_table_relation_by_user(self, *,
+    #                                   table_uri: str,
+    #                                   user_email: str,
+    #                                   relation_type: UserResourceRel) -> None:
+    #     """
+    #     Delete the relationship between user and resources.
+    #
+    #     :param table_uri:
+    #     :param user_email:
+    #     :param relation_type:
+    #     :return:
+    #     """
+    #     self.delete_resource_relation_by_user(id=table_uri,
+    #                                           user_email=user_email,
+    #                                           relation_type=relation_type,
+    #                                           resource_type=ResourceType.Table)
+
+        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type,
+        #                                                            user_key=user_email,
+        #                                                            tbl_key=table_uri)
+        #
+        # delete_query = textwrap.dedent(f"""
+        # MATCH {rel_clause}
+        # DELETE rel
+        # """)
+        #
+        # try:
+        #     tx = self._driver.session().begin_transaction()
+        #     tx.run(delete_query, {})
+        #     tx.commit()
+        # except Exception as e:
+        #     # propagate the exception back to api
+        #     if not tx.closed():
+        #         tx.rollback()
+        #     raise e
+        # finally:
+        #     tx.close()
 
     @timer_with_counter
     def get_dashboard(self,

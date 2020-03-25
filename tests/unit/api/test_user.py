@@ -57,14 +57,14 @@ class UserFollowAPITest(unittest.TestCase):
         self.api = UserFollowAPI()
 
     def test_put(self) -> None:
-        response = self.api.put(user_id='username', resource_type='2', table_uri='3')
+        response = self.api.put(user_id='username', resource_type='table', table_uri='3')
         self.assertEqual(list(response)[1], HTTPStatus.OK)
-        self.mock_client.add_table_relation_by_user.assert_called_once()
+        self.mock_client.add_resource_relation_by_user.assert_called_once()
 
     def test_delete(self) -> None:
-        response = self.api.delete(user_id='username', resource_type='2', table_uri='3')
+        response = self.api.delete(user_id='username', resource_type='table', table_uri='3')
         self.assertEqual(list(response)[1], HTTPStatus.OK)
-        self.mock_client.delete_table_relation_by_user.assert_called_once()
+        self.mock_client.delete_resource_relation_by_user.assert_called_once()
 
 
 class UserOwnsAPITest(unittest.TestCase):

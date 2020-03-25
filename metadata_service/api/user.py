@@ -12,6 +12,7 @@ from metadata_service.api import BaseAPI
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 from metadata_service.util import UserResourceRel
+from metadata_service.entity.resource_type import to_resource_type
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,48 +82,53 @@ class UserFollowAPI(Resource):
     def put(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Create the follow relationship between user and resources.
-        todo: It will need to refactor all neo4j proxy api to take a type argument.
 
         :param user_id:
         :param table_uri:
         :return:
         """
         try:
-            self.client.add_table_relation_by_user(table_uri=table_uri,
-                                                   user_email=user_id,
-                                                   relation_type=UserResourceRel.follow)
-            return {'message': 'The user {} for table_uri {} '
+            self.client.add_resource_relation_by_user(id=table_uri,
+                                                      user_email=user_id,
+                                                      relation_type=UserResourceRel.follow,
+                                                      resource_type=to_resource_type(label=resource_type))
+
+            return {'message': 'The user {} for id {} resource type {} '
                                'is added successfully'.format(user_id,
-                                                              table_uri)}, HTTPStatus.OK
+                                                              table_uri,
+                                                              resource_type)}, HTTPStatus.OK
         except Exception as e:
             LOGGER.exception('UserFollowAPI PUT Failed')
-            return {'message': 'The user {} for table_uri {} '
+            return {'message': 'The user {} for id {} resource type {}'
                                'is not added successfully'.format(user_id,
-                                                                  table_uri)}, \
+                                                                  table_uri,
+                                                                  resource_type)}, \
                 HTTPStatus.INTERNAL_SERVER_ERROR
 
     @swag_from('swagger_doc/user/follow_delete.yml')
     def delete(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         """
         Delete the follow relationship between user and resources.
-        todo: It will need to refactor all neo4j proxy api to take a type argument.
 
         :param user_id:
         :param table_uri:
         :return:
         """
         try:
-            self.client.delete_table_relation_by_user(table_uri=table_uri,
-                                                      user_email=user_id,
-                                                      relation_type=UserResourceRel.follow)
-            return {'message': 'The user following {} for table_uri {} '
+            self.client.delete_resource_relation_by_user(id=table_uri,
+                                                         user_email=user_id,
+                                                         relation_type=UserResourceRel.follow,
+                                                         resource_type=to_resource_type(label=resource_type))
+            return {'message': 'The user following {} for id {} resource type {} '
                                'is deleted successfully'.format(user_id,
-                                                                table_uri)}, HTTPStatus.OK
+                                                                table_uri,
+                                                                resource_type)}, HTTPStatus.OK
         except Exception as e:
             LOGGER.exception('UserFollowAPI DELETE Failed')
-            return {'message': 'The user {} for table_uri {} '
+            return {'message': 'The user {} for id {} resource type {} '
                                'is not deleted successfully'.format(user_id,
-                                                                    table_uri)}, \
+                                                                    table_uri,
+                                                                    resource_type)}, \
                 HTTPStatus.INTERNAL_SERVER_ERROR
 
 

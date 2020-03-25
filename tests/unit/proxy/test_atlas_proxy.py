@@ -365,17 +365,17 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_add_resource_relation_by_user(self) -> None:
         reader_entity = self._mock_get_reader_entity()
         with patch.object(reader_entity, 'update') as mock_execute:
-            self.proxy.add_table_relation_by_user(table_uri=self.table_uri,
-                                                  user_email="test_user_id",
-                                                  relation_type=UserResourceRel.follow)
+            self.proxy._add_table_relation_by_user(table_uri=self.table_uri,
+                                                   user_email="test_user_id",
+                                                   relation_type=UserResourceRel.follow)
             mock_execute.assert_called_with()
 
     def test_delete_resource_relation_by_user(self) -> None:
         reader_entity = self._mock_get_reader_entity()
         with patch.object(reader_entity, 'update') as mock_execute:
-            self.proxy.delete_table_relation_by_user(table_uri=self.table_uri,
-                                                     user_email="test_user_id",
-                                                     relation_type=UserResourceRel.follow)
+            self.proxy._delete_table_relation_by_user(table_uri=self.table_uri,
+                                                      user_email="test_user_id",
+                                                      relation_type=UserResourceRel.follow)
             mock_execute.assert_called_with()
 
 
