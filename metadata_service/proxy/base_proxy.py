@@ -90,32 +90,18 @@ class BaseProxy(metaclass=ABCMeta):
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
         pass
 
-    # @abstractmethod
-    # def add_table_relation_by_user(self, *,
-    #                                table_uri: str,
-    #                                user_email: str,
-    #                                relation_type: UserResourceRel) -> None:
-    #     pass
-
     @abstractmethod
     def add_resource_relation_by_user(self, *,
                                       id: str,
-                                      user_email: str,
+                                      user_id: str,
                                       relation_type: UserResourceRel,
                                       resource_type: ResourceType) -> None:
         pass
 
-    # @abstractmethod
-    # def delete_table_relation_by_user(self, *,
-    #                                   table_uri: str,
-    #                                   user_email: str,
-    #                                   relation_type: UserResourceRel) -> None:
-    #     pass
-
     @abstractmethod
     def delete_resource_relation_by_user(self, *,
                                          id: str,
-                                         user_email: str,
+                                         user_id: str,
                                          relation_type: UserResourceRel,
                                          resource_type: ResourceType) -> None:
         pass

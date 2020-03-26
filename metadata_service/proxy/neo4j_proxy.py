@@ -954,7 +954,7 @@ class Neo4jProxy(BaseProxy):
     @timer_with_counter
     def add_resource_relation_by_user(self, *,
                                       id: str,
-                                      user_email: str,
+                                      user_id: str,
                                       relation_type: UserResourceRel,
                                       resource_type: ResourceType) -> None:
         """
@@ -963,7 +963,7 @@ class Neo4jProxy(BaseProxy):
         2. Do a upsert of the relation/reverse-relation edge.
 
         :param table_uri:
-        :param user_email:
+        :param user_id:
         :param relation_type:
         :return:
         """
@@ -988,12 +988,12 @@ class Neo4jProxy(BaseProxy):
         try:
             tx = self._driver.session().begin_transaction()
             # upsert the node
-            tx.run(upsert_user_query, {'user_email': user_email})
-            result = tx.run(upsert_user_relation_query, {'user_key': user_email, 'resource_key': id})
+            tx.run(upsert_user_query, {'user_email': user_id})
+            result = tx.run(upsert_user_relation_query, {'user_key': user_id, 'resource_key': id})
 
             if not result.single():
                 raise RuntimeError('Failed to create relation between '
-                                   'user {user} and resource {id}'.format(user=user_email,
+                                   'user {user} and resource {id}'.format(user=user_id,
                                                                           id=id))
             tx.commit()
         except Exception as e:
@@ -1004,72 +1004,17 @@ class Neo4jProxy(BaseProxy):
         finally:
             tx.close()
 
-    # @timer_with_counter
-    # def add_table_relation_by_user(self, *,
-    #                                table_uri: str,
-    #                                user_email: str,
-    #                                relation_type: UserResourceRel) -> None:
-    #
-    #     self.add_resource_relation_by_user(id=table_uri,
-    #                                        user_email=user_email,
-    #                                        relation_type=relation_type,
-    #                                        resource_type=ResourceType.Table)
-        # """
-        # Update table user informations.
-        # 1. Do a upsert of the user node.
-        # 2. Do a upsert of the relation/reverse-relation edge.
-        #
-        # :param table_uri:
-        # :param user_email:
-        # :param relation_type:
-        # :return:
-        # """
-        #
-        # upsert_user_query = textwrap.dedent("""
-        # MERGE (u:User {key: $user_email})
-        # on CREATE SET u={email: $user_email, key: $user_email}
-        # """)
-        #
-        # user_email_clause = f'key: "{user_email}"'
-        # tbl_key = f'key: "{table_uri}"'
-        #
-        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type)
-        # upsert_user_relation_query = textwrap.dedent(f"""
-        # MATCH (usr:User {{{user_email_clause}}}), (tbl:Table {{{tbl_key}}})
-        # MERGE {rel_clause}
-        # RETURN usr.key, tbl.key
-        # """)
-        #
-        # try:
-        #     tx = self._driver.session().begin_transaction()
-        #     # upsert the node
-        #     tx.run(upsert_user_query, {'user_email': user_email})
-        #     result = tx.run(upsert_user_relation_query, {})
-        #
-        #     if not result.single():
-        #         raise RuntimeError('Failed to create relation between '
-        #                            'user {user} and table {tbl}'.format(user=user_email,
-        #                                                                 tbl=table_uri))
-        #     tx.commit()
-        # except Exception as e:
-        #     if not tx.closed():
-        #         tx.rollback()
-        #     # propagate the exception back to api
-        #     raise e
-        # finally:
-        #     tx.close()
-
     @timer_with_counter
     def delete_resource_relation_by_user(self, *,
                                          id: str,
-                                         user_email: str,
+                                         user_id: str,
                                          relation_type: UserResourceRel,
                                          resource_type: ResourceType) -> None:
         """
         Delete the relationship between user and resources.
 
         :param table_uri:
-        :param user_email:
+        :param user_id:
         :param relation_type:
         :return:
         """
@@ -1078,7 +1023,7 @@ class Neo4jProxy(BaseProxy):
         #                                                            tbl_key=table_uri)
         rel_clause: str = self._get_user_resource_relationship_clause(relation_type=relation_type,
                                                                       resource_type=resource_type,
-                                                                      user_key=user_email,
+                                                                      user_key=user_id,
                                                                       id=id
                                                                       )
 
@@ -1089,7 +1034,7 @@ class Neo4jProxy(BaseProxy):
 
         try:
             tx = self._driver.session().begin_transaction()
-            tx.run(delete_query, {'user_key': user_email, 'resource_key': id})
+            tx.run(delete_query, {'user_key': user_id, 'resource_key': id})
             tx.commit()
         except Exception as e:
             # propagate the exception back to api
@@ -1098,45 +1043,6 @@ class Neo4jProxy(BaseProxy):
             raise e
         finally:
             tx.close()
-
-    # @timer_with_counter
-    # def delete_table_relation_by_user(self, *,
-    #                                   table_uri: str,
-    #                                   user_email: str,
-    #                                   relation_type: UserResourceRel) -> None:
-    #     """
-    #     Delete the relationship between user and resources.
-    #
-    #     :param table_uri:
-    #     :param user_email:
-    #     :param relation_type:
-    #     :return:
-    #     """
-    #     self.delete_resource_relation_by_user(id=table_uri,
-    #                                           user_email=user_email,
-    #                                           relation_type=relation_type,
-    #                                           resource_type=ResourceType.Table)
-
-        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type,
-        #                                                            user_key=user_email,
-        #                                                            tbl_key=table_uri)
-        #
-        # delete_query = textwrap.dedent(f"""
-        # MATCH {rel_clause}
-        # DELETE rel
-        # """)
-        #
-        # try:
-        #     tx = self._driver.session().begin_transaction()
-        #     tx.run(delete_query, {})
-        #     tx.commit()
-        # except Exception as e:
-        #     # propagate the exception back to api
-        #     if not tx.closed():
-        #         tx.rollback()
-        #     raise e
-        # finally:
-        #     tx.close()
 
     @timer_with_counter
     def get_dashboard(self,

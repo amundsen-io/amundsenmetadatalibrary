@@ -149,14 +149,14 @@ class AbstractGremlinProxy(BaseProxy):
 
     def add_resource_relation_by_user(self, *,
                                       id: str,
-                                      user_email: str,
+                                      user_id: str,
                                       relation_type: UserResourceRel,
                                       resource_type: ResourceType) -> None:
         pass
 
     def delete_resource_relation_by_user(self, *,
                                          id: str,
-                                         user_email: str,
+                                         user_id: str,
                                          relation_type: UserResourceRel,
                                          resource_type: ResourceType) -> None:
         pass

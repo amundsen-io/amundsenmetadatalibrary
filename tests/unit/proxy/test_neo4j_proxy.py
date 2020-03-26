@@ -598,7 +598,7 @@ class TestNeo4jProxy(unittest.TestCase):
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.add_resource_relation_by_user(id='dummy_uri',
-                                                      user_email='tester',
+                                                      user_id='tester',
                                                       relation_type=UserResourceRel.follow,
                                                       resource_type=ResourceType.Table)
             self.assertEquals(mock_run.call_count, 2)
@@ -619,7 +619,7 @@ class TestNeo4jProxy(unittest.TestCase):
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.delete_resource_relation_by_user(id='dummy_uri',
-                                                         user_email='tester',
+                                                         user_id='tester',
                                                          relation_type=UserResourceRel.follow,
                                                          resource_type=ResourceType.Table)
             self.assertEquals(mock_run.call_count, 1)

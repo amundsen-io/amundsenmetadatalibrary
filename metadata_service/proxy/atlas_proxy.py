@@ -568,7 +568,7 @@ class AtlasProxy(BaseProxy):
 
     def add_resource_relation_by_user(self, *,
                                       id: str,
-                                      user_email: str,
+                                      user_id: str,
                                       relation_type: UserResourceRel,
                                       resource_type: ResourceType) -> None:
 
@@ -576,7 +576,7 @@ class AtlasProxy(BaseProxy):
             raise NotImplemented('resource type {} is not supported'.format(resource_type))
 
         self._add_table_relation_by_user(table_uri=id,
-                                         user_email=user_email,
+                                         user_email=user_id,
                                          relation_type=relation_type)
 
     def _add_table_relation_by_user(self, *,
@@ -590,14 +590,14 @@ class AtlasProxy(BaseProxy):
 
     def delete_resource_relation_by_user(self, *,
                                          id: str,
-                                         user_email: str,
+                                         user_id: str,
                                          relation_type: UserResourceRel,
                                          resource_type: ResourceType) -> None:
         if resource_type is not ResourceType.Table:
             raise NotImplemented('resource type {} is not supported'.format(resource_type))
 
         self._delete_table_relation_by_user(table_uri=id,
-                                            user_email=user_email,
+                                            user_email=user_id,
                                             relation_type=relation_type)
 
     def _delete_table_relation_by_user(self, *,
