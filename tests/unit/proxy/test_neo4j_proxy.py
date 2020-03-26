@@ -807,6 +807,37 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_run.assert_called_with(expected_stmt, {'desc_key': 'test_dashboard/_description',
                                                         'key': 'test_dashboard'})
 
+    def test_user_resource_relation_clause(self) -> None:
+        with patch.object(GraphDatabase, 'driver'):
+            neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
+            actual = neo4j_proxy._get_user_resource_relationship_clause(UserResourceRel.follow,
+                                                                        id='foo',
+                                                                        user_key='bar',
+                                                                        resource_type=ResourceType.Table)
+            expected = '(usr:User {key: $user_key})-[rel:FOLLOW]->(resource:Table {key: $resource_key})'
+            self.assertEqual(expected, actual)
+
+            actual = neo4j_proxy._get_user_resource_relationship_clause(UserResourceRel.read,
+                                                                        id='foo',
+                                                                        user_key='bar',
+                                                                        resource_type=ResourceType.Table)
+            expected = '(usr:User {key: $user_key})-[rel:READ]->(resource:Table {key: $resource_key})'
+            self.assertEqual(expected, actual)
+
+            actual = neo4j_proxy._get_user_resource_relationship_clause(UserResourceRel.own,
+                                                                        id='foo',
+                                                                        user_key='bar',
+                                                                        resource_type=ResourceType.Table)
+            expected = '(usr:User {key: $user_key})<-[rel:OWNER]-(resource:Table {key: $resource_key})'
+            self.assertEqual(expected, actual)
+
+            actual = neo4j_proxy._get_user_resource_relationship_clause(UserResourceRel.follow,
+                                                                        id='foo',
+                                                                        user_key='bar',
+                                                                        resource_type=ResourceType.Dashboard)
+            expected = '(usr:User {key: $user_key})-[rel:FOLLOW]->(resource:Dashboard {key: $resource_key})'
+            self.assertEqual(expected, actual)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -830,13 +830,13 @@ class Neo4jProxy(BaseProxy):
         The User node is 'usr', the table node is 'tbl', and the relationship is 'rel'
         e.g. (usr:User)-[rel:READ]->(tbl:Table), (usr)-[rel:READ]->(tbl)
         """
-        tbl_matcher: str = ''
+        resource_matcher: str = ''
         user_matcher: str = ''
 
         if id is not None:
-            tbl_matcher += ':{}'.format(resource_type.name)
+            resource_matcher += ':{}'.format(resource_type.name)
             if id != '':
-                tbl_matcher += ' {key: $resource_key}'
+                resource_matcher += ' {key: $resource_key}'
 
         if user_key is not None:
             user_matcher += ':User'
@@ -844,11 +844,11 @@ class Neo4jProxy(BaseProxy):
                 user_matcher += ' {key: $user_key}'
 
         if relation_type == UserResourceRel.follow:
-            relation = f'(usr{user_matcher})-[rel:FOLLOW]->(tbl{tbl_matcher})'
+            relation = f'(usr{user_matcher})-[rel:FOLLOW]->(resource{resource_matcher})'
         elif relation_type == UserResourceRel.own:
-            relation = f'(usr{user_matcher})<-[rel:OWNER]-(tbl{tbl_matcher})'
+            relation = f'(usr{user_matcher})<-[rel:OWNER]-(resource{resource_matcher})'
         elif relation_type == UserResourceRel.read:
-            relation = f'(usr{user_matcher})-[rel:READ]->(tbl{tbl_matcher})'
+            relation = f'(usr{user_matcher})-[rel:READ]->(resource{resource_matcher})'
         else:
             raise NotImplementedError(f'The relation type {relation_type} is not defined!')
         return relation
@@ -977,9 +977,9 @@ class Neo4jProxy(BaseProxy):
                                                                       resource_type=resource_type)
 
         upsert_user_relation_query = textwrap.dedent("""
-        MATCH (usr:User {{key: $user_key}}), (tbl:{resource_type} {{key: $resource_key}})
+        MATCH (usr:User {{key: $user_key}}), (resource:{resource_type} {{key: $resource_key}})
         MERGE {rel_clause}
-        RETURN usr.key, tbl.key
+        RETURN usr.key, resource.key
         """.format(resource_type=resource_type.name,
                    rel_clause=rel_clause))
 
