@@ -975,9 +975,7 @@ class Neo4jProxy(BaseProxy):
 
         rel_clause: str = self._get_user_resource_relationship_clause(relation_type=relation_type,
                                                                       resource_type=resource_type)
-        LOGGER.info('rel_clause: {}'.format(rel_clause))
 
-        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type)
         upsert_user_relation_query = textwrap.dedent("""
         MATCH (usr:User {{key: $user_key}}), (tbl:{resource_type} {{key: $resource_key}})
         MERGE {rel_clause}
@@ -1018,9 +1016,6 @@ class Neo4jProxy(BaseProxy):
         :param relation_type:
         :return:
         """
-        # rel_clause: str = self._get_user_table_relationship_clause(relation_type=relation_type,
-        #                                                            user_key=user_email,
-        #                                                            tbl_key=table_uri)
         rel_clause: str = self._get_user_resource_relationship_clause(relation_type=relation_type,
                                                                       resource_type=resource_type,
                                                                       user_key=user_id,
