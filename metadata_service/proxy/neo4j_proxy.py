@@ -869,6 +869,11 @@ class Neo4jProxy(BaseProxy):
                                                                       resource_type=ResourceType.Dashboard,
                                                                       user_key=user_email)
 
+        # FYI, to extract last_successful_execution, it searches for its execution ID which is always
+        # _last_successful_execution
+        # https://github.com/lyft/amundsendatabuilder/blob/master/databuilder/models/dashboard/dashboard_execution.py#L18
+        # https://github.com/lyft/amundsendatabuilder/blob/master/databuilder/models/dashboard/dashboard_execution.py#L24
+
         query = textwrap.dedent(f"""
         MATCH {rel_clause}<-[:DASHBOARD]-(dg:Dashboardgroup)<-[:DASHBOARD_GROUP]-(clstr:Cluster)
         OPTIONAL MATCH (resource)-[:DESCRIPTION]->(dscrpt:Description)
