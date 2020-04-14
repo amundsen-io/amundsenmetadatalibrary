@@ -314,7 +314,7 @@ components:
               $ref: '#/components/schemas/TagFields'
         recent_view_count:
           type: int
-          description: 'Dashboard recent view count'
+          description: 'Dashboard recent view count. Not using explicit duration, as it is up to timely ingestion and timely removal of stale data'
           example: 1024
     DashboardSummary:
       type: object
