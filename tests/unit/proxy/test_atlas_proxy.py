@@ -45,7 +45,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
             }
         else:
             mocked_entity.referredEntities = {}
-        self.proxy._get_table_entity = MagicMock(return_value=mocked_entity)
+        self.proxy._get_table_entity = MagicMock(return_value=mocked_entity)  # type: ignore
         return mocked_entity
 
     def _mock_get_reader_entity(self, entity: Optional[Any] = None) -> Any:

@@ -1,7 +1,7 @@
 import logging
 import re
 from random import randint
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Union
 
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Column, Statistics, Table, Tag, User

@@ -12,7 +12,6 @@ class Data:
         ]
     }
 
-
     test_column = {
         'guid': 'COLUMN_GUID',
         'typeName': 'COLUMN',
