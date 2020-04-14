@@ -595,6 +595,7 @@ class TestNeo4jProxy(unittest.TestCase):
                     'name': 'dashboard',
                     'url': 'http://foo.bar/dashboard',
                     'description': 'description',
+                    'product': 'mode',
                     'last_successful_run_timestamp': 1234567890
                 }
             ]
@@ -608,6 +609,7 @@ class TestNeo4jProxy(unittest.TestCase):
                                         group_name='dashboard_group',
                                         group_url='http://foo.bar/group',
                                         name='dashboard',
+                                        product='mode',
                                         url='http://foo.bar/dashboard',
                                         description='description',
                                         last_successful_run_timestamp=1234567890)

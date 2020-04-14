@@ -880,7 +880,7 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (resource)-[:EXECUTED]->(last_exec:Execution)
         WHERE split(last_exec.key, '/')[5] = '_last_successful_execution'
         RETURN clstr.name as cluster_name, dg.name as dg_name, dg.dashboard_group_url as dg_url,
-        resource.key as uri, resource.name as name, resource.dashboard_url as url,
+        resource.key as uri, resource.name as name, resource.dashboard_url as url, 'mode' as product,
         dscrpt.description as description, last_exec.timestamp as last_successful_run_timestamp""")
 
         records = self._execute_cypher_query(statement=query, param_dict={'user_key': user_email})
@@ -900,6 +900,7 @@ class Neo4jProxy(BaseProxy):
                 group_url=record['dg_url'],
                 name=record['name'],
                 url=record['url'],
+                product=record['product'],
                 description=record['description'],
                 last_successful_run_timestamp=record['last_successful_run_timestamp'],
             ))
