@@ -182,8 +182,8 @@ class AtlasProxy(BaseProxy):
                            'user': {'guid': user_guid}}
         }
 
-        readers = table_entity.entity[self.ATTRS_KEY]['readers'].append(reader_entity)
-        table_entity.entity[self.ATTRS_KEY]['readers'] = readers
+        self._driver.entity_post.create(data=reader_entity)
+        table_entity.entity[self.ATTRS_KEY]['readers'].append(reader_entity)
         table_entity.update()
 
     def _get_reader_entity(self, table_uri: str, user_id: str) -> EntityUniqueAttribute:
@@ -447,20 +447,8 @@ class AtlasProxy(BaseProxy):
                                 'sortOrder': 'DESCENDING',
                                 'excludeDeletedEntities': True,
                                 'limit': num_entries}
-
-        table_entities: List = list()
-
-        try:
-            search_results = self._driver.search_basic.create(data=popular_query_params)
-            for table in search_results.entities:
-                table_entities.append(table)
-
-        except (KeyError, TypeError) as ex:
-            LOGGER.exception(f'get_popular_tables Failed : {ex}')
-            raise NotFoundException('Unable to fetch popular tables. '
-                                    'Please check your configurations.')
-
-        for table in table_entities:
+        search_results = self._driver.search_basic.create(data=popular_query_params)
+        for table in search_results.entities:
             table_attrs = table.attributes
 
             table_qn = parse_table_qualified_name(
