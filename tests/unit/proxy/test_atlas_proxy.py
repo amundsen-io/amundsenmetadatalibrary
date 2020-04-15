@@ -149,14 +149,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
         result = MagicMock(return_value=table_collection)
 
         with patch.object(self.proxy._driver.search_basic, 'create', result):
-            entities_collection = MagicMock()
-            entities_collection.entities = [self.to_class(self.entity1), self.to_class(self.entity2)]
-
-            self.proxy._driver.entity_bulk = MagicMock(return_value=[entities_collection])
 
             response = self.proxy.get_popular_tables(num_entries=2)
-
-            self.assertEqual(self.proxy._driver.entity_bulk.call_count, 1)
 
             ent1_attrs = cast(dict, self.entity1['attributes'])
             ent2_attrs = cast(dict, self.entity2['attributes'])

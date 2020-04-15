@@ -451,18 +451,9 @@ class AtlasProxy(BaseProxy):
         table_entities: List = list()
 
         try:
-            popular_tables_guids = list()
-
             search_results = self._driver.search_basic.create(data=popular_query_params)
             for table in search_results.entities:
-                popular_tables_guids.append(table.guid)
-
-            # In order to get comments and other extra fields from table entity
-            table_collection = self._driver.entity_bulk(guid=popular_tables_guids,
-                                                        ignoreRelationships=True)
-
-            for _collection in table_collection:
-                table_entities.extend(_collection.entities)
+                table_entities.append(table)
 
         except (KeyError, TypeError) as ex:
             LOGGER.exception(f'get_popular_tables Failed : {ex}')
