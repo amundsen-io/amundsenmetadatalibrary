@@ -172,11 +172,8 @@ class UserOwnsAPI(Resource):
 
             resources = self.client.get_table_by_user_relation(user_email=user_id,
                                                                relation_type=UserResourceRel.own)
-            LOGGER.info('resources1 : {}'.format(resources))
             if resources and table_key in resources and len(resources[table_key]) > 0:
                 result[table_key] = PopularTableSchema(many=True).dump(resources[table_key]).data
-
-            LOGGER.info('result1: {}'.format(result))
 
             resources = self.client.get_dashboard_by_user_relation(user_email=user_id,
                                                                    relation_type=UserResourceRel.own)
