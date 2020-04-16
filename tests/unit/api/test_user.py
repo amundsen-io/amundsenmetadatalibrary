@@ -108,6 +108,7 @@ class UserOwnsAPITest(unittest.TestCase):
         response = self.api.get(user_id='username')
         self.assertEqual(list(response)[1], HTTPStatus.OK)
         self.mock_client.get_table_by_user_relation.assert_called_once()
+        self.mock_client.get_dashboard_by_user_relation.assert_called_once()
 
 
 class UserOwnAPITest(unittest.TestCase):
