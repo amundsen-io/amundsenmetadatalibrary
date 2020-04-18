@@ -98,7 +98,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
         col_attrs = cast(dict, self.test_column['attributes'])
         exp_col_stats = list()
 
-        for stats in col_attrs['statistics']:
+        for stats in self.test_exp_col_stats:
             exp_col_stats.append(
                 Statistics(
                     stat_type=stats['attributes']['stat_name'],
@@ -107,6 +107,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
                     end_epoch=stats['attributes']['end_epoch'],
                 )
             )
+
         exp_col = Column(name=col_attrs['name'],
                          description='column description',
                          col_type='Managed',

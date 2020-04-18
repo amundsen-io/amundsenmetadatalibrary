@@ -24,13 +24,13 @@ class Data:
             'statistics': [
                 {'attributes': {
                     'stat_name': 'max',
-                    'stat_val': '100',
+                    'stat_val': 100.00,
                     'start_epoch': '100',
                     'end_epoch': '200',
                 }},
                 {'attributes': {
                     'stat_name': 'min',
-                    'stat_val': '0',
+                    'stat_val': 0.00,
                     'start_epoch': '100',
                     'end_epoch': '200',
                 }},
@@ -38,6 +38,21 @@ class Data:
         },
 
     }
+
+    test_exp_col_stats = [
+        {'attributes': {
+            'stat_name': 'maximum',
+            'stat_val': '100.00',
+            'start_epoch': '100',
+            'end_epoch': '200',
+        }},
+        {'attributes': {
+            'stat_name': 'minimum',
+            'stat_val': '0.00',
+            'start_epoch': '100',
+            'end_epoch': '200',
+        }},
+    ]
 
     db_entity = {
         'guid': '-100',

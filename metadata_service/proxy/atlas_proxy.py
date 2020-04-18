@@ -26,6 +26,15 @@ from metadata_service.util import UserResourceRel
 
 LOGGER = logging.getLogger(__name__)
 
+STATS_FORMAT_SPEC = {
+    'standard deviation': dict(format='{:,.2f}'),
+    'mean': dict(format='{:,.2f}'),
+    'max': dict(new_name='maximum', format='{:,.2f}'),
+    'min': dict(new_name='minimum', format='{:,.2f}'),
+    'completeness': dict(format='{:.2%}'),
+    'approximateNumDistinctValues': dict(new_name='distinct values', format='{:,.0f}')
+}
+
 # Expire cache every 11 hours + jitter
 _ATLAS_PROXY_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
@@ -258,14 +267,28 @@ class AtlasProxy(BaseProxy):
 
             for stats in col_attrs.get('statistics') or list():
                 stats_attrs = stats['attributes']
-                statistics.append(
-                    Statistics(
-                        stat_type=stats_attrs.get('stat_name'),
-                        stat_val=stats_attrs.get('stat_val'),
-                        start_epoch=stats_attrs.get('start_epoch'),
-                        end_epoch=stats_attrs.get('end_epoch'),
+
+                stat_type = stats_attrs.get('stat_name')
+
+                stat_format = STATS_FORMAT_SPEC.get(stat_type)
+
+                if stat_format:
+                    stat_type = stat_format.get('new_name', stat_type)
+
+                    stat_val = stats_attrs.get('stat_val')
+                    stat_val = stat_format.get('format', '{}').format(stat_val)
+
+                    start_epoch = stats_attrs.get('start_epoch')
+                    end_epoch = stats_attrs.get('end_epoch')
+
+                    statistics.append(
+                        Statistics(
+                            stat_type=stat_type,
+                            stat_val=stat_val,
+                            start_epoch=start_epoch,
+                            end_epoch=end_epoch,
+                        )
                     )
-                )
 
             columns.append(
                 Column(
