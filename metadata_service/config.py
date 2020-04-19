@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional   # noqa: F401
+from typing import List, Optional  # noqa: F401
 
 # PROXY configuration keys
 PROXY_HOST = 'PROXY_HOST'
@@ -38,6 +38,21 @@ class Config:
 
     # The relationalAttribute name of Atlas Entity that identifies the database entity.
     ATLAS_DB_ATTRIBUTE = 'db'
+
+    # Configurable dictionary to influence format of column statistics displayed in UI
+    # The key is name of statistic and a value is a dictionary with optional keys:
+    #   new_name - how to rename statistic (if absent proxy will default to old name)
+    #   format - how to format numerical statistics (if absent, proxy will default to {})
+    #   drop - should given statistic not be displayed in UI (if absent, proxy will keep it)
+    ATLAS_STATISTICS_FORMAT_SPEC = {
+        'standard deviation': dict(format='{:,.2f}'),
+        'mean': dict(format='{:,.2f}'),
+        'max': dict(new_name='maximum', format='{:,.2f}'),
+        'min': dict(new_name='minimum', format='{:,.2f}'),
+        'completeness': dict(format='{:.2%}'),
+        'approximateNumDistinctValues': dict(new_name='distinct values', format='{:,.0f}', ),
+        'sum': dict(drop=True)
+    }
 
     # whitelist badges
     WHITELIST_BADGES: List[str] = []

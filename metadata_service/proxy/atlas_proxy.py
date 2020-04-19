@@ -26,15 +26,6 @@ from metadata_service.util import UserResourceRel
 
 LOGGER = logging.getLogger(__name__)
 
-STATS_FORMAT_SPEC = {
-    'standard deviation': dict(format='{:,.2f}'),
-    'mean': dict(format='{:,.2f}'),
-    'max': dict(new_name='maximum', format='{:,.2f}'),
-    'min': dict(new_name='minimum', format='{:,.2f}'),
-    'completeness': dict(format='{:.2%}'),
-    'approximateNumDistinctValues': dict(new_name='distinct values', format='{:,.0f}')
-}
-
 # Expire cache every 11 hours + jitter
 _ATLAS_PROXY_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
@@ -47,6 +38,7 @@ class AtlasProxy(BaseProxy):
     """
     TABLE_ENTITY = app.config['ATLAS_TABLE_ENTITY']
     DB_ATTRIBUTE = app.config['ATLAS_DB_ATTRIBUTE']
+    STATISTICS_FORMAT_SPEC = app.config['ATLAS_STATISTICS_FORMAT_SPEC']
     READER_TYPE = 'Reader'
     QN_KEY = 'qualifiedName'
     BKMARKS_KEY = 'isFollowing'
@@ -270,9 +262,9 @@ class AtlasProxy(BaseProxy):
 
                 stat_type = stats_attrs.get('stat_name')
 
-                stat_format = STATS_FORMAT_SPEC.get(stat_type)
+                stat_format = self.STATISTICS_FORMAT_SPEC.get(stat_type, dict())
 
-                if stat_format:
+                if not stat_format.get('drop', False):
                     stat_type = stat_format.get('new_name', stat_type)
 
                     stat_val = stats_attrs.get('stat_val')
