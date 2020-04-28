@@ -32,7 +32,7 @@ The key is name of statistic and a value is a dictionary with optional keys:
 * **drop** - should given statistic not be displayed in UI (if absent, proxy should keep it)
 
 Example (if you're using [deeque](https://aws.amazon.com/blogs/big-data/test-data-quality-at-scale-with-deequ/) library), you might want to:
-```shell python
+```python
 STATISTICS_FORMAT_SPEC = {
         'stdDev': dict(new_name='standard deviation', format='{:,.2f}'),
         'mean': dict(format='{:,.2f}'),
