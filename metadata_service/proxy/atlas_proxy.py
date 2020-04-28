@@ -38,7 +38,7 @@ class AtlasProxy(BaseProxy):
     """
     TABLE_ENTITY = app.config['ATLAS_TABLE_ENTITY']
     DB_ATTRIBUTE = app.config['ATLAS_DB_ATTRIBUTE']
-    STATISTICS_FORMAT_SPEC = app.config['ATLAS_STATISTICS_FORMAT_SPEC']
+    STATISTICS_FORMAT_SPEC = app.config['STATISTICS_FORMAT_SPEC']
     READER_TYPE = 'Reader'
     QN_KEY = 'qualifiedName'
     BKMARKS_KEY = 'isFollowing'
@@ -268,7 +268,13 @@ class AtlasProxy(BaseProxy):
                     stat_type = stat_format.get('new_name', stat_type)
 
                     stat_val = stats_attrs.get('stat_val')
-                    stat_val = stat_format.get('format', '{}').format(stat_val)
+
+                    format_val = stat_format.get('format')
+
+                    if format_val:
+                        stat_val = format_val.format(stat_val)
+                    else:
+                        stat_val = str(stat_val)
 
                     start_epoch = stats_attrs.get('start_epoch')
                     end_epoch = stats_attrs.get('end_epoch')
