@@ -88,7 +88,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
         self.assertEqual(ent.__repr__(), unique_attr_response.__repr__())
 
-    def _get_table(self, custom_stats_format=False) -> None:
+    def _get_table(self, custom_stats_format: bool = False) -> None:
         if custom_stats_format:
             test_exp_col = self.test_exp_col_stats_formatted
         else:
