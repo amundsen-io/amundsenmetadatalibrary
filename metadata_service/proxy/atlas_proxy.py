@@ -42,7 +42,7 @@ class AtlasProxy(BaseProxy):
     BOOKMARK_TYPE = 'Bookmark'
     USER_TYPE = 'User'
     QN_KEY = 'qualifiedName'
-    BOOMARK_ACTIVE_KEY = 'active'
+    BOOKMARK_ACTIVE_KEY = 'active'
     GUID_KEY = 'guid'
     ATTRS_KEY = 'attributes'
     REL_ATTRS_KEY = 'relationshipAttributes'
@@ -184,7 +184,7 @@ class AtlasProxy(BaseProxy):
             'entity': {
                 'typeName': self.BOOKMARK_TYPE,
                 'attributes': {'qualifiedName': bookmark_qn,
-                               self.BOOMARK_ACTIVE_KEY: True,
+                               self.BOOKMARK_ACTIVE_KEY: True,
                                'entityUri': table_uri,
                                'user': {'guid': user_guid},
                                'entity': {'guid': entity.entity[self.GUID_KEY]}}
@@ -569,7 +569,7 @@ class AtlasProxy(BaseProxy):
                         'attributeValue': f'.{user_email}.bookmark'
                     },
                     {
-                        'attributeName': self.BOOMARK_ACTIVE_KEY,
+                        'attributeName': self.BOOKMARK_ACTIVE_KEY,
                         'operator': 'eq',
                         'attributeValue': 'true'
                     }
@@ -614,7 +614,7 @@ class AtlasProxy(BaseProxy):
                                     relation_type: UserResourceRel) -> None:
 
         entity = self._get_bookmark_entity(entity_uri=table_uri, user_id=user_email)
-        entity.entity[self.ATTRS_KEY][self.BOOMARK_ACTIVE_KEY] = True
+        entity.entity[self.ATTRS_KEY][self.BOOKMARK_ACTIVE_KEY] = True
         entity.update()
 
     def delete_resource_relation_by_user(self, *,
@@ -634,7 +634,7 @@ class AtlasProxy(BaseProxy):
                                        user_email: str,
                                        relation_type: UserResourceRel) -> None:
         entity = self._get_bookmark_entity(entity_uri=table_uri, user_id=user_email)
-        entity.entity[self.ATTRS_KEY][self.BOOMARK_ACTIVE_KEY] = False
+        entity.entity[self.ATTRS_KEY][self.BOOKMARK_ACTIVE_KEY] = False
         entity.update()
 
     def get_dashboard(self,
