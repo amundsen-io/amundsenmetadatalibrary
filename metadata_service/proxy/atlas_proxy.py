@@ -215,34 +215,6 @@ class AtlasProxy(BaseProxy):
 
         self._driver.entity_post.create(data=bookmark_entity)
 
-    def user_exists(self, user_id: str) -> bool:
-        """
-        Verifies if given user exists in Atlas.
-        :param user_id: User's id
-        :return: True if user exists, otherwise False
-        """
-        user_entity = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_id)
-
-        return bool(user_entity.entity)
-
-    def create_user(self, user_id: str) -> None:
-        """
-        Creates a User entity.
-        :param user_id: User's id
-        :return:
-        """
-        user_entity = {
-            'entity': {
-                'typeName': self.USER_TYPE,
-                'attributes': {'qualifiedName': user_id}
-            }
-        }
-
-        try:
-            self._driver.entity_post.create(data=user_entity)
-        except Exception as ex:
-            LOGGER.error('Error creating user.', exc_info=True)
-
     def _get_bookmark_entity(self, entity_uri: str, user_id: str) -> EntityUniqueAttribute:
         """
         Fetch a Bookmark entity from parsing table uri and user id.
