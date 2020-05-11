@@ -111,6 +111,28 @@ class AtlasProxy(BaseProxy):
         result = pattern.match(table_uri)
         return result.groupdict() if result else dict()
 
+    def _parse_reader_qn(self, reader_qn: str) -> Dict:
+        """
+        Parse reader qualifiedName and extract the info
+        :param reader_qn:
+        :return: Dictionary object containing following information:
+        cluster: cluster information
+        db: Database name
+        name: Table name
+        """
+        pattern = re.compile(r"""
+        ^(?P<db>[^.]*)
+        \.
+        (?P<table>[^.]*)
+        \.
+        (?P<user_id>[^.]*)\.reader
+        \@
+        (?P<cluster>.*)
+        $
+        """, re.X)
+        result = pattern.match(reader_qn)
+        return result.groupdict() if result else dict()
+
     def _parse_bookmark_qn(self, bookmark_qn: str) -> Dict:
         """
         Parse bookmark qualifiedName and extract the info
@@ -201,10 +223,7 @@ class AtlasProxy(BaseProxy):
         """
         user_entity = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_id)
 
-        if not user_entity.entity:
-            return False
-        else:
-            return True
+        return bool(user_entity.entity)
 
     def create_user(self, user_id: str) -> None:
         """
