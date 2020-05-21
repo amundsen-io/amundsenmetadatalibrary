@@ -10,7 +10,7 @@ from flask_restful import Resource, reqparse
 from metadata_service.api import BaseAPI
 from metadata_service.api.tag import TagCommon
 from metadata_service.entity.resource_type import ResourceType
-from metadata_service.entity.dashboard_summaries import DashboardSummariesSchema
+from metadata_service.entity.dashboard_summary import DashboardSummarySchema
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 
@@ -157,13 +157,21 @@ class TableTagAPI(Resource):
 
 
 class TableDashboardAPI(BaseAPI):
+    """
+    TableDashboard API that supports GET operation providing list of Dashboards using a table.
+    """
 
     def __init__(self) -> None:
         self.client = get_proxy_client()
-        super().__init__(DashboardSummariesSchema, 'resources_using_table', self.client)
+        super().__init__(DashboardSummarySchema, 'resources_using_table', self.client)
 
     @swag_from('swagger_doc/table/dashboards_using_table_get.yml')
     def get(self, *, id: Optional[str] = None) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Supports GET operation providing list of Dashboards using a table.
+        :param id: Table URI
+        :return: See Swagger doc for the schema. swagger_doc/table/dashboards_using_table_get.yml
+        """
         try:
             return super().get_with_kwargs(id=id, resource_type=ResourceType.Dashboard)
         except NotFoundException:
