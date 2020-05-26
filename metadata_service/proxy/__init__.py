@@ -29,8 +29,9 @@ def get_proxy_client() -> BaseProxy:
             port = current_app.config[config.PROXY_PORT]
             user = current_app.config[config.PROXY_USER]
             password = current_app.config[config.PROXY_PASSWORD]
+            encrypted = current_app.config[config.PROXY_ENCRYPTED]
 
             client = import_string(current_app.config[config.PROXY_CLIENT])
-            _proxy_client = client(host=host, port=port, user=user, password=password)
+            _proxy_client = client(host=host, port=port, user=user, password=password, encrypted=encrypted)
 
     return _proxy_client

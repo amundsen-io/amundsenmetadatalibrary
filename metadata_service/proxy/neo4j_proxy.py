@@ -44,7 +44,8 @@ class Neo4jProxy(BaseProxy):
                  user: str = 'neo4j',
                  password: str = '',
                  num_conns: int = 50,
-                 max_connection_lifetime_sec: int = 100) -> None:
+                 max_connection_lifetime_sec: int = 100,
+                 encrypted: bool = False) -> None:
         """
         There's currently no request timeout from client side where server
         side can be enforced via "dbms.transaction.timeout"
@@ -56,10 +57,12 @@ class Neo4jProxy(BaseProxy):
         value needs to be smaller than surrounding network environment's timeout.
         """
         endpoint = f'{host}:{port}'
+        LOGGER.debug('Attempting bolt connection to {endpoint}'.format(endpoint=endpoint))
         self._driver = GraphDatabase.driver(endpoint, max_connection_pool_size=num_conns,
                                             connection_timeout=10,
                                             max_connection_lifetime=max_connection_lifetime_sec,
-                                            auth=(user, password))  # type: Driver
+                                            auth=(user, password),
+                                            encrypted=encrypted)  # type: Driver
 
     @timer_with_counter
     def get_table(self, *, table_uri: str) -> Table:
