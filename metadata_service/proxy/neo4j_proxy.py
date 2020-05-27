@@ -14,7 +14,7 @@ from amundsen_common.models.table import Tag
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
-from neo4j.v1 import BoltStatementResult, Driver, GraphDatabase  # noqa: F401
+from neo4j import BoltStatementResult, Driver, GraphDatabase  # noqa: F401
 
 from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.description import Description
