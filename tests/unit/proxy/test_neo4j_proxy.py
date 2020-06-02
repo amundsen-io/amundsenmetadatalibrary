@@ -734,7 +734,7 @@ class TestNeo4jProxy(unittest.TestCase):
                     ],
                     'charts': [{'name': 'chart1'}, {'name': 'chart2'}],
                     'queries': [{'name': 'query1'}, {'name': 'query2', 'url': 'http://foo.bar/query',
-                                                     'text': 'SELECT * FROM foo.bar'}],
+                                                     'query_text': 'SELECT * FROM foo.bar'}],
                     'tables': [
                         {
                             'database': 'db1',
@@ -799,7 +799,7 @@ class TestNeo4jProxy(unittest.TestCase):
                                        query_names=['query1', 'query2'],
                                        queries=[DashboardQuery(name='query1'),
                                                 DashboardQuery(name='query2',url='http://foo.bar/query',
-                                                               text='SELECT * FROM foo.bar')],
+                                                               query_text='SELECT * FROM foo.bar')],
                                        tables=[
                                            PopularTable(database='db1',
                                                         name='table1',

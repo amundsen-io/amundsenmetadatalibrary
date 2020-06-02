@@ -8,7 +8,7 @@ from marshmallow_annotations.ext.attrs import AttrsSchema
 class DashboardQuery:
     name: Optional[str] = attr.ib(default=None)
     url: Optional[str] = attr.ib(default=None)
-    text: Optional[str] = attr.ib(default=None)
+    query_text: Optional[str] = attr.ib(default=None)
 
 
 class DashboardQuerySchema(AttrsSchema):
