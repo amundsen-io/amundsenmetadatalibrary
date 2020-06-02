@@ -798,7 +798,7 @@ class TestNeo4jProxy(unittest.TestCase):
                                        frequent_users=[], chart_names=['chart1', 'chart2'],
                                        query_names=['query1', 'query2'],
                                        queries=[DashboardQuery(name='query1'),
-                                                DashboardQuery(name='query2',url='http://foo.bar/query',
+                                                DashboardQuery(name='query2', url='http://foo.bar/query',
                                                                query_text='SELECT * FROM foo.bar')],
                                        tables=[
                                            PopularTable(database='db1',
