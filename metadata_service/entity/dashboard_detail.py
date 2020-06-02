@@ -28,7 +28,7 @@ class DashboardDetail:
     owners: List[User] = attr.ib(factory=list)
     frequent_users: List[User] = attr.ib(factory=list)
     chart_names: List[str] = attr.ib(factory=list)
-    query_names: List[str] = attr.ib(factory=list)
+    query_names: List[str] = attr.ib(factory=list)  # DEPRECATED
     queries: List[DashboardQuery] = attr.ib(factory=list)
     tables: List[PopularTable] = attr.ib(factory=list)
     tags: List[Tag] = attr.ib(factory=list)
