@@ -8,6 +8,7 @@ PROXY_PORT = 'PROXY_PORT'
 PROXY_USER = 'PROXY_USER'
 PROXY_PASSWORD = 'PROXY_PASSWORD'
 PROXY_ENCRYPTED = 'PROXY_ENCRYPTED'
+PROXY_VALIDATE_SSL = 'PROXY_VALIDATE_SSL'
 PROXY_CLIENT = 'PROXY_CLIENT'
 
 PROXY_CLIENTS = {
@@ -33,6 +34,8 @@ class Config:
     PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', 'test')
     PROXY_ENCRYPTED = True
     """Whether the connection to the proxy should use SSL/TLS encryption."""
+    PROXY_VALIDATE_SSL = True
+    """Whether the SSL/TLS certificate presented by the user should be validated against the system's trusted CAs."""
 
     IS_STATSD_ON = False
 
@@ -64,6 +67,7 @@ class LocalConfig(Config):
     PROXY_PORT = os.environ.get('PROXY_PORT', 7687)
     PROXY_CLIENT = PROXY_CLIENTS[os.environ.get('PROXY_CLIENT', 'NEO4J')]
     PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'True')))
+    PROXY_VALIDATE_SSL = bool(distutils.util.strtobool(os.environ.get(PROXY_VALIDATE_SSL, 'False')))
 
     JANUS_GRAPH_URL = None
 

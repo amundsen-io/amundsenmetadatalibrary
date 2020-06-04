@@ -56,12 +56,18 @@ class AtlasProxy(BaseProxy):
                  port: int,
                  user: str = 'admin',
                  password: str = '',
-                 encrypted: bool = False) -> None:
+                 encrypted: bool = False,
+                 validate_ssl: bool = False) -> None:
         """
         Initiate the Apache Atlas client with the provided credentials
         """
         protocol = 'https' if encrypted else 'http'
-        self._driver = Atlas(host=host, port=port, username=user, password=password, protocol=protocol)
+        self._driver = Atlas(host=host,
+                             port=port,
+                             username=user,
+                             password=password,
+                             protocol=protocol,
+                             validate_ssl=validate_ssl)
 
     def _get_ids_from_basic_search(self, *, params: Dict) -> List[str]:
         """
