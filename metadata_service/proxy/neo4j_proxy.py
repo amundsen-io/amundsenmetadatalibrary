@@ -820,6 +820,13 @@ class Neo4jProxy(BaseProxy):
 
     @staticmethod
     def _build_user_from_record(record: dict, manager_name: str = '') -> UserEntity:
+        """
+        Builds user record from Cypher query result. Other than the one defined in amundsen_common.models.user.User,
+        you could add more fields from User node into the User model by specifying keys in config.USER_OTHER_KEYS
+        :param record:
+        :param manager_name:
+        :return:
+        """
         other_key_values = {}
         if has_app_context() and current_app.config[config.USER_OTHER_KEYS]:
             for k in current_app.config[config.USER_OTHER_KEYS]:
