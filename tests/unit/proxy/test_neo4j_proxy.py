@@ -562,7 +562,6 @@ class TestNeo4jProxy(unittest.TestCase):
             neo4j_user = neo4j_proxy.get_user(id='test_email')
             self.assertEquals(neo4j_user.other_key_values, {'mode_user_id': 'mode_foo_bar'})
 
-
     def test_get_users(self) -> None:
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             test_user = {
