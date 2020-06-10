@@ -33,7 +33,7 @@ class Config:
 
     PROXY_USER = os.environ.get('CREDENTIALS_PROXY_USER', 'neo4j')
     PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', 'test')
-    PROXY_ENCRYPTED = True
+    PROXY_ENCRYPTED = False
     """Whether the connection to the proxy should use SSL/TLS encryption."""
     PROXY_VALIDATE_SSL = True
     """Whether the SSL/TLS certificate presented by the user should be validated against the system's trusted CAs."""
@@ -70,7 +70,7 @@ class LocalConfig(Config):
     PROXY_HOST = os.environ.get('PROXY_HOST', f'bolt://{LOCAL_HOST}')
     PROXY_PORT = os.environ.get('PROXY_PORT', 7687)
     PROXY_CLIENT = PROXY_CLIENTS[os.environ.get('PROXY_CLIENT', 'NEO4J')]
-    PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'True')))
+    PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'False')))
     PROXY_VALIDATE_SSL = bool(distutils.util.strtobool(os.environ.get(PROXY_VALIDATE_SSL, 'False')))
 
     JANUS_GRAPH_URL = None
