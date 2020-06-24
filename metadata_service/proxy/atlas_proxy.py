@@ -4,7 +4,7 @@ from random import randint
 from typing import Any, Dict, List, Union, Optional
 
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Column, Statistics, Table, Tag, User
+from amundsen_common.models.table import Column, Statistics, Table, Tag, User, TableReport
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from atlasclient.client import Atlas
@@ -47,6 +47,8 @@ class AtlasProxy(BaseProxy):
     ATTRS_KEY = 'attributes'
     REL_ATTRS_KEY = 'relationshipAttributes'
     ENTITY_URI_KEY = 'entityUri'
+    ENTITY_STATUS = 'status'
+    ENTITY_ACTIVE_STATUS = 'ACTIVE'
     _CACHE = CacheManager(**parse_cache_config_options({'cache.regions': 'atlas_proxy',
                                                         'cache.atlas_proxy.type': 'memory',
                                                         'cache.atlas_proxy.expire': _ATLAS_PROXY_CACHE_EXPIRY_SEC}))
@@ -356,6 +358,7 @@ class AtlasProxy(BaseProxy):
         or gathered from different entities.
         """
         entity = self._get_table_entity(table_uri=table_uri)
+
         table_details = entity.entity
 
         try:
@@ -375,6 +378,24 @@ class AtlasProxy(BaseProxy):
                     )
                 )
 
+            reports = []
+            for report in attrs.get("reports") or list():
+                LOGGER.info("Getting matadata for table Report GUID:{}".format(report.get("guid")))
+                report_entity = self._driver.entity_guid(report.get("guid"))
+
+                try:
+                    if report_entity.entity[self.ENTITY_STATUS] == self.ENTITY_ACTIVE_STATUS:
+                        report_attrs = report_entity.entity[self.ATTRS_KEY]
+                        reports.append(
+                            TableReport(
+                                name=report_attrs['name'],
+                                url=report_attrs['url']
+                            )
+                        )
+                except KeyError as ex:
+                    LOGGER.exception('Error while accessing table report guid {}. {}'
+                                     .format(report.get("guid"),str(ex)))
+
             columns = self._serialize_columns(entity=entity)
 
             table = Table(
@@ -385,9 +406,9 @@ class AtlasProxy(BaseProxy):
                 tags=tags,
                 description=attrs.get('description') or attrs.get('comment'),
                 owners=[User(email=attrs.get('owner'))],
+                table_reports=reports,
                 columns=columns,
                 last_updated_timestamp=self._parse_date(table_details.get('updateTime')))
-
             return table
         except KeyError as ex:
             LOGGER.exception('Error while accessing table information. {}'
