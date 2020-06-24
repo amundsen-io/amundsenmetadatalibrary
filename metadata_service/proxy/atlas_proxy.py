@@ -381,7 +381,6 @@ class AtlasProxy(BaseProxy):
             for report in attrs.get("reports") or list():
                 LOGGER.info("Getting matadata for table Report GUID:{}".format(report.get("guid")))
                 report_entity = self._driver.entity_guid(report.get("guid"))
-
                 try:
                     if report_entity.entity[self.ENTITY_STATUS] == self.ENTITY_ACTIVE_STATUS:
                         report_attrs = report_entity.entity[self.ATTRS_KEY]
@@ -393,7 +392,7 @@ class AtlasProxy(BaseProxy):
                         )
                 except KeyError as ex:
                     LOGGER.exception('Error while accessing table report guid {}. {}'
-                                     .format(report.get("guid"),str(ex)))
+                                     .format(report.get("guid"), str(ex)))
 
             columns = self._serialize_columns(entity=entity)
 

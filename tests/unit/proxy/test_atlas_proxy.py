@@ -3,9 +3,9 @@ import unittest
 from typing import Any, Dict, Optional, cast
 
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Column, Statistics, Table, Tag, User
+from amundsen_common.models.table import Column, Statistics, Table, Tag, User, ResourceReport
 from atlasclient.exceptions import BadRequest
-from mock import MagicMock, patch
+from mock import MagicMock, patch, Mock
 from tests.unit.proxy.fixtures.atlas_test_data import Data
 
 from metadata_service import create_app
@@ -88,6 +88,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
         self.assertEqual(ent.__repr__(), unique_attr_response.__repr__())
 
+    def _create_mocked_report_entity(self, entity):
+        mocked_report_entity = MagicMock()
+        mocked_report_entity.entity = entity
+        return mocked_report_entity
+
     def _get_table(self, custom_stats_format: bool = False) -> None:
         if custom_stats_format:
             test_exp_col = self.test_exp_col_stats_formatted
@@ -95,6 +100,10 @@ class TestAtlasProxy(unittest.TestCase, Data):
             test_exp_col = self.test_exp_col_stats_raw
 
         self._mock_get_table_entity()
+        self.proxy._driver.entity_guid = Mock()
+        self.proxy._driver.entity_guid.side_effect = [self._create_mocked_report_entity(report_entity)
+                                                      for report_entity in self.report_entities]
+
         response = self.proxy.get_table(table_uri=self.table_uri)
 
         classif_name = self.classification_entity['classifications'][0]['typeName']
@@ -126,8 +135,9 @@ class TestAtlasProxy(unittest.TestCase, Data):
                          description=ent_attrs['description'],
                          owners=[User(email=ent_attrs['owner'])],
                          last_updated_timestamp=int(str(self.entity1['updateTime'])[:10]),
+                         resource_reports=[ResourceReport(name='test_report', url='http://test'),
+                                           ResourceReport(name='test_report3', url='http://test3')],
                          columns=[exp_col] * self.active_columns)
-
         self.assertEqual(str(expected), str(response))
 
     def test_get_table_without_custom_stats_format(self) -> None:
