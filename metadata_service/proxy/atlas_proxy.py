@@ -4,7 +4,7 @@ from random import randint
 from typing import Any, Dict, List, Union, Optional
 
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Column, Statistics, Table, Tag, User, TableReport
+from amundsen_common.models.table import Column, Statistics, Table, Tag, User, ResourceReport
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from atlasclient.client import Atlas
@@ -363,7 +363,6 @@ class AtlasProxy(BaseProxy):
 
         try:
             attrs = table_details[self.ATTRS_KEY]
-
             table_qn = parse_table_qualified_name(
                 qualified_name=attrs.get(self.QN_KEY)
             )
@@ -387,7 +386,7 @@ class AtlasProxy(BaseProxy):
                     if report_entity.entity[self.ENTITY_STATUS] == self.ENTITY_ACTIVE_STATUS:
                         report_attrs = report_entity.entity[self.ATTRS_KEY]
                         reports.append(
-                            TableReport(
+                            ResourceReport(
                                 name=report_attrs['name'],
                                 url=report_attrs['url']
                             )
@@ -406,7 +405,7 @@ class AtlasProxy(BaseProxy):
                 tags=tags,
                 description=attrs.get('description') or attrs.get('comment'),
                 owners=[User(email=attrs.get('owner'))],
-                table_reports=reports,
+                resource_reports=reports,
                 columns=columns,
                 last_updated_timestamp=self._parse_date(table_details.get('updateTime')))
             return table
