@@ -29,7 +29,7 @@ class TestPopularTablesAPI(BasicTestCase):
 
         self.mock_client.stop()
 
-    def test_should_get_popular_tables_with_default_limits(self) -> None:
+    def test_should_get_popular_tables_with_default_args(self) -> None:
         self.mock_proxy.get_popular_tables.return_value = CLIENT_RESPONSE
 
         response = self.app.test_client().get('popular_tables/')
