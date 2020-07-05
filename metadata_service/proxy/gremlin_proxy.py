@@ -132,7 +132,7 @@ class AbstractGremlinProxy(BaseProxy):
                                column_name: str) -> Union[str, None]:
         pass
 
-    def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
+    def get_popular_tables(self, *, num_entries: int, num_readers: int) -> List[PopularTable]:
         pass
 
     def get_latest_updated_ts(self) -> int:

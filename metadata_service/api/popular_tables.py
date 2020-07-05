@@ -19,6 +19,7 @@ class PopularTablesAPI(Resource):
     @swag_from('swagger_doc/popular_tables_get.yml')
     def get(self) -> Iterable[Union[Mapping, int, None]]:
         limit = request.args.get('limit', 10, type=int)
-        popular_tables: List[PopularTable] = self.client.get_popular_tables(num_entries=limit)
+        readers = request.args.get('readers', 10, type=int)
+        popular_tables: List[PopularTable] = self.client.get_popular_tables(num_entries=limit, num_readers=readers)
         popular_tables_json: str = PopularTableSchema(many=True).dump(popular_tables).data
         return {'popular_tables': popular_tables_json}, HTTPStatus.OK

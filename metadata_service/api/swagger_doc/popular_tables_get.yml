@@ -3,8 +3,15 @@ Gets information about popular tables
 tags:
   - 'popular_tables'
 parameters:
-  - in: query
-    name: limit
+  - name: limit
+    in: query
+    required: false
+    type: integer
+    schema:
+      type: integer
+      default: 10
+  - name: readers
+    in: query
     required: false
     type: integer
     schema:
