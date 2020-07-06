@@ -3,8 +3,8 @@ Gets information about popular tables
 tags:
   - 'popular_tables'
 parameters:
-  - name: limit
-    in: query
+  - in: query
+    name: limit
     required: false
     type: integer
     schema:
