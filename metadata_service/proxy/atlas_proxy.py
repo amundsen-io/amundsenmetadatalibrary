@@ -500,7 +500,7 @@ class AtlasProxy(BaseProxy):
             column_name=column_name)
         return column_detail[self.ATTRS_KEY].get('description')
 
-    def get_popular_tables(self, *, num_entries: int, num_readers: int = None) -> List[PopularTable]:
+    def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
         """
         :param num_entries: Number of popular tables to fetch
         :param num_readers: Not used in Atlas proxy

@@ -10,13 +10,6 @@ parameters:
     schema:
       type: integer
       default: 10
-  - name: readers
-    in: query
-    required: false
-    type: integer
-    schema:
-      type: integer
-      default: 10
 responses:
   200:
     description: 'Popular tables'

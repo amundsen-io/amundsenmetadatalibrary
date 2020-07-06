@@ -493,9 +493,9 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value = [{'table_key': 'foo'}, {'table_key': 'bar'}]
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            self.assertEqual(neo4j_proxy._get_popular_tables_uris(num_entries=2, num_readers=1), ['foo', 'bar'])
-            self.assertEqual(neo4j_proxy._get_popular_tables_uris(num_entries=2, num_readers=1), ['foo', 'bar'])
-            self.assertEqual(neo4j_proxy._get_popular_tables_uris(num_entries=2, num_readers=1), ['foo', 'bar'])
+            self.assertEqual(neo4j_proxy._get_popular_tables_uris(2), ['foo', 'bar'])
+            self.assertEqual(neo4j_proxy._get_popular_tables_uris(2), ['foo', 'bar'])
+            self.assertEqual(neo4j_proxy._get_popular_tables_uris(2), ['foo', 'bar'])
 
             self.assertEquals(mock_execute.call_count, 1)
 
@@ -507,7 +507,7 @@ class TestNeo4jProxy(unittest.TestCase):
             ]
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
-            actual = neo4j_proxy.get_popular_tables(num_entries=2, num_readers=1)
+            actual = neo4j_proxy.get_popular_tables(num_entries=2)
 
             expected = [
                 PopularTable(database='db', cluster='clstr', schema='sch', name='foo', description='test description'),

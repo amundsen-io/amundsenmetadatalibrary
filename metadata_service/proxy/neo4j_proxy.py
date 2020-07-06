@@ -703,7 +703,7 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
-    def _get_popular_tables_uris(self, num_entries: int, num_readers: int) -> List[str]:
+    def _get_popular_tables_uris(self, num_entries: int) -> List[str]:
         """
         Retrieve popular table uris. Will provide tables with top x popularity score.
         Popularity score = number of distinct readers * log(total number of reads)
@@ -721,8 +721,8 @@ class Neo4jProxy(BaseProxy):
         RETURN table_key, readers, total_reads, (readers * log(total_reads)) as score
         ORDER BY score DESC LIMIT $num_entries;
         """)
-
         LOGGER.info('Querying popular tables URIs')
+        num_readers = current_app.config['POPULAR_TABLE_MINIMUM_READER_COUNT']
         records = self._execute_cypher_query(statement=query,
                                              param_dict={'num_readers': num_readers,
                                                          'num_entries': num_entries})
@@ -730,17 +730,16 @@ class Neo4jProxy(BaseProxy):
         return [record['table_key'] for record in records]
 
     @timer_with_counter
-    def get_popular_tables(self, *, num_entries: int, num_readers: int) -> List[PopularTable]:
+    def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
         """
         Retrieve popular tables. As popular table computation requires full scan of table and user relationship,
         it will utilize cached method _get_popular_tables_uris.
 
         :param num_entries:
-        :param num_readers: Minimum number of readers to qualify for popular tables
         :return: Iterable of PopularTable
         """
 
-        table_uris = self._get_popular_tables_uris(num_entries, num_readers)
+        table_uris = self._get_popular_tables_uris(num_entries)
         if not table_uris:
             return []
 
