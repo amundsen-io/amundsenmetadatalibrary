@@ -503,7 +503,6 @@ class AtlasProxy(BaseProxy):
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
         """
         :param num_entries: Number of popular tables to fetch
-        :param num_readers: Not used in Atlas proxy
         :return: A List of popular tables instances
         """
         popular_tables = list()
