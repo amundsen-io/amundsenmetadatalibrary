@@ -343,6 +343,30 @@ class AtlasProxy(BaseProxy):
             )
         return sorted(columns, key=lambda item: item.sort_order)
 
+    def _get_reports(self, guids: List[str]) -> List[ResourceReport]:
+        reports = []
+        if guids:
+            report_entities_collection = self._driver.entity_bulk(guid=guids)
+            for report_entities in report_entities_collection:
+                for report_entity in report_entities.entities:
+                    try:
+                        if report_entity.status == self.ENTITY_ACTIVE_STATUS:
+                            report_attrs = report_entity.attributes
+                            reports.append(
+                                ResourceReport(
+                                    name=report_attrs['name'],
+                                    url=report_attrs['url']
+                                )
+                            )
+                    except (KeyError, AttributeError) as ex:
+                        LOGGER.exception('Error while accessing table report: {}. {}'
+                                         .format(str(report_entity), str(ex)))
+
+        parsed_reports = app.config['RESOURCE_REPORT_CLIENT'](reports) \
+            if app.config['RESOURCE_REPORT_CLIENT'] else reports
+
+        return parsed_reports
+
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
         pass
 
@@ -378,27 +402,7 @@ class AtlasProxy(BaseProxy):
 
             columns = self._serialize_columns(entity=entity)
 
-            reports = []
             reports_guids = [report.get("guid") for report in attrs.get("reports") or list()]
-            if reports_guids:
-                report_entities_collection = self._driver.entity_bulk(guid=reports_guids)
-                for report_entities in report_entities_collection:
-                    for report_entity in report_entities.entities:
-                        try:
-                            if report_entity.status == self.ENTITY_ACTIVE_STATUS:
-                                report_attrs = report_entity.attributes
-                                reports.append(
-                                    ResourceReport(
-                                        name=report_attrs['name'],
-                                        url=report_attrs['url']
-                                    )
-                                )
-                        except (KeyError, AttributeError) as ex:
-                            LOGGER.exception('Error while accessing table report: {}. {}'
-                                             .format(str(report_entity), str(ex)))
-
-            parsed_reports = app.config['RESOURCE_REPORT_CLIENT'](reports) \
-                if app.config['RESOURCE_REPORT_CLIENT'] else reports
 
             table = Table(
                 database=table_details.get('typeName'),
@@ -408,7 +412,7 @@ class AtlasProxy(BaseProxy):
                 tags=tags,
                 description=attrs.get('description') or attrs.get('comment'),
                 owners=[User(email=attrs.get('owner'))],
-                resource_reports=parsed_reports,
+                resource_reports=self._get_reports(guids=reports_guids),
                 columns=columns,
                 last_updated_timestamp=self._parse_date(table_details.get('updateTime')))
 
