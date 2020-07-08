@@ -3,7 +3,7 @@ import unittest
 from typing import Any, Dict, Optional, cast
 
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Column, Statistics, Table, Tag, User
+from amundsen_common.models.table import Column, Statistics, Table, Tag, User, ResourceReport
 from atlasclient.exceptions import BadRequest
 from mock import MagicMock, patch
 from tests.unit.proxy.fixtures.atlas_test_data import Data
@@ -88,6 +88,18 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
         self.assertEqual(ent.__repr__(), unique_attr_response.__repr__())
 
+    def _create_mocked_report_entity(self, entity):
+        mocked_report_entity = MagicMock()
+        mocked_report_entity.status = entity["status"]
+        mocked_report_entity.attributes = entity["attributes"]
+        return mocked_report_entity
+
+    def _create_mockerd_report_entities_collection(self):
+        mocked_report_entities_collection = MagicMock()
+        mocked_report_entities_collection.entities = [self._create_mocked_report_entity(report_entity)
+                                                      for report_entity in self.report_entities]
+        return [mocked_report_entities_collection]
+
     def _get_table(self, custom_stats_format: bool = False) -> None:
         if custom_stats_format:
             test_exp_col = self.test_exp_col_stats_formatted
@@ -95,6 +107,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
             test_exp_col = self.test_exp_col_stats_raw
 
         self._mock_get_table_entity()
+        report_entity_collection = self._create_mockerd_report_entities_collection()
+        self.proxy._driver.entity_bulk = MagicMock(return_value=report_entity_collection)
         response = self.proxy.get_table(table_uri=self.table_uri)
 
         classif_name = self.classification_entity['classifications'][0]['typeName']
@@ -125,6 +139,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
                          tags=[Tag(tag_name=classif_name, tag_type="default")],
                          description=ent_attrs['description'],
                          owners=[User(email=ent_attrs['owner'])],
+                         resource_reports=[ResourceReport(name='test_report', url='http://test'),
+                                           ResourceReport(name='test_report3', url='http://test3')],
                          last_updated_timestamp=int(str(self.entity1['updateTime'])[:10]),
                          columns=[exp_col] * self.active_columns)
 
