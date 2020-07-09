@@ -65,7 +65,7 @@ class Config:
     USER_OTHER_KEYS = {'mode_user_id'}  # type: Set[str]
 
     # Number of minimum reader count to qualify for popular table
-    POPULAR_TABLE_MINIMUM_READER_COUNT = 4  # type: int
+    POPULAR_TABLE_MINIMUM_READER_COUNT = 10  # type: int
 
 
 class LocalConfig(Config):
