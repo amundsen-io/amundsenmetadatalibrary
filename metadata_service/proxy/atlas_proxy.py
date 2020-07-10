@@ -724,7 +724,7 @@ class AtlasProxy(BaseProxy):
 
         results = []
 
-        if len(readers) > 0:
+        if readers:
             read_entities = extract_entities(self._driver.entity_bulk(guid=readers, ignoreRelationships=False))
 
             for read_entity in read_entities:
