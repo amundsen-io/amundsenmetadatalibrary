@@ -725,12 +725,12 @@ class AtlasProxy(BaseProxy):
         results = []
 
         if len(readers) > 0:
-            full_entities = extract_entities(self._driver.entity_bulk(guid=readers, ignoreRelationships=False))
+            read_entities = extract_entities(self._driver.entity_bulk(guid=readers, ignoreRelationships=False))
 
-            for r in full_entities:
-                reader = Reader(user=User(email=r.relationshipAttributes['user']['displayText'],
-                                          user_id=r.relationshipAttributes['user']['displayText']),
-                                read_count=r.attributes['count'])
+            for read_entity in read_entities:
+                reader = Reader(user=User(email=read_entity.relationshipAttributes['user']['displayText'],
+                                          user_id=read_entity.relationshipAttributes['user']['displayText']),
+                                read_count=read_entity.attributes['count'])
 
                 results.append(reader)
 
