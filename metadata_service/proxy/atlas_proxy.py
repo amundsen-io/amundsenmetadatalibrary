@@ -689,11 +689,11 @@ class AtlasProxy(BaseProxy):
         except Exception:
             return None
 
-    def _get_readers(self, qualified_name: str, top: Optional[int] = None) -> List[Reader]:
+    def _get_readers(self, qualified_name: str, top: Optional[int] = 15) -> List[Reader]:
         params = {
             'typeName': self.READER_TYPE,
             'offset': '0',
-            'limit': top or 15,
+            'limit': top,
             'excludeDeletedEntities': True,
             'entityFilters': {
                 'condition': 'AND',
