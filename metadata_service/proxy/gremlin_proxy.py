@@ -90,10 +90,11 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        pass
+        user = self.g.V().hasLabel('User').has('email', id).next()
+        return user
 
     def get_users(self) -> List[UserEntity]:
-        pass
+        return self.g.V().hasLabel('User').toList()
 
     def get_table(self, *, table_uri: str) -> Table:
         pass
