@@ -740,7 +740,7 @@ class AtlasProxy(BaseProxy):
         return results
 
     def _get_programmatic_descriptions(self, parameters: dict) -> List[ProgrammaticDescription]:
-        programmatic_descriptions: List[ProgrammaticDescription] = {}
+        programmatic_descriptions: Dict[str, ProgrammaticDescription] = {}
 
         for source, text in parameters.items():
             use_parameter = True
@@ -756,9 +756,9 @@ class AtlasProxy(BaseProxy):
                 source = re.sub("([a-z])([A-Z])", "\g<1> \g<2>", source).lower()
                 programmatic_descriptions[source] = ProgrammaticDescription(source=source, text=text)
 
-        programmatic_descriptions = dict(sorted(programmatic_descriptions.items()))
+        result = dict(sorted(programmatic_descriptions.items()))
 
-        return list(programmatic_descriptions.values())
+        return list(result.values())
 
     def get_dashboard(self,
                       dashboard_uri: str,
