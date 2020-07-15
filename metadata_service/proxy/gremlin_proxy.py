@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
+from gremlin_python.process.traversal import WithOptions
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table
 from amundsen_common.models.user import User as UserEntity
@@ -90,7 +91,7 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        user = self.g.V().hasLabel('User').has('email', id).next()
+        user = self.g.V().hasLabel('User').has('email', id).valueMap().with_(WithOptions.tokens).by().unfold()
         return user
 
     def get_users(self) -> List[UserEntity]:
