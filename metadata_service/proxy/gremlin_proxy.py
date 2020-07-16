@@ -93,13 +93,23 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        user_query = self.g.V().hasLabel().has('email', id).as_('user')
-        user_query = user_query
-        user = self.g.V().hasLabel('User').has('email', id).valueMap().with_(WithOptions.tokens).by().unfold()
+        user_result = self.g.V().hasLabel('User').has('email', id).valueMap(True).fold().next()
+        user = UserEntity(
+            id=user_result[T.id],
+            email=user_result['email'][0]
+        )
         return user
 
     def get_users(self) -> List[UserEntity]:
-        return self.g.V().hasLabel('User').toList()
+        users_result = self.g.V().hasLabel('User').valueMap(True).toList()
+        users = []
+        for user_result in users_result:
+            user = UserEntity(
+                id=user_result[T.id],
+                email=user_result['email'][0]
+            )
+            users.append(user)
+        return users
 
     def get_table(self, *, table_uri: str) -> Table:
         table_query = self.g.V().hasId(table_uri).as_('table')
@@ -134,14 +144,19 @@ class AbstractGremlinProxy(BaseProxy):
         return table
 
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
-        pass
+        forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
+            from_from_vertex_id=owner,
+            to_vertex_id=table_uri,
+            label="OWNER"
+        )
+        self.g.E().hasId(forward_key).drop()
 
     def add_owner(self, *, table_uri: str, owner: str) -> None:
         user = self.get_user(owner)
         if user is None:
             self.g.addV(T.id, owner, T.label, "User").property('email', owner).property('is_active', True)
         forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
-            from_from_vertex_id=owner,
+            from_vertex_id=owner,
             to_vertex_id=table_uri,
             label="OWNER"
         )
