@@ -1,3 +1,6 @@
+# Copyright Contributors to the Amundsen project.
+# SPDX-License-Identifier: Apache-2.0
+
 import json
 from http import HTTPStatus
 from typing import Any, Iterable, Mapping, Union, Optional

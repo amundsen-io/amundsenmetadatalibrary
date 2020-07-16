@@ -1,3 +1,6 @@
+# Copyright Contributors to the Amundsen project.
+# SPDX-License-Identifier: Apache-2.0
+
 from metadata_service.proxy.aws4authwebsocket.transport import WebsocketClientTransport
 from .gremlin_proxy import AbstractGremlinProxy
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection

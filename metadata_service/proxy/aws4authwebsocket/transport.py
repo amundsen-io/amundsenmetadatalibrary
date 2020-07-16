@@ -1,3 +1,6 @@
+# Copyright Contributors to the Amundsen project.
+# SPDX-License-Identifier: Apache-2.0
+
 from gremlin_python.driver.transport import AbstractBaseTransport
 import mocket.mocket
 import mocket.mockhttp
