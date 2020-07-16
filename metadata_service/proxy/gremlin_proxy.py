@@ -100,8 +100,11 @@ class AbstractGremlinProxy(BaseProxy):
         return self.g.V().hasLabel('User').toList()
 
     def get_table(self, *, table_uri: str) -> Table:
-        table_query = self.g.V().hasId('postgres://sganalytic.public/action_touchpoints').as_('table')
-        table_query = table_query.union(__.select('table').valueMap(True), __.select('table').out().valueMap(True))
+        table_query = self.g.V().hasId(table_uri).as_('table')
+        table_query = table_query.union(__.select('table').valueMap(True),
+                                        __.select('table').out().valueMap(True),
+                                        __.select('table').out().hasLabel('Schema').out().hasLabel('Cluster').valueMap(True),
+                                        __.select('table').out().hasLabel('Schema').out().hasLabel('Cluster').out().hasLabel('Database').valueMap(True))
         table_results = table_query.fold().next()
         database_node = [table_result for table_result in table_results if table_result[T.label] == 'Database'][0]
         schema_node = [table_result for table_result in table_results if table_result[T.label] == 'Schema'][0]
