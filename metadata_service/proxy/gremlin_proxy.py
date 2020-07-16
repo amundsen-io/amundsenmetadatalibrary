@@ -3,11 +3,10 @@ import logging
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
-from gremlin_python.process.traversal import WithOptions
 from gremlin_python.process.traversal import T
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Table, Column, Statistics
+from amundsen_common.models.table import Table, Column
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from gremlin_python.driver.driver_remote_connection import \
