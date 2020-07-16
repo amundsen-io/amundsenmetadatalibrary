@@ -93,7 +93,8 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        user_query = self.g.V().hasLabel().has('email', id)
+        user_query = self.g.V().hasLabel().has('email', id).as_('user')
+        user_query = user_query
         user = self.g.V().hasLabel('User').has('email', id).valueMap().with_(WithOptions.tokens).by().unfold()
         return user
 
@@ -136,7 +137,15 @@ class AbstractGremlinProxy(BaseProxy):
         pass
 
     def add_owner(self, *, table_uri: str, owner: str) -> None:
-        pass
+        user = self.get_user(owner)
+        if user is None:
+            self.g.addV(T.id, owner, T.label, "User").property('email', owner).property('is_active', True)
+        forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
+            from_from_vertex_id=owner,
+            to_vertex_id=table_uri,
+            label="OWNER"
+        )
+        self.g.addE(T.id, forward_key, T.label, "OWNER")
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
