@@ -164,7 +164,8 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
-        pass
+        result = self.g.V().hasId(table_uri).value('description').next()
+        return result
 
     def put_table_description(self, *,
                               table_uri: str,
