@@ -4,8 +4,10 @@ from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
 from gremlin_python.process.traversal import WithOptions
+from gremlin_python.process.traversal import T
+from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Table
+from amundsen_common.models.table import Table, Column, Statistics
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from gremlin_python.driver.driver_remote_connection import \
@@ -98,7 +100,33 @@ class AbstractGremlinProxy(BaseProxy):
         return self.g.V().hasLabel('User').toList()
 
     def get_table(self, *, table_uri: str) -> Table:
-        pass
+        table_query = self.g.V().hasId('postgres://sganalytic.public/action_touchpoints').as_('table')
+        table_query = table_query.union(__.select('table').valueMap(True), __.select('table').out().valueMap(True))
+        table_results = table_query.fold().next()
+        database_node = [table_result for table_result in table_results if table_result[T.label] == 'Database'][0]
+        schema_node = [table_result for table_result in table_results if table_result[T.label] == 'Schema'][0]
+        cluster_node = [table_result for table_result in table_results if table_result[T.label] == 'Cluster'][0]
+        table_node = [table_result for table_result in table_results if table_result[T.label] == 'Table'][0]
+        column_nodes = [table_result for table_result in table_results if table_result[T.label] == 'Column']
+        columns = []
+        for column_node in column_nodes:
+            # TODO column descriptions and column stats
+            column = Column(
+                name=column_node['name'],
+                description='',
+                col_type=column_node['type'],
+                sort_order=column_node['sort_order']
+            )
+            columns.append(column)
+        table = Table(
+            schema=schema_node['name'],
+            database=database_node['name'],
+            cluster=cluster_node['name'],
+            name=table_node['name'],
+            columns=columns,
+            is_view=table_node['is_view']
+        )
+        return table
 
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
         pass
