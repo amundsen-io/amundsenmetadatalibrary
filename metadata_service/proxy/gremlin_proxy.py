@@ -93,6 +93,7 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
+        user_query = self.g.V().hasLabel().has('email', id)
         user = self.g.V().hasLabel('User').has('email', id).valueMap().with_(WithOptions.tokens).by().unfold()
         return user
 
@@ -115,19 +116,19 @@ class AbstractGremlinProxy(BaseProxy):
         for column_node in column_nodes:
             # TODO column descriptions and column stats
             column = Column(
-                name=column_node['name'],
+                name=column_node['name'][0],
                 description='',
-                col_type=column_node['type'],
-                sort_order=column_node['sort_order']
+                col_type=column_node['type'][0],
+                sort_order=column_node['sort_order'][0]
             )
             columns.append(column)
         table = Table(
-            schema=schema_node['name'],
-            database=database_node['name'],
-            cluster=cluster_node['name'],
-            name=table_node['name'],
+            schema=schema_node['name'][0],
+            database=database_node['name'][0],
+            cluster=cluster_node['name'][0],
+            name=table_node['name'][0],
             columns=columns,
-            is_view=table_node['is_view']
+            is_view=table_node['is_view'][0]
         )
         return table
 
