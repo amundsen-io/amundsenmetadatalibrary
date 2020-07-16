@@ -17,6 +17,7 @@ class ColumnDescriptionAPI(Resource):
     """
     ColumnDescriptionAPI supports PUT and GET operations to upsert column description
     """
+
     def __init__(self) -> None:
         self.client = get_proxy_client()
         super(ColumnDescriptionAPI, self).__init__()

@@ -16,6 +16,7 @@ class PopularTablesAPI(Resource):
     """
     PopularTables API
     """
+
     def __init__(self) -> None:
         self.client = get_proxy_client()
 

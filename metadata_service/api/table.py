@@ -74,6 +74,7 @@ class TableDescriptionAPI(Resource):
     """
     TableDescriptionAPI supports PUT and GET operation to upsert table description
     """
+
     def __init__(self) -> None:
         self.client = get_proxy_client()
         super(TableDescriptionAPI, self).__init__()

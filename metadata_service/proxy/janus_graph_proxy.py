@@ -12,6 +12,7 @@ class JanusGraphGremlinProxy(AbstractGremlinProxy):
     A proxy to a JanusGraph using the Gremlin protocol.
 
     """
+
     def __init__(self, *, host: str, port: Optional[int] = None, user: Optional[str] = None,
                  password: Optional[str] = None, traversal_source: 'str' = 'g',
                  driver_remote_connection_options: Mapping[str, Any] = {},

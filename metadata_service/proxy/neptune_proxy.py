@@ -23,6 +23,7 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
     See also https://docs.aws.amazon.com/neptune/latest/userguide/access-graph-gremlin-differences.html
     See also https://docs.aws.amazon.com/neptune/latest/userguide/access-graph-gremlin-sessions.html
     """
+
     def __init__(self, *, host: str, port: Optional[int] = None, user: str = None,
                  password: Optional[Union[str, Mapping[str, str]]] = None,
                  driver_remote_connection_options: Mapping[str, Any] = {},
