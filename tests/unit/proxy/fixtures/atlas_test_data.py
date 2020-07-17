@@ -1,3 +1,6 @@
+# Copyright Contributors to the Amundsen project.
+# SPDX-License-Identifier: Apache-2.0
+
 import copy
 
 
@@ -103,6 +106,11 @@ class Data:
             'db': db_entity,
             'popularityScore': 100,
             'partitions': list(),
+            'parameters': {
+                'testParameterKeyB': 'testParameterValueB',
+                'testParameterKeyA': 'testParameterValueA',
+                'spark.sql.param': 1
+            },
             'reports': [{'guid': '23'}, {'guid': '121212'}, {'guid': '2344'}]
         },
         'relationshipAttributes': {

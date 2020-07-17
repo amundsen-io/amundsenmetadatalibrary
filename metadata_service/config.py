@@ -1,3 +1,6 @@
+# Copyright Contributors to the Amundsen project.
+# SPDX-License-Identifier: Apache-2.0
+
 import distutils.util
 import os
 from typing import List, Dict, Optional, Set  # noqa: F401
@@ -68,6 +71,9 @@ class Config:
 
     # Number of minimum reader count to qualify for popular table
     POPULAR_TABLE_MINIMUM_READER_COUNT = 10  # type: int
+
+    # List of regexes which will exclude certain parameters from appearing as Programmatic Descriptions
+    PROGRAMMATIC_DESCRIPTIONS_EXCLUDE_FILTERS = []  # type: list
 
 
 class LocalConfig(Config):
