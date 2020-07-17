@@ -349,20 +349,19 @@ class AtlasProxy(BaseProxy):
         reports = []
         if guids:
             report_entities_collection = self._driver.entity_bulk(guid=guids)
-            for report_entities in report_entities_collection:
-                for report_entity in report_entities.entities:
-                    try:
-                        if report_entity.status == self.ENTITY_ACTIVE_STATUS:
-                            report_attrs = report_entity.attributes
-                            reports.append(
-                                ResourceReport(
-                                    name=report_attrs['name'],
-                                    url=report_attrs['url']
-                                )
+            for report_entity in extract_entities(report_entities_collection):
+                try:
+                    if report_entity.status == self.ENTITY_ACTIVE_STATUS:
+                        report_attrs = report_entity.attributes
+                        reports.append(
+                            ResourceReport(
+                                name=report_attrs['name'],
+                                url=report_attrs['url']
                             )
-                    except (KeyError, AttributeError) as ex:
-                        LOGGER.exception('Error while accessing table report: {}. {}'
-                                         .format(str(report_entity), str(ex)))
+                        )
+                except (KeyError, AttributeError) as ex:
+                    LOGGER.exception('Error while accessing table report: {}. {}'
+                                     .format(str(report_entity), str(ex)))
 
         parsed_reports = app.config['RESOURCE_REPORT_CLIENT'](reports) \
             if app.config['RESOURCE_REPORT_CLIENT'] else reports
