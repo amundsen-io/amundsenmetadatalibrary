@@ -7,7 +7,8 @@ from random import randint
 from typing import Any, Dict, List, Union, Optional
 
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Column, Statistics, Table, Tag, User, Reader, ProgrammaticDescription, ResourceReport
+from amundsen_common.models.table import Column, Statistics, Table, Tag, User, Reader,\
+    ProgrammaticDescription, ResourceReport
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from atlasclient.client import Atlas
