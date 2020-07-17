@@ -88,17 +88,16 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
         self.assertEqual(ent.__repr__(), unique_attr_response.__repr__())
 
-    def _create_mocked_report_entity(self, entity):
-        mocked_report_entity = MagicMock()
-        mocked_report_entity.status = entity["status"]
-        mocked_report_entity.attributes = entity["attributes"]
-        return mocked_report_entity
-
-    def _create_mockerd_report_entities_collection(self):
+    def _create_mocked_report_entities_collection(self) -> None:
         mocked_report_entities_collection = MagicMock()
-        mocked_report_entities_collection.entities = [self._create_mocked_report_entity(report_entity)
-                                                      for report_entity in self.report_entities]
-        return [mocked_report_entities_collection]
+        mocked_report_entities_collection.entities = []
+        for entity in self.report_entities:
+            mocked_report_entity = MagicMock()
+            mocked_report_entity.status = entity['status']
+            mocked_report_entity.attributes = entity['attributes']
+            mocked_report_entities_collection.entities.append(mocked_report_entity)
+
+        self.report_entity_collection = [mocked_report_entities_collection]
 
     def _get_table(self, custom_stats_format: bool = False) -> None:
         if custom_stats_format:
@@ -107,8 +106,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
             test_exp_col = self.test_exp_col_stats_raw
 
         self._mock_get_table_entity()
-        report_entity_collection = self._create_mockerd_report_entities_collection()
-        self.proxy._driver.entity_bulk = MagicMock(return_value=report_entity_collection)
+        self._create_mocked_report_entities_collection()
+        self.proxy._driver.entity_bulk = MagicMock(return_value=self.report_entity_collection)
         response = self.proxy.get_table(table_uri=self.table_uri)
 
         classif_name = self.classification_entity['classifications'][0]['typeName']
