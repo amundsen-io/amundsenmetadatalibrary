@@ -5,6 +5,7 @@ from werkzeug.utils import import_string
 
 from metadata_service import config
 from metadata_service.proxy.base_proxy import BaseProxy
+import boto3
 
 _proxy_client = None
 _proxy_client_lock = Lock()
@@ -32,12 +33,33 @@ def get_proxy_client() -> BaseProxy:
             encrypted = current_app.config[config.PROXY_ENCRYPTED]
             validate_ssl = current_app.config[config.PROXY_VALIDATE_SSL]
 
+            client_init_params = {
+                'host': host,
+                'port': port,
+                'user': user,
+                'password': password,
+                'encrypted': encrypted,
+                'validate_ssl': validate_ssl
+            }
+
+            proxy_client_name = current_app.config[config.PROXY_CLIENT_NAME]
+            if proxy_client_name == "NEPTUNE":
+                aws_region = current_app.config[config.PROXY_AWS_REGION]
+                session = boto3.Session()
+                aws_creds = session.get_credentials()
+                aws_access_key = aws_creds.access_key
+                aws_access_secret = aws_creds.secret_key
+                aws_token = aws_creds.token
+                client_init_params['password'] = {
+                    'aws_access_key_id': aws_access_key,
+                    'aws_secret_access_key': aws_access_secret,
+                    'service_region': aws_region
+                }
+                client_init_params['aws4auth_options'] = {
+                    'session_token': aws_token
+                }
+
             client = import_string(current_app.config[config.PROXY_CLIENT])
-            _proxy_client = client(host=host,
-                                   port=port,
-                                   user=user,
-                                   password=password,
-                                   encrypted=encrypted,
-                                   validate_ssl=validate_ssl)
+            _proxy_client = client(**client_init_params)
 
     return _proxy_client

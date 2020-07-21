@@ -1,5 +1,6 @@
 import distutils.util
 import os
+import boto3
 from typing import List, Dict, Optional, Set  # noqa: F401
 
 # PROXY configuration keys
@@ -10,6 +11,8 @@ PROXY_PASSWORD = 'PROXY_PASSWORD'
 PROXY_ENCRYPTED = 'PROXY_ENCRYPTED'
 PROXY_VALIDATE_SSL = 'PROXY_VALIDATE_SSL'
 PROXY_CLIENT = 'PROXY_CLIENT'
+PROXY_CLIENT_NAME = 'PROXY_CLIENT_NAME'
+PROXY_AWS_REGION = 'AWS_REGION'
 
 PROXY_CLIENTS = {
     'NEO4J': 'metadata_service.proxy.neo4j_proxy.Neo4jProxy',
@@ -34,6 +37,8 @@ class Config:
 
     PROXY_USER = os.environ.get('CREDENTIALS_PROXY_USER', 'neo4j')
     PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', 'test')
+
+    PROXY_AWS_ZONE = os.environ.get("AWS_REGION", None)
 
     PROXY_ENCRYPTED = True
     """Whether the connection to the proxy should use SSL/TLS encryption."""
@@ -74,6 +79,7 @@ class LocalConfig(Config):
 
     PROXY_HOST = os.environ.get('PROXY_HOST', f'bolt://{LOCAL_HOST}')
     PROXY_PORT = os.environ.get('PROXY_PORT', 7687)
+    PROXY_CLIENT_NAME = os.environ.get('PROXY_CLIENT', 'NEO4J')
     PROXY_CLIENT = PROXY_CLIENTS[os.environ.get('PROXY_CLIENT', 'NEO4J')]
     PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'True')))
     PROXY_VALIDATE_SSL = bool(distutils.util.strtobool(os.environ.get(PROXY_VALIDATE_SSL, 'False')))

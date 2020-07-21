@@ -72,3 +72,4 @@ beaker>=1.10.0
 mocket==3.7.3
 overrides==2.5
 websocket-client==0.56.0
+boto3==1.9.242
