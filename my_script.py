@@ -18,6 +18,7 @@ def main():
         host=neptune_host,
         password=auth_dict
     )
+    table = neptune_proxy.get_table(table_uri='postgres://sganalytic.public/action_touchpoints')
     print(neptune_proxy)
 
 
