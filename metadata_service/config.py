@@ -12,7 +12,7 @@ PROXY_ENCRYPTED = 'PROXY_ENCRYPTED'
 PROXY_VALIDATE_SSL = 'PROXY_VALIDATE_SSL'
 PROXY_CLIENT = 'PROXY_CLIENT'
 PROXY_CLIENT_NAME = 'PROXY_CLIENT_NAME'
-PROXY_AWS_REGION = 'AWS_REGION'
+PROXY_AWS_REGION = 'PROXY_AWS_REGION'
 
 PROXY_CLIENTS = {
     'NEO4J': 'metadata_service.proxy.neo4j_proxy.Neo4jProxy',
@@ -38,7 +38,7 @@ class Config:
     PROXY_USER = os.environ.get('CREDENTIALS_PROXY_USER', 'neo4j')
     PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', 'test')
 
-    PROXY_AWS_ZONE = os.environ.get("AWS_REGION", None)
+    PROXY_AWS_REGION = os.environ.get("AWS_REGION", None)
 
     PROXY_ENCRYPTED = True
     """Whether the connection to the proxy should use SSL/TLS encryption."""

@@ -58,6 +58,12 @@ def get_proxy_client() -> BaseProxy:
                 client_init_params['aws4auth_options'] = {
                     'session_token': aws_token
                 }
+                client_init_params.pop('encrypted')
+                client_init_params.pop('validate_ssl')
+                neptune_port = client_init_params.pop('port')
+                neptune_endpoint = client_init_params.pop('host')
+                client_init_params.pop('user')
+                client_init_params['host'] = "wss://{}:{}/gremlin".format(neptune_endpoint, neptune_port)
 
             client = import_string(current_app.config[config.PROXY_CLIENT])
             _proxy_client = client(**client_init_params)
