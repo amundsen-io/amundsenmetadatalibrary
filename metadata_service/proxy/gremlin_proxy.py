@@ -1,5 +1,6 @@
 import json
 import logging
+from random import randint
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
@@ -13,6 +14,10 @@ from gremlin_python.driver.driver_remote_connection import \
     DriverRemoteConnection
 from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.process.graph_traversal import GraphTraversalSource
+from metadata_service.exception import NotFoundException
+
+from beaker.cache import CacheManager
+from beaker.util import parse_cache_config_options
 
 from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.description import Description
@@ -23,6 +28,12 @@ from metadata_service.util import UserResourceRel
 __all__ = ['AbstractGremlinProxy', 'GenericGremlinProxy']
 
 LOGGER = logging.getLogger(__name__)
+
+
+_CACHE = CacheManager(**parse_cache_config_options({'cache.type': 'memory'}))
+
+# Expire cache every 11 hours + jitter
+_GET_POPULAR_TABLE_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
 
 def _parse_gremlin_server_error(exception: Exception) -> Dict[str, Any]:
@@ -191,7 +202,13 @@ class AbstractGremlinProxy(BaseProxy):
         pass
 
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
-        pass
+        table_uris = self._get_popular_tables_uris(num_entries)
+        if not table_uris:
+            return []
+
+    @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
+    def _get_popular_tables(self, num_entries: int):
+        return []
 
     def get_latest_updated_ts(self) -> int:
         pass
@@ -205,7 +222,8 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_table_by_user_relation(self, *, user_email: str,
                                    relation_type: UserResourceRel) -> Dict[str, Any]:
-        pass
+        raise NotFoundException('User {user_id} does not {relation} any resources'.format(user_id=user_email,
+                                                                                          relation=relation_type))
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
         pass
