@@ -4,7 +4,7 @@ from random import randint
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
-from gremlin_python.process.traversal import T
+from gremlin_python.process.traversal import T, Order, gt
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table, Column
@@ -208,7 +208,18 @@ class AbstractGremlinProxy(BaseProxy):
 
     @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
     def _get_popular_tables(self, num_entries: int):
-        return []
+        results = self.g.V().hasLabel('Table'). \
+            where(__.outE('READ_BY').count().is_(gt(0))). \
+            project('table_key', 'score'). \
+            by(T.id).by(__.outE('READ_BY').count()). \
+            by(__.project('readers', 'total_reads').\
+               by(__.outE('READ_BY').count()).\
+               by(__.coalesce(__.outE('READ_BY').values('read_count'), __.constant(0))).\
+               math('readers * log(total_reads)')). \
+            order().by(__.select('score'), Order.desc). \
+            limit(num_entries). \
+            toList()
+        return [result['table_key'] for result in results]
 
     def get_latest_updated_ts(self) -> int:
         pass
