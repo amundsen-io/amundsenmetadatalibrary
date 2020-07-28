@@ -7,7 +7,7 @@ import gremlin_python
 from gremlin_python.process.traversal import T, Order, gt
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Table, Column
+from amundsen_common.models.table import Table, Column, Reader
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from gremlin_python.driver.driver_remote_connection import \
@@ -134,6 +134,7 @@ class AbstractGremlinProxy(BaseProxy):
         table_node = [table_result for table_result in table_results if table_result[T.label] == 'Table'][0]
         column_nodes = [table_result for table_result in table_results if table_result[T.label] == 'Column']
         columns = []
+        readers = self._get_table_users(table_uri=table_uri)
         for column_node in column_nodes:
             # TODO column descriptions and column stats
             column = Column(
@@ -147,11 +148,30 @@ class AbstractGremlinProxy(BaseProxy):
             schema=schema_node['name'][0],
             database=database_node['name'][0],
             cluster=cluster_node['name'][0],
+            table_readers=readers,
             name=table_node['name'][0],
             columns=columns,
             is_view=table_node['is_view'][0]
         )
         return table
+
+    def _get_table_users(self, *, table_uri):
+        records = self.g.V(table_uri). \
+            out('READ_BY'). \
+            project('email', 'read_count'). \
+            by('email'). \
+            by(__.coalesce(__.inE('READ_BY').values('read_count'), __.constant(0))). \
+            order().by(__.select('read_count'), Order.desc). \
+            limit(5).toList()
+
+        readers = []  # type: List[Reader]
+        for record in records:
+            reader = Reader(user=UserEntity(email=record['email']),
+                            read_count=record['read_count'])
+            readers.append(reader)
+
+        return readers
+
 
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
         forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
