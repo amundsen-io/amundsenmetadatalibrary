@@ -223,7 +223,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
-        result = self.g.V().hasId(table_uri).out('DESCRIPTION_OF').value('description').next()
+        result = self.g.V().hasId(table_uri).out('DESCRIPTION').value('description').next()
         return result
 
     def put_table_description(self, *,
@@ -288,7 +288,20 @@ class AbstractGremlinProxy(BaseProxy):
 
     def delete_tag(self, *, id: str, tag: str, tag_type: str,
                    resource_type: ResourceType = ResourceType.Table) -> None:
-        pass
+
+        forward_edge_id = "{from_vertex_id}_{to_vertex_id}_{label}".format(
+            from_vertex_id=tag,
+            to_vertex_id=id,
+            label="TAG"
+        )
+        reverse_edge_id = "{from_vertex_id}_{to_vertex_id}_{label}".format(
+            from_vertex_id=tag,
+            to_vertex_id=id,
+            label="TAGGED_BY"
+        )
+        tx = self.g
+        tx = tx.E([ forward_edge_id,reverse_edge_id]).drop()
+        tx.iterate()
 
     def put_column_description(self, *,
                                table_uri: str,
