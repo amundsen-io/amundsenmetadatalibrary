@@ -202,7 +202,6 @@ class AbstractGremlinProxy(BaseProxy):
 
         return readers
 
-
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
         forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
             from_from_vertex_id=owner,
@@ -212,7 +211,7 @@ class AbstractGremlinProxy(BaseProxy):
         self.g.E().hasId(forward_key).drop()
 
     def add_owner(self, *, table_uri: str, owner: str) -> None:
-        user = self.get_user(owner)
+        user = self.get_user(email=owner)
         if user is None:
             self.g.addV(T.id, owner, T.label, "User").property('email', owner).property('is_active', True)
         forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
