@@ -15,6 +15,7 @@ from gremlin_python.driver.driver_remote_connection import \
 from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.process.graph_traversal import GraphTraversalSource
 from metadata_service.exception import NotFoundException
+from metadata_service.entity.tag_detail import TagDetail
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -194,7 +195,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
-        result = self.g.V().hasId(table_uri).value('description').next()
+        result = self.g.V().hasId(table_uri).out('DESCRIPTION_OF').value('description').next()
         return result
 
     def put_table_description(self, *,
@@ -202,9 +203,33 @@ class AbstractGremlinProxy(BaseProxy):
                               description: str) -> None:
         pass
 
-    def add_tag(self, *, id: str, tag: str, tag_type: str,
-                resource_type: ResourceType = ResourceType.Table) -> None:
-        pass
+    def add_tag(self, *, id: str, tag: str, tag_type: str, resource_type: ResourceType = ResourceType.Table) -> None:
+        # id is the table id.
+        node_properties = {
+            'tag_type': tag_type
+        }
+        tx = self.g
+        tx = self.upsert_node_as_tx(
+            tx=tx,
+            node_id=tag,
+            node_label="Tag",
+            node_properties=node_properties
+        )
+        tx = self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=tag,
+            end_node_id=id,
+            edge_label="TAG",
+            edge_properties={}
+        )
+        tx = self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=id,
+            end_node_id=tag,
+            edge_label="TAGGED_BY",
+            edge_properties={}
+        )
+        tx.next()
 
     def delete_tag(self, *, id: str, tag: str, tag_type: str,
                    resource_type: ResourceType = ResourceType.Table) -> None:
@@ -248,7 +273,6 @@ class AbstractGremlinProxy(BaseProxy):
 
         return popular_tables
 
-
     @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
     def _get_popular_tables(self, num_entries: int):
         results = self.g.V().hasLabel('Table'). \
@@ -268,7 +292,17 @@ class AbstractGremlinProxy(BaseProxy):
         pass
 
     def get_tags(self) -> List:
-        pass
+        records = self.g.V().hasLabel('Tag').project('tag_name', 'tag_count').\
+            by(__.id()).\
+            by(__.outE("TAG").count()).toList()
+
+        results = []
+        for record in records:
+            results.append(TagDetail(
+                tag_name=record['tag_name'],
+                tag_count=record['tag_count']
+            ))
+        return results
 
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
@@ -315,6 +349,73 @@ class AbstractGremlinProxy(BaseProxy):
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
         return {}
 
+    def upsert_node(self, *,
+                    node_id,
+                    node_label,
+                    node_properties
+                    ):
+        tx = self.g
+        self.upsert_node_as_tx(
+            tx,
+            node_id=node_id,
+            node_label=node_label,
+            node_properties=node_properties
+        )
+        tx.next()
+
+    def upsert_node_as_tx(self, *,
+                          tx,
+                          node_id,
+                          node_label,
+                          node_properties
+                          ):
+        create_traversal = __.addV(node_label).property(T.id, node_id)
+        tx = tx.V().hasId(node_id). \
+            fold(). \
+            coalesce(__.unfold(), create_traversal)
+        for key, value in node_properties.items():
+            if not value:
+                continue
+            tx = tx.property(key, value)
+
+        return tx
+
+    def upsert_edge(self, *,
+                    start_node_id,
+                    end_node_id,
+                    edge_label,
+                    edge_properties: Dict[str, Any]):
+        tx = self.g
+        self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=start_node_id,
+            end_node_id=end_node_id,
+            edge_label=edge_label,
+            edge_properties=edge_properties
+        )
+
+        tx.next()
+
+    def upsert_edge_as_tx(self, *,
+                          tx,
+                          start_node_id,
+                          end_node_id,
+                          edge_label,
+                          edge_properties: Dict[str, Any]):
+        edge_id = "{from_vertex_id}_{to_vertex_id}_{label}".format(
+            from_vertex_id=start_node_id,
+            to_vertex_id=end_node_id,
+            label=edge_label
+        )
+        create_traversal = __.V(start_node_id).addE(edge_label).to(__.V(end_node_id)).property(T.id, edge_id)
+        tx = tx.V(start_node_id).outE(edge_label).hasId(edge_id). \
+            fold(). \
+            coalesce(__.unfold(), create_traversal)
+        for key, value in edge_properties.items():
+            tx = tx.property(key, value)
+        return tx
+
+
 
 class GenericGremlinProxy(AbstractGremlinProxy):
     """
@@ -344,3 +445,6 @@ class GenericGremlinProxy(AbstractGremlinProxy):
 
         super().__init__(key_property_name=key_property_name,
                          remote_connection=DriverRemoteConnection(**driver_remote_connection_options))
+
+
+
