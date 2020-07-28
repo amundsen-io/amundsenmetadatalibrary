@@ -170,7 +170,7 @@ class AbstractGremlinProxy(BaseProxy):
             tags.append(
                 Tag(
                     tag_type=tag_node['tag_type'],
-                    tag_id=tag_node['tag_id']
+                    tag_name=tag_node['tag_id']
                 )
             )
         table = Table(
