@@ -7,7 +7,7 @@ import gremlin_python
 from gremlin_python.process.traversal import T, Order, gt
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Table, Column, Reader
+from amundsen_common.models.table import Table, Column, Reader, Tag
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from gremlin_python.driver.driver_remote_connection import \
@@ -123,36 +123,65 @@ class AbstractGremlinProxy(BaseProxy):
         return users
 
     def get_table(self, *, table_uri: str) -> Table:
-        table_query = self.g.V().hasId(table_uri).as_('table')
-        table_query = table_query.union(__.select('table').valueMap(True),
-                                        __.select('table').out().valueMap(True),
-                                        __.select('table').out().hasLabel('Schema').out().hasLabel('Cluster').valueMap(True),
-                                        __.select('table').out().hasLabel('Schema').out().hasLabel('Cluster').out().hasLabel('Database').valueMap(True))
-        table_results = table_query.fold().next()
-        database_node = [table_result for table_result in table_results if table_result[T.label] == 'Database'][0]
-        schema_node = [table_result for table_result in table_results if table_result[T.label] == 'Schema'][0]
-        cluster_node = [table_result for table_result in table_results if table_result[T.label] == 'Cluster'][0]
-        table_node = [table_result for table_result in table_results if table_result[T.label] == 'Table'][0]
-        column_nodes = [table_result for table_result in table_results if table_result[T.label] == 'Column']
-        columns = []
+        result = self.g.V().hasId(table_uri). \
+            project(
+                'database',
+                'cluster',
+                'schema',
+                'schema_description',
+                'name',
+                'is_view',
+                'key',
+                'description',
+                'columns',
+                'tags',
+            ). \
+            by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
+            by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
+            by(__.out('TABLE_OF').values('name')). \
+            by(__.coalesce(__.out('TABLE_OF').out('DESCRIPTION_OF').values('description'), __.constant(''))). \
+            by('name'). \
+            by('is_view'). \
+            by(T.id). \
+            by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))). \
+            by(__.out('COLUMN').project('column_name', 'column_description', 'column_type', 'sort_order').\
+               by('name').\
+               by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))).\
+               by('type'). \
+               by('sort_order').fold()). \
+            by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(__.id()).by(__.values('tag_type')).fold()).\
+            next()
+
+        column_nodes = result['columns']
+        tag_nodes = result['tags']
         readers = self._get_table_users(table_uri=table_uri)
+        columns = []
         for column_node in column_nodes:
-            # TODO column descriptions and column stats
+            # TODO column stats
             column = Column(
-                name=column_node['name'][0],
-                description='',
-                col_type=column_node['type'][0],
-                sort_order=column_node['sort_order'][0]
+                name=column_node.get('column_name'),
+                description=column_node.get('column_description'),
+                col_type=column_node.get('column_type'),
+                sort_order=column_node('sort_order')
             )
             columns.append(column)
+        tags = []
+        for tag_node in tag_nodes:
+            tags.append(
+                Tag(
+                    tag_type=tag_node['tag_type'],
+                    tag_id=tag_node['tag_id']
+                )
+            )
         table = Table(
-            schema=schema_node['name'][0],
-            database=database_node['name'][0],
-            cluster=cluster_node['name'][0],
+            schema=result.get('schema'),
+            database=result.get('database'),
+            cluster=result.get('cluster'),
             table_readers=readers,
-            name=table_node['name'][0],
+            name=result.get('name'),
             columns=columns,
-            is_view=table_node['is_view'][0]
+            is_view=result.get('is_view'),
+            tags=tags
         )
         return table
 
@@ -201,7 +230,34 @@ class AbstractGremlinProxy(BaseProxy):
     def put_table_description(self, *,
                               table_uri: str,
                               description: str) -> None:
-        pass
+        self._put_resource_description(
+            uri=table_uri,
+            description=description
+        )
+
+    def _put_resource_description(self, *,
+                                  uri: str,
+                                  description: str) -> None:
+
+        desc_key = uri + '/_description'
+        node_properties = {
+            'description': description
+        }
+        tx = self.g
+        tx = self.upsert_node_as_tx(
+            tx=tx,
+            node_id=desc_key,
+            node_label="Description",
+            node_properties=node_properties
+        )
+        tx = self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=uri,
+            end_node_id=desc_key,
+            edge_label="DESCRIPTION",
+            edge_properties={}
+        )
+        tx.next()
 
     def add_tag(self, *, id: str, tag: str, tag_type: str, resource_type: ResourceType = ResourceType.Table) -> None:
         # id is the table id.
@@ -355,7 +411,7 @@ class AbstractGremlinProxy(BaseProxy):
                     node_properties
                     ):
         tx = self.g
-        self.upsert_node_as_tx(
+        tx = self.upsert_node_as_tx(
             tx,
             node_id=node_id,
             node_label=node_label,
