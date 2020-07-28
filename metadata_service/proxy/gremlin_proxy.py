@@ -257,7 +257,7 @@ class AbstractGremlinProxy(BaseProxy):
             by(T.id).by(__.outE('READ_BY').count()). \
             by(__.project('readers', 'total_reads').\
                by(__.outE('READ_BY').count()).\
-               by(__.coalesce(__.outE('READ_BY').values('read_count'), __.constant(0))).\
+               by(__.coalesce(__.outE('READ_BY').values('read_count'), __.constant(0)).sum()).\
                math('readers * log(total_reads)')). \
             order().by(__.select('score'), Order.desc). \
             limit(num_entries). \
