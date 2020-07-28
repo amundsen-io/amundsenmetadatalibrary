@@ -162,7 +162,7 @@ class AbstractGremlinProxy(BaseProxy):
                 name=column_node.get('column_name'),
                 description=column_node.get('column_description'),
                 col_type=column_node.get('column_type'),
-                sort_order=column_node('sort_order')
+                sort_order=column_node.get('sort_order')
             )
             columns.append(column)
         tags = []
