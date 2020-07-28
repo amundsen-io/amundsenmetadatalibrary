@@ -202,9 +202,32 @@ class AbstractGremlinProxy(BaseProxy):
         pass
 
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
-        table_uris = self._get_popular_tables_uris(num_entries)
+        table_uris = self._get_popular_tables(num_entries)
         if not table_uris:
             return []
+
+        records = self.g.V(table_uris). \
+            project('table_name', 'schema_name', 'cluster_name', 'database_name', 'table_description'). \
+            by('name'). \
+            by(__.out('TABLE_OF').values('name')). \
+            by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
+            by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
+            by(__.coalesce(__.out('DESCRIPTION_OF').values('description'), __.constant(''))). \
+            toList()
+
+        popular_tables = []
+        for record in records:
+            popular_table = PopularTable(
+                database=record['database_name'],
+                cluster=record['cluster_name'],
+                schema=record['schema_name'],
+                name=record['table_name'],
+                description=record['table_description']
+            )
+            popular_tables.append(popular_table)
+
+        return popular_tables
+
 
     @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
     def _get_popular_tables(self, num_entries: int):
