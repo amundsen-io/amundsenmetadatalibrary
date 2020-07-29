@@ -107,21 +107,27 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        user_result = self.g.V().hasLabel('User').hasId(id).valueMap(True).fold().next()
+        result = self.g.V(id).project('id', 'email').\
+            by(__.id()).\
+            by('email').\
+            next()
         user = UserEntity(
-            id=user_result[T.id],
-            email=user_result['email'][0]
+            id=result.get('id'),
+            email=result.get('email')
         )
 
         return user
 
     def get_users(self) -> List[UserEntity]:
-        users_result = self.g.V().hasLabel('User').valueMap(True).toList()
+        users_result = self.g.V().hasLabel('User').project('id', 'email'). \
+            by(__.id()). \
+            by('email').\
+            toList()
         users = []
         for user_result in users_result:
             user = UserEntity(
-                id=user_result[T.id],
-                email=user_result['email'][0]
+                id=user_result.get('id'),
+                email=user_result.get('email')
             )
             users.append(user)
         return users

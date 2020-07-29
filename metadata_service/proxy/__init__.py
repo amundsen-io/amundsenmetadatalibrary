@@ -2,12 +2,13 @@ from datetime import datetime
 
 from threading import Lock
 
+import boto3
 from flask import current_app
 from werkzeug.utils import import_string
 
 from metadata_service import config
 from metadata_service.proxy.base_proxy import BaseProxy
-import boto3
+
 
 PROXY_LIFE_SPAN_SECONDS = 7200  # 2 Hours
 
