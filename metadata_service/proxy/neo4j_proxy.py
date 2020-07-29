@@ -71,6 +71,9 @@ class Neo4jProxy(BaseProxy):
                                             encrypted=encrypted,
                                             trust=trust)  # type: Driver
 
+    def close_driver(self):
+        self._driver.close()
+
     @timer_with_counter
     def get_table(self, *, table_uri: str) -> Table:
         """

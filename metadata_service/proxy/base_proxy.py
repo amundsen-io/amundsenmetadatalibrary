@@ -19,6 +19,10 @@ class BaseProxy(metaclass=ABCMeta):
     """
 
     @abstractmethod
+    def close_driver(self):
+        pass
+
+    @abstractmethod
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
         pass
 

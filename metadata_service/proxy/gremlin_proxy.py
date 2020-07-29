@@ -58,6 +58,9 @@ class AbstractGremlinProxy(BaseProxy):
 
         self._g: GraphTraversalSource = traversal().withRemote(self.remote_connection)
 
+    def close_driver(self):
+        self.remote_connection.close()
+
     @property
     def g(self) -> GraphTraversalSource:
         """
@@ -104,11 +107,12 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        user_result = self.g.V().hasLabel('User').has('email', id).valueMap(True).fold().next()
+        user_result = self.g.V().hasLabel('User').hasId(id).valueMap(True).fold().next()
         user = UserEntity(
             id=user_result[T.id],
             email=user_result['email'][0]
         )
+
         return user
 
     def get_users(self) -> List[UserEntity]:
