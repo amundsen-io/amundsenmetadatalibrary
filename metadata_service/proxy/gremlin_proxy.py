@@ -156,7 +156,7 @@ class AbstractGremlinProxy(BaseProxy):
             by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))). \
             by(__.out('COLUMN').project('column_name', 'column_description', 'column_type', 'sort_order').\
                by('name').\
-               by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))).\
+               by(__.coalesce(__.out('DESCRIPTION_OF').values('description'), __.constant(''))).\
                by('type'). \
                by('sort_order').fold()). \
             by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(__.id()).by(__.values('tag_type')).fold()).\
