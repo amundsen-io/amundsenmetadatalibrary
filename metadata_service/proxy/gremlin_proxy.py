@@ -187,6 +187,7 @@ class AbstractGremlinProxy(BaseProxy):
             schema=result.get('schema'),
             database=result.get('database'),
             cluster=result.get('cluster'),
+            description=result.get('description'),
             table_readers=readers,
             name=result.get('name'),
             columns=columns,
@@ -233,7 +234,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
-        result = self.g.V().hasId(table_uri).out('DESCRIPTION').value('description').next()
+        result = self.g.V(table_uri).out('DESCRIPTION').values('description').next()
         return result
 
     def put_table_description(self, *,
