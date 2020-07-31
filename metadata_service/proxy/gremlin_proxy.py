@@ -352,7 +352,8 @@ class AbstractGremlinProxy(BaseProxy):
     def get_column_description(self, *,
                                table_uri: str,
                                column_name: str) -> Union[str, None]:
-        pass
+        column_uri = table_uri + '/' + column_name + '/_description' # type: str
+        return self.g.V(column_uri).values('description').next()
 
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
         table_uris = self._get_popular_tables(num_entries)
