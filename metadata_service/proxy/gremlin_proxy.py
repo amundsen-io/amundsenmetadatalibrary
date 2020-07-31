@@ -150,14 +150,14 @@ class AbstractGremlinProxy(BaseProxy):
             by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
             by(__.out('TABLE_OF').values('name')). \
-            by(__.coalesce(__.out('TABLE_OF').out('DESCRIPTION_OF').values('description'), __.constant(''))). \
+            by(__.coalesce(__.out('TABLE_OF').out('DESCRIPTION').values('description'), __.constant(''))). \
             by('name'). \
             by('is_view'). \
             by(T.id). \
             by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))). \
             by(__.out('COLUMN').project('column_name', 'column_description', 'column_type', 'sort_order').\
                by('name').\
-               by(__.coalesce(__.out('DESCRIPTION_OF').values('description'), __.constant(''))).\
+               by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))).\
                by('type'). \
                by('sort_order').fold()). \
             by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(__.id()).by(__.values('tag_type')).fold()).\
@@ -328,7 +328,26 @@ class AbstractGremlinProxy(BaseProxy):
                                table_uri: str,
                                column_name: str,
                                description: str) -> None:
-        pass
+        column_uri = table_uri + '/' + column_name  # type: str
+        desc_key = column_uri + '/_description'
+        node_properties = {
+            'description': description
+        }
+        tx = self.g
+        tx = self.upsert_node_as_tx(
+            tx=tx,
+            node_id=desc_key,
+            node_label="Description",
+            node_properties=node_properties
+        )
+        tx = self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=column_uri,
+            end_node_id=desc_key,
+            edge_label="DESCRIPTION",
+            edge_properties={}
+        )
+        tx.next()
 
     def get_column_description(self, *,
                                table_uri: str,
