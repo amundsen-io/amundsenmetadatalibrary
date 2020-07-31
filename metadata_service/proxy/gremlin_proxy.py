@@ -112,7 +112,7 @@ class AbstractGremlinProxy(BaseProxy):
             by('email').\
             next()
         user = UserEntity(
-            id=result.get('id'),
+            user_id=result.get('id'),
             email=result.get('email')
         )
 
@@ -145,6 +145,7 @@ class AbstractGremlinProxy(BaseProxy):
                 'description',
                 'columns',
                 'tags',
+                'owners'
             ). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
@@ -160,10 +161,12 @@ class AbstractGremlinProxy(BaseProxy):
                by('type'). \
                by('sort_order').fold()). \
             by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(__.id()).by(__.values('tag_type')).fold()).\
+            by(__.inE('OWNER').outV().values('email').fold()).\
             next()
 
         column_nodes = result['columns']
         tag_nodes = result['tags']
+        owner_nodes = result['owners']
         readers = self._get_table_users(table_uri=table_uri)
         columns = []
         for column_node in column_nodes:
@@ -183,6 +186,14 @@ class AbstractGremlinProxy(BaseProxy):
                     tag_name=tag_node['tag_id']
                 )
             )
+
+        owners = []
+        for owner in owner_nodes:
+            owners.append(
+                UserEntity(
+                    email=owner
+                )
+            )
         table = Table(
             schema=result.get('schema'),
             database=result.get('database'),
@@ -192,7 +203,8 @@ class AbstractGremlinProxy(BaseProxy):
             name=result.get('name'),
             columns=columns,
             is_view=result.get('is_view'),
-            tags=tags
+            tags=tags,
+            owners=owners
         )
         return table
 
@@ -215,22 +227,20 @@ class AbstractGremlinProxy(BaseProxy):
 
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
         forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
-            from_from_vertex_id=owner,
-            to_vertex_id=table_uri,
-            label="OWNER"
-        )
-        self.g.E().hasId(forward_key).drop()
-
-    def add_owner(self, *, table_uri: str, owner: str) -> None:
-        user = self.get_user(email=owner)
-        if user is None:
-            self.g.addV(T.id, owner, T.label, "User").property('email', owner).property('is_active', True)
-        forward_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
             from_vertex_id=owner,
             to_vertex_id=table_uri,
             label="OWNER"
         )
-        self.g.addE(T.id, forward_key, T.label, "OWNER")
+        self.g.E().hasId(forward_key).drop().iterate()
+
+    def add_owner(self, *, table_uri: str, owner: str) -> None:
+        user = self.get_user(id=owner)
+        self.upsert_edge(
+            start_node_id=user.user_id,
+            end_node_id=table_uri,
+            edge_label="OWNER",
+            edge_properties={}
+        )
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
@@ -465,7 +475,7 @@ class AbstractGremlinProxy(BaseProxy):
                     edge_label,
                     edge_properties: Dict[str, Any]):
         tx = self.g
-        self.upsert_edge_as_tx(
+        tx = self.upsert_edge_as_tx(
             tx=tx,
             start_node_id=start_node_id,
             end_node_id=end_node_id,
