@@ -4,7 +4,7 @@ from random import randint
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
-from gremlin_python.process.traversal import T, Order, gt
+from gremlin_python.process.traversal import T, Order, gt, Cardinality
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table, Column, Reader, Tag
@@ -455,7 +455,7 @@ class AbstractGremlinProxy(BaseProxy):
         for key, value in node_properties.items():
             if not value:
                 continue
-            tx = tx.property(key, value)
+            tx = tx.property(Cardinality.single, key, value)
 
         return tx
 
