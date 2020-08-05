@@ -15,6 +15,11 @@ test_unit:
 lint:
 	python3 -m flake8
 
+.PHONY: setup_gremlin_server
+setup_gremlin_server:
+	docker pull tinkerpop/gremlin-server:3.4.7
+	docker run -p 8182:8182 tinkerpop/gremlin-server:3.4.7
+
 .PHONY: mypy
 mypy:
 	mypy --ignore-missing-imports --follow-imports=skip --strict-optional --warn-no-return .
