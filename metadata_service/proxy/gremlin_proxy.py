@@ -155,9 +155,11 @@ class AbstractGremlinProxy(BaseProxy):
             by('is_view'). \
             by(T.id). \
             by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))). \
-            by(__.out('COLUMN').project('column_name', 'column_description', 'column_type', 'sort_order').\
+            by(__.out('COLUMN').project('column_name', 'column_descriptions', 'column_type', 'sort_order').\
                by('name').\
-               by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))).\
+               by(__.out('DESCRIPTION').project('text', 'description_type').\
+                    by('description').\
+                    by(__.label()).fold()).\
                by('type'). \
                by('sort_order').fold()). \
             by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(__.id()).by(__.values('tag_type')).fold()).\
@@ -170,10 +172,17 @@ class AbstractGremlinProxy(BaseProxy):
         readers = self._get_table_users(table_uri=table_uri)
         columns = []
         for column_node in column_nodes:
+            programmatic_descriptions = [description.get('text') for description in column_node.get('column_descriptions') if description.get('description_type') == "Programmatic_Description"]
+            default_descriptions = [description.get('text') for description in column_node.get('column_descriptions') if description.get('description_type') == "Description"]
+            column_description = ''
+            if len(default_descriptions) > 0:
+                column_description = default_descriptions[0]
+            elif len(default_descriptions) > 0:
+                column_description = programmatic_descriptions[0]
             # TODO column stats
             column = Column(
                 name=column_node.get('column_name'),
-                description=column_node.get('column_description'),
+                description=column_description,
                 col_type=column_node.get('column_type'),
                 sort_order=column_node.get('sort_order')
             )
