@@ -177,7 +177,7 @@ class AbstractGremlinProxy(BaseProxy):
             column_description = ''
             if len(default_descriptions) > 0:
                 column_description = default_descriptions[0]
-            elif len(default_descriptions) > 0:
+            elif len(programmatic_descriptions) > 0:
                 column_description = programmatic_descriptions[0]
             # TODO column stats
             column = Column(
