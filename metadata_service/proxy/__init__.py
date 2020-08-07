@@ -10,7 +10,7 @@ from metadata_service import config
 from metadata_service.proxy.base_proxy import BaseProxy
 
 
-PROXY_LIFE_SPAN_SECONDS = 7200  # 2 Hours
+PROXY_LIFE_SPAN_SECONDS = 3599  # 1 Hour
 
 _proxy_client = None
 _proxy_created_at = None
