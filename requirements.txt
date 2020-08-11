@@ -44,7 +44,7 @@ typing==3.6.4
 # accross different amundsen repositories.
 amundsen-common>=0.3.6,<1.0
 
-flasgger==0.9.3
+flasgger==0.9.5
 Flask-RESTful==0.3.6
 Flask==1.0.2
 flask-cors==3.0.8
