@@ -61,7 +61,7 @@ MarkupSafe==1.1
 pytz==2018.4
 six==1.11.0
 Werkzeug==0.15.3
-wheel==0.33.1
+wheel==0.34.2
 neo4j==1.7.6
 neotime==1.7.1
 pytz==2018.4
