@@ -23,7 +23,7 @@ pytest-cov==2.5.1
 # Rolling backport of unittest.mock for all Pythons
 # License: BSD
 # Upstream url: https://mock.readthedocs.io/en/latest/
-mock==2.0.0
+mock==4.0.2
 
 # Mypy is an optional static type checker for Python.
 # License: MIT
