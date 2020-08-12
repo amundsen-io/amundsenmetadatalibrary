@@ -107,8 +107,8 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        result = self.g.V(id).project('id', 'email').\
-            by(__.id()).\
+        result = self.g.V().hasLabel('User').has(self.key_property_name).project('id', 'email').\
+            by(self.key_property_name).\
             by('email').\
             next()
         user = UserEntity(
@@ -487,8 +487,8 @@ class AbstractGremlinProxy(BaseProxy):
                           node_label,
                           node_properties
                           ):
-        create_traversal = __.addV(node_label).property(T.id, node_id)
-        tx = tx.V().hasId(node_id). \
+        create_traversal = __.addV(node_label).property(self.key_property_name, node_id)
+        tx = tx.V().has(self.key_property_name, node_id). \
             fold(). \
             coalesce(__.unfold(), create_traversal)
         for key, value in node_properties.items():
@@ -525,8 +525,8 @@ class AbstractGremlinProxy(BaseProxy):
             to_vertex_id=end_node_id,
             label=edge_label
         )
-        create_traversal = __.V(start_node_id).addE(edge_label).to(__.V(end_node_id)).property(T.id, edge_id)
-        tx = tx.V(start_node_id).outE(edge_label).hasId(edge_id). \
+        create_traversal = __.V(start_node_id).addE(edge_label).to(__.V(end_node_id)).property(self.key_property_name, edge_id)
+        tx = tx.V(start_node_id).outE(edge_label).has(self.key_property_name, edge_id). \
             fold(). \
             coalesce(__.unfold(), create_traversal)
         for key, value in edge_properties.items():
