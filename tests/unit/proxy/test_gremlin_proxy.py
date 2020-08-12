@@ -62,10 +62,24 @@ class TestGremlinProxy(unittest.TestCase):
         proxy_transversal.next()
 
     def _create_test_table(self, table: Table):
-        table_database = table.database
-        table_cluster = table.cluster
-        table_schema = table.schema
-        table_source = table.source
+        table_id = '{db}://{cluster}.{schema}/{tbl}'.format(
+            db=table.database,
+            cluster=table.cluster,
+            schema=table.schema,
+            tbl=table.name
+        )
+        self.proxy.upsert_node(
+            node_id=table_id,
+            node_label="Table",
+            node_properties={
+                'name':table.name,
+                'is_view':table.is_view
+            }
+        )
+        self._create_test_table_database(table.database)
+        self._create_test_table_cluster(table)
+        self._create_test_table_schema(table)
+        self._create_test_table_source(table, table.source)
         table_tags = table.tags
         table_badges = table.badges
         table_readers = table.table_readers
@@ -74,13 +88,85 @@ class TestGremlinProxy(unittest.TestCase):
         table_owners = table.owners
         table_watermarks = table.watermarks
 
-    def _create_test_database(self, database_name):
+    def _create_test_table_database(self, database_name):
         database_id = 'database://{db}'.format(db=database_name)
         self.proxy.upsert_node(
             node_id=database_id,
             node_label='Database',
             node_properties={
                 'name': database_name
+            }
+        )
+
+    def _create_test_table_cluster(self, table: Table):
+        cluster_id = '{db}://{cluster}'.format(
+            db=table.database,
+            cluster=table.cluster
+        )
+        self.proxy.upsert_node(
+            node_id=cluster_id,
+            node_label='Cluster',
+            node_properties={
+                'name': table.cluster
+            }
+        )
+
+    def _create_test_table_schema(self, table: Table):
+        schema_id = '{db}://{cluster}.{schema}'.format(
+            db=table.database,
+            cluster=table.cluster,
+            schema=table.schema
+        )
+        self.proxy.upsert_node(
+            node_id=schema_id,
+            node_label='Schema',
+            node_properties={
+                'name': table.schema
+            }
+        )
+
+    def _create_test_table_source(self, table: Table, source: Source):
+        source_id = '{db}://{cluster}.{schema}/{tbl}/_source'.format(
+            db=table.database,
+            cluster=table.cluster,
+            schema=table.schema,
+            tbl=table.name
+        )
+        table_id = '{db}://{cluster}.{schema}/{tbl}'.format(
+            db=table.database,
+            cluster=table.cluster,
+            schema=table.schema,
+            tbl=table.name
+        )
+        self.proxy.upsert_node(
+            node_id=source_id,
+            node_label='Source',
+            node_properties={
+                'source': source.source,
+                'source_type': source.source_type
+            }
+        )
+
+        self.proxy.upsert_edge(
+            start_node_id=table_id,
+            end_node_id=source_id,
+            edge_label="SOURCE",
+            edge_properties={}
+        )
+        self.proxy.upsert_edge(
+            start_node_id=source_id,
+            end_node_id=table_id,
+            edge_label="SOURCE_OF",
+            edge_properties={}
+        )
+
+    def _create_test_tags(self, tag: Tag, entity_id: str):
+        tag_id = tag.tag_name
+        self.proxy.upsert_node(
+            node_id=tag_id,
+            node_label="Tag",
+            node_properties={
+                'tag_type': tag.tag_type
             }
         )
 
