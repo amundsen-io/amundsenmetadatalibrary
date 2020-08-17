@@ -474,7 +474,7 @@ class AbstractGremlinProxy(BaseProxy):
                     ):
         tx = self.g
         tx = self.upsert_node_as_tx(
-            tx,
+            tx=tx,
             node_id=node_id,
             node_label=node_label,
             node_properties=node_properties
