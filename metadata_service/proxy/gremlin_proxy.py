@@ -426,10 +426,34 @@ class AbstractGremlinProxy(BaseProxy):
             -> Dict[str, List[DashboardSummary]]:
         pass
 
-    def get_table_by_user_relation(self, *, user_email: str,
+    def get_table_by_user_relation(self, *,
+                                   user_email: str,
                                    relation_type: UserResourceRel) -> Dict[str, Any]:
-        raise NotFoundException('User {user_id} does not {relation} any resources'.format(user_id=user_email,
-                                                                                          relation=relation_type))
+        if relation_type == UserResourceRel.follow:
+            relation_label = "FOLLOW"
+        elif relation_type == UserResourceRel.own:
+            relation_label = "OWNER"
+        elif relation_type == UserResourceRel.read:
+            relation_label = "READ"
+        else:
+            raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
+        table_records = self.g.V().has(self.key_property_name, user_email).outE(relation_label).outV("Table")\
+            .project('table_name', 'schema_name', 'cluster_name', 'database_name', 'table_description').\
+            by('name'). \
+            by(__.out('TABLE_OF').values('name')). \
+            by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
+            by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
+            by(__.coalesce(__.out('DESCRIPTION_OF').values('description'), __.constant(''))).toList()
+
+        results = []
+        for record in table_records:
+            results.append(PopularTable(
+                database=record['database_name'],
+                cluster=record['cluster_name'],
+                schema=record['schema_name'],
+                name=record['table_name'],
+                description=record['table_description']))
+        return {ResourceType.Table.name.lower(): results}
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
         pass
