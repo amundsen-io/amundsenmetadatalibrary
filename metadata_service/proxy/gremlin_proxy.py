@@ -439,7 +439,52 @@ class AbstractGremlinProxy(BaseProxy):
                                       user_id: str,
                                       relation_type: UserResourceRel,
                                       resource_type: ResourceType) -> None:
-        pass
+        """
+        Update table user informations.
+        1. Do a upsert of the user node.
+        2. Do a upsert of the relation/reverse-relation edge.
+
+        :param table_uri:
+        :param user_id:
+        :param relation_type:
+        :return:
+        """
+        tx = self.g
+        tx = self.upsert_node_as_tx(
+            tx=tx,
+            node_id=user_id,
+            node_label="User",
+            node_properties={
+                'email': user_id
+            }
+        )
+        if relation_type == UserResourceRel.follow:
+            relation_label = "FOLLOW"
+            reverse_relation_label = None
+        elif relation_type == UserResourceRel.own:
+            relation_label = "OWNER"
+            reverse_relation_label = "OWNER_OF"
+        else:
+            raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
+
+        tx = self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=user_id,
+            end_node_id=id,
+            edge_label=relation_label,
+            edge_properties={}
+        )
+        if reverse_relation_label:
+            tx = self.upsert_edge_as_tx(
+                tx=tx,
+                start_node_id=id,
+                end_node_id=user_id,
+                edge_label=reverse_relation_label,
+                edge_properties={}
+            )
+
+        tx.next()
+
 
     def delete_resource_relation_by_user(self, *,
                                          id: str,
