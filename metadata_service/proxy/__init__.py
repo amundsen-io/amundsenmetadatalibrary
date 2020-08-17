@@ -8,6 +8,7 @@ from werkzeug.utils import import_string
 
 from metadata_service import config
 from metadata_service.proxy.base_proxy import BaseProxy
+from gremlin_python.process.traversal import T
 
 
 PROXY_LIFE_SPAN_SECONDS = 3599  # 1 Hour
@@ -90,6 +91,7 @@ def _create_proxy():
         neptune_endpoint = client_init_params.pop('host')
         client_init_params.pop('user')
         client_init_params['host'] = "wss://{}:{}/gremlin".format(neptune_endpoint, neptune_port)
+        client_init_params['key_property_name'] = T.id
 
     client = import_string(current_app.config[config.PROXY_CLIENT])
     return client(**client_init_params)

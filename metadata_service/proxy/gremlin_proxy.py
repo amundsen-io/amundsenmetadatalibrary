@@ -107,7 +107,7 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
-        result = self.g.V().hasLabel('User').has(self.key_property_name).project('id', 'email').\
+        result = self.g.V().hasLabel('User').has(self.key_property_name, id).project('id', 'email').\
             by(self.key_property_name).\
             by('email').\
             next()
@@ -153,7 +153,7 @@ class AbstractGremlinProxy(BaseProxy):
             by(__.coalesce(__.out('TABLE_OF').out('DESCRIPTION').values('description'), __.constant(''))). \
             by('name'). \
             by('is_view'). \
-            by(T.id). \
+            by(self.key_property_name). \
             by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))). \
             by(__.out('COLUMN').project('column_name', 'column_descriptions', 'column_type', 'sort_order').\
                by('name').\
@@ -162,7 +162,7 @@ class AbstractGremlinProxy(BaseProxy):
                     by(__.label()).fold()).\
                by('type'). \
                by('sort_order').fold()). \
-            by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(__.id()).by(__.values('tag_type')).fold()).\
+            by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(self.key_property_name).by(__.values('tag_type')).fold()).\
             by(__.inE('OWNER').outV().values('email').fold()).\
             next()
 
@@ -396,7 +396,7 @@ class AbstractGremlinProxy(BaseProxy):
         results = self.g.V().hasLabel('Table'). \
             where(__.outE('READ_BY').count().is_(gt(0))). \
             project('table_key', 'score'). \
-            by(T.id).by(__.outE('READ_BY').count()). \
+            by(self.key_property_name).by(__.outE('READ_BY').count()). \
             by(__.project('readers', 'total_reads').\
                by(__.outE('READ_BY').count()).\
                by(__.coalesce(__.outE('READ_BY').values('read_count'), __.constant(0)).sum()).\
@@ -411,7 +411,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_tags(self) -> List:
         records = self.g.V().hasLabel('Tag').project('tag_name', 'tag_count').\
-            by(__.id()).\
+            by(self.key_property_name).\
             by(__.outE("TAG").count()).toList()
 
         results = []

@@ -20,10 +20,13 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
     See also https://docs.aws.amazon.com/neptune/latest/userguide/access-graph-gremlin-differences.html
     See also https://docs.aws.amazon.com/neptune/latest/userguide/access-graph-gremlin-sessions.html
     """
-    def __init__(self, *, host: str, port: Optional[int] = None, user: str = None,
-                 password: Optional[Union[str, Mapping[str, str]]] = None,
+    def __init__(self, *,
+                 host: str, port: Optional[int] = None,
+                 user: str = None, password: Optional[Union[str, Mapping[str, str]]] = None,
+                 key_property_name: str = 'key',
                  driver_remote_connection_options: Mapping[str, Any] = {},
-                 aws4auth_options: Mapping[str, Any] = {}, websocket_options: Mapping[str, Any] = {}) -> None:
+                 aws4auth_options: Mapping[str, Any] = {},
+                 websocket_options: Mapping[str, Any] = {}) -> None:
         driver_remote_connection_options = dict(driver_remote_connection_options)
         # as others, we repurpose host a url
         driver_remote_connection_options.update(url=host)
@@ -64,7 +67,7 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
                 return WebsocketClientTransport(extra_websocket_options=websocket_options or {})
             driver_remote_connection_options.update(transport_factory=factory)
 
-        super().__init__(key_property_name='key',
+        super().__init__(key_property_name=key_property_name,
                          remote_connection=DriverRemoteConnection(**driver_remote_connection_options))
 
     @classmethod
