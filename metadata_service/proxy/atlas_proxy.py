@@ -377,23 +377,22 @@ class AtlasProxy(BaseProxy):
 
         return parsed_reports
 
-    def _get_owners(self, data_owner: list, fallback_owner: str) -> List[User]:
-        data_owners = list()
+    def _get_owners(self, data_owners: list, fallback_owner: str) -> List[User]:
+        owners_detail = list()
         active_owners = filter(lambda item:
                                item['entityStatus'] == Status.ACTIVE and
                                item['relationshipStatus'] == Status.ACTIVE,
-                               data_owner)
+                               data_owners)
 
         for owner in active_owners:
             owner_qn = owner['displayText']
-            # noinspection PyArgumentList
             owner_data = self.user_detail_method(owner_qn) or {
                 'email': owner_qn,
                 'user_id': owner_qn
             }
-            data_owners.append(User(**owner_data))
+            owners_detail.append(User(**owner_data))
 
-        return data_owners or [User(email=fallback_owner, user_id=fallback_owner)]
+        return owners_detail or [User(email=fallback_owner, user_id=fallback_owner)]
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
         pass
@@ -490,7 +489,6 @@ class AtlasProxy(BaseProxy):
         :param owner: Email address of the owner
         :return: None, as it simply adds the owner.
         """
-        # noinspection PyArgumentList
         if not (self.user_detail_method(owner) or owner):
             raise NotFoundException(f'User "{owner}" does not exist.')
 
@@ -821,7 +819,6 @@ class AtlasProxy(BaseProxy):
 
             for read_entity in read_entities:
                 reader_qn = read_entity.relationshipAttributes['user']['displayText']
-                # noinspection PyArgumentList
                 reader_details = self.user_detail_method(reader_qn) or {
                     'email': reader_qn,
                     'user_id': reader_qn
