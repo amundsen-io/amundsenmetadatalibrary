@@ -437,7 +437,7 @@ class AbstractGremlinProxy(BaseProxy):
             relation_label = "READ"
         else:
             raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
-        table_records = self.g.V().has(self.key_property_name, user_email).outE(relation_label).outV("Table")\
+        table_records = self.g.V().has(self.key_property_name, user_email).outE(relation_label).inV().hasLabel("Table")\
             .project('table_name', 'schema_name', 'cluster_name', 'database_name', 'table_description').\
             by('name'). \
             by(__.out('TABLE_OF').values('name')). \
