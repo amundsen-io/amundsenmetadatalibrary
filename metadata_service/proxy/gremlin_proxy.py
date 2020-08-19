@@ -509,13 +509,34 @@ class AbstractGremlinProxy(BaseProxy):
 
         tx.next()
 
-
     def delete_resource_relation_by_user(self, *,
                                          id: str,
                                          user_id: str,
                                          relation_type: UserResourceRel,
                                          resource_type: ResourceType) -> None:
-        pass
+        if relation_type == UserResourceRel.follow:
+            relation_label = "FOLLOW"
+            reverse_relation_label = None
+        elif relation_type == UserResourceRel.own:
+            relation_label = "OWNER"
+            reverse_relation_label = "OWNER_OF"
+        else:
+            raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
+        edge_ids = [
+            "{from_vertex_id}_{to_vertex_id}_{label}".format(
+                from_vertex_id=user_id,
+                to_vertex_id=id,
+                label=relation_label
+            )
+        ]
+        if reverse_relation_label:
+            edge_ids.append("{from_vertex_id}_{to_vertex_id}_{label}".format(
+                from_vertex_id=id,
+                to_vertex_id=user_id,
+                label=reverse_relation_label
+            ))
+
+        self.g.E(edge_ids).drop().iterate()
 
     def get_dashboard(self,
                       dashboard_uri: str,
