@@ -566,6 +566,10 @@ class Neo4jProxy(BaseProxy):
             tx.commit()
 
     @timer_with_counter
+    def get_badges(self) -> List:
+        return []
+
+    @timer_with_counter
     def add_tag(self, *,
                 id: str,
                 tag: str,
@@ -673,8 +677,8 @@ class Neo4jProxy(BaseProxy):
         # todo: Currently all the tags are default type, we could open it up if we want to include badge
         query = textwrap.dedent("""
         MATCH (t:Tag{tag_type: 'default'})
-        OPTIONAL MATCH (resource)-[:TAGGED_BY]->(t)
-        RETURN t as tag_name, count(distinct resource.key) as tag_count
+        OPTIONAL MATCH (tbl:Table)-[:TAGGED_BY]->(t)
+        RETURN t as tag_name, count(distinct tbl.key) as tag_count
         """)
 
         records = self._execute_cypher_query(statement=query,
