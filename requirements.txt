@@ -50,6 +50,7 @@ marshmallow==2.15.3
 marshmallow-annotations==2.4.0
 MarkupSafe==1.1 
 pytz==2018.4
+six==1.11.0
 Werkzeug==0.15.5
 wheel==0.33.1
 neo4j==1.7.6
