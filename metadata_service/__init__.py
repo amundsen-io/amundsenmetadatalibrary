@@ -22,6 +22,7 @@ from metadata_service.api.system import Neo4jDetailAPI
 from metadata_service.api.table \
     import TableDetailAPI, TableOwnerAPI, TableTagAPI, TableDescriptionAPI, TableDashboardAPI
 from metadata_service.api.tag import TagAPI
+from metadata_service.api.badge import BadgeAPI
 from metadata_service.api.user import (UserDetailAPI, UserFollowAPI,
                                        UserFollowsAPI, UserOwnsAPI,
                                        UserOwnAPI, UserReadsAPI)
@@ -92,6 +93,7 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/table/<path:id>/description')
     api.add_resource(TableTagAPI,
                      '/table/<path:id>/tag/<tag>')
+# TODO add table resource for badge
     api.add_resource(TableOwnerAPI,
                      '/table/<path:table_uri>/owner/<owner>')
     api.add_resource(TableDashboardAPI,
@@ -102,6 +104,8 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/latest_updated_ts')
     api.add_resource(TagAPI,
                      '/tags/')
+    api.add_resource(BadgeAPI,
+                    '/badges/')
     api.add_resource(UserDetailAPI,
                      '/user',
                      '/user/<path:id>')
