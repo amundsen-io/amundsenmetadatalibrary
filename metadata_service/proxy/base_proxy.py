@@ -94,6 +94,10 @@ class BaseProxy(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def get_badges(self) -> List:
+        pass
+
+    @abstractmethod
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
         pass
