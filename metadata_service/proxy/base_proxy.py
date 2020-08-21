@@ -85,14 +85,6 @@ class BaseProxy(metaclass=ABCMeta):
     def get_tags(self) -> List:
         pass
 
-    # @abstractmethod
-    # def get_badges(self) -> List:
-    #     pass
-
-    @abstractmethod
-    def get_badges(self) -> List:
-        pass
-
     @abstractmethod
     def get_badges(self) -> List:
         pass
