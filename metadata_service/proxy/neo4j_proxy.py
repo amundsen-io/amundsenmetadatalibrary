@@ -566,6 +566,38 @@ class Neo4jProxy(BaseProxy):
             tx.commit()
 
     @timer_with_counter
+    def add_badge(self, *,
+                id: str,
+                badge_name: str,
+                sentiment: str = '',
+                category: str = '',
+                resource_type: ResourceType = ResourceType.Table) -> None:
+        # TODO log that a new badge was created
+
+        """
+        TODO do we want all badges that don't have a specified
+        sentiment/category to be neutral and table status? we could keep the
+        legacy UI so this doesn't really matter..?
+        """
+        validation_query = \
+            'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
+
+        # TODO create query that turns all existing badges into new nodes?
+        # TODO make sentiment or categories into enums?
+        upsert_badge_query = textwrap.dedent("""
+        MERGE (u:Badge {key: $badge_name})
+        on CREATE SET u={key: $badge_name, sentiment: $sentiment, category: $category}
+        on MATCH SET u={key: $badge_name, sentiment: $sentiment, category: $category}
+        """)
+
+        upsert_badge_relation_query = textwrap.dedent("""
+        MATCH(n1:Badge {{key: $badge_name, sentiment: $sentiment, category: $category}}), (n2:{resource_type} {{key:$key}})
+        MERGE (n1)-[r1:BADGE_FOR]->(n2)-[r2:HAS_BADGE]->(n1)
+        RETURN n1.key, n2.key
+        """.format(resource_type=resource_type.name))
+
+
+    @timer_with_counter
     def get_badges(self) -> List:
         return []
 
