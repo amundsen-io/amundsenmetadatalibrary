@@ -176,6 +176,22 @@ class AtlasProxy(BaseProxy):
         result = pattern.match(bookmark_qn)
         return result.groupdict() if result else dict()
 
+    def _get_user_detail(self, user_id: str, fallback: str = None) -> Union[Dict, str]:
+        """
+        Helper function to help get the user details if the `USER_DETAIL_METHOD` is configured,
+        else uses the user_id for both email and user_id properties.
+        :param user_id: The Unique user id of a user entity
+        :return: a dictionary of user details
+        """
+        if app.config.get('USER_DETAIL_METHOD'):
+            user_details = app.config.get('USER_DETAIL_METHOD')(user_id)  # type: ignore
+        elif fallback:
+            user_details = fallback
+        else:
+            user_details = {'email': user_id, 'user_id': user_id}
+
+        return user_details
+
     def _get_table_entity(self, *, table_uri: str) -> EntityUniqueAttribute:
         """
         Fetch information from table_uri and then find the appropriate entity
@@ -385,10 +401,7 @@ class AtlasProxy(BaseProxy):
 
         for owner in active_owners:
             owner_qn = owner['displayText']
-            if app.config.get('USER_DETAIL_METHOD'):
-                owner_data = app.config.get('USER_DETAIL_METHOD')(owner_qn)
-            else:
-                owner_data = {'email': owner_qn, 'user_id': owner_qn}
+            owner_data = self._get_user_detail(owner_qn)
             owners_detail.append(User(**owner_data))
 
         return owners_detail or [User(email=fallback_owner, user_id=fallback_owner)]
@@ -492,9 +505,7 @@ class AtlasProxy(BaseProxy):
         :return: None, as it simply adds the owner.
         """
         # Generating owner_info to validate if the user exists
-        owner_info = owner
-        if app.config.get('USER_DETAIL_METHOD'):
-            owner_info = app.config.get('USER_DETAIL_METHOD')(owner)
+        owner_info = self._get_user_detail(owner, fallback=owner)
 
         if not owner_info:
             raise NotFoundException(f'User "{owner}" does not exist.')
@@ -617,7 +628,7 @@ class AtlasProxy(BaseProxy):
             column_name=column_name)
         return column_detail[self.ATTRS_KEY].get('description')
 
-    def _serialize_popular_tables(self, entities) -> List[PopularTable]:
+    def _serialize_popular_tables(self, entities: list) -> List[PopularTable]:
         """
         Gets a list of entities and serialize the popular tables.
         :param entities: List of entities from atlas client
@@ -880,10 +891,7 @@ class AtlasProxy(BaseProxy):
 
             for read_entity in read_entities:
                 reader_qn = read_entity.relationshipAttributes['user']['displayText']
-                if app.config.get('USER_DETAIL_METHOD'):
-                    reader_details = app.config.get('USER_DETAIL_METHOD')(reader_qn)
-                else:
-                    reader_details = {'email': reader_qn, 'user_id': reader_qn}
+                reader_details = self._get_user_detail(reader_qn)
                 reader = Reader(user=User(**reader_details), read_count=read_entity.attributes['count'])
 
                 results.append(reader)
