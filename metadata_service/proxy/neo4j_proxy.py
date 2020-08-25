@@ -15,6 +15,7 @@ from amundsen_common.models.table import (Application, Column, Reader, Source,
                                           Statistics, Table, User,
                                           Watermark, ProgrammaticDescription)
 from amundsen_common.models.table import Tag
+from amundsen_common.models.table import Badge
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -27,6 +28,7 @@ from metadata_service.entity.dashboard_query import DashboardQuery as DashboardQ
 from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.entity.tag_detail import TagDetail
+from metadata_service.entity.badge import Badge
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy.base_proxy import BaseProxy
 from metadata_service.proxy.statsd_utilities import timer_with_counter
@@ -187,7 +189,8 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (tbl)-[:LAST_UPDATED_AT]->(t:Timestamp)
         OPTIONAL MATCH (owner:User)<-[:OWNER]-(tbl)
         OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
-        OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(badge:Tag{tag_type: $tag_badge_type})
+        OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
+        OPTIONAL MATCH (tbl)-[:HAS_BADGE]->(badge:Badge)
         OPTIONAL MATCH (tbl)-[:SOURCE]->(src:Source)
         OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(prog_descriptions:Programmatic_Description)
         RETURN collect(distinct wmk) as wmk_records,
@@ -195,6 +198,7 @@ class Neo4jProxy(BaseProxy):
         t.last_updated_timestamp as last_updated_timestamp,
         collect(distinct owner) as owner_records,
         collect(distinct tag) as tag_records,
+        collect(distinct legacy_badge) as legacy_badge_records,
         collect(distinct badge) as badge_records,
         src,
         collect(distinct prog_descriptions) as prog_descriptions
@@ -230,11 +234,20 @@ class Neo4jProxy(BaseProxy):
                 tags.append(tag_result)
 
         badges = []
+        # kept this for backwards compatibility
+        if table_records.get('legacy_badge_records'):
+            tag_records = table_records['legacy_badge_records']
+            for record in tag_records:
+                badge_result = Tag(tag_name=record['key'],
+                                 tag_type=record['tag_type'])
+                tags.append(badge_result)
+        # this is for any badges added with BadgeAPI instead of TagAPI
         if table_records.get('badge_records'):
             badge_records = table_records['badge_records']
             for record in badge_records:
-                badge_result = Tag(tag_name=record['key'],
-                                   tag_type=record['tag_type'])
+                badge_result = Badge(badge_name=record['key'],
+                                    category=record['category'],
+                                    badge_type=record['badge_type'])
                 badges.append(badge_result)
 
         application_record = table_records['application']
@@ -569,37 +582,63 @@ class Neo4jProxy(BaseProxy):
     def add_badge(self, *,
                 id: str,
                 badge_name: str,
-                sentiment: str = '',
                 category: str = '',
+                badge_type: str = '',
                 resource_type: ResourceType = ResourceType.Table) -> None:
         # TODO log that a new badge was created
 
-        """
-        TODO do we want all badges that don't have a specified
-        sentiment/category to be neutral and table status? we could keep the
-        legacy UI so this doesn't really matter..?
-        """
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
-
-        # TODO create query that turns all existing badges into new nodes?
-        # TODO make sentiment or categories into enums?
+        
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
-        on CREATE SET u={key: $badge_name, sentiment: $sentiment, category: $category}
-        on MATCH SET u={key: $badge_name, sentiment: $sentiment, category: $category}
+        on CREATE SET u={key: $badge_name, category: $category, badge_type: $badge_type}
+        on MATCH SET u={key: $badge_name, category: $category, badge_type: $badge_type}
         """)
 
         upsert_badge_relation_query = textwrap.dedent("""
-        MATCH(n1:Badge {{key: $badge_name, sentiment: $sentiment, category: $category}}), (n2:{resource_type} {{key:$key}})
+        MATCH(n1:Badge {{key: $badge_name, category: $category, badge_type: $badge_type}}), (n2:{resource_type} {{key:$key}})
         MERGE (n1)-[r1:BADGE_FOR]->(n2)-[r2:HAS_BADGE]->(n1)
         RETURN n1.key, n2.key
         """.format(resource_type=resource_type.name))
 
+        try:
+            tx = self._driver.session().begin_transaction()
+            tbl_result = tx.run(validation_query, {'key': id})
+            if not tbl_result.single():
+                raise NotFoundException('id {} does not exist'.format(id))
+            
+            result = tx.run(upsert_badge_query, {'badge_name': badge_name,
+                                            'category': category,
+                                            'badge_type': badge_type
+                                            })
+            if not result.single():
+                raise RuntimeError('failed to create relation between'
+                                'badge {badge} and resource {resource} of resource type'
+                                '{resource_type}'.format(
+                                    badge=badge_name,
+                                    resource=resource,
+                                    resource_type=resource_type))
+            tx.commit()
+        except Exception as e:
+            if not tx.closed():
+                tx.rollback()
+            raise e
+
 
     @timer_with_counter
     def get_badges(self) -> List:
-        return []
+        # TODO logger
+        query = textwrap.dedent("""
+        MATCH (b:Badge) RETURN b as badge
+        """)
+        records = self._execute_cypher_query(statement=query,
+                                            param_dict={})
+        results = []
+        for record in records:
+            results.append(Badge)
+
+        return results
 
     @timer_with_counter
     def add_tag(self, *,
@@ -642,7 +681,7 @@ class Neo4jProxy(BaseProxy):
             if not tbl_result.single():
                 raise NotFoundException('id {} does not exist'.format(id))
 
-            # upsert the node. Currently the type for all the tags is default. We could change it later per UI.
+            # upsert the node
             tx.run(upsert_tag_query, {'tag': tag,
                                       'tag_type': tag_type})
             result = tx.run(upsert_tag_relation_query, {'tag': tag,
@@ -706,7 +745,7 @@ class Neo4jProxy(BaseProxy):
         :return:
         """
         LOGGER.info('Get all the tags')
-        # todo: Currently all the tags are default type, we could open it up if we want to include badge
+        # all the tags are default type
         query = textwrap.dedent("""
         MATCH (t:Tag{tag_type: 'default'})
         OPTIONAL MATCH (tbl:Table)-[:TAGGED_BY]->(t)

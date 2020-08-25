@@ -53,12 +53,14 @@ class TagCommon:
         :param resource_type:
         :param tag:
         :param tag_type:
+        :param sentiment:
+        :param category:
         :return:
         """
 
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
         if tag_type == BADGE_TYPE:
-            # need to check whether the badge is part of the whitelist:
+            # TODO should i add amessage here to pevent people from using TagAPI to add badges and use BadgeAPI instead?
             if tag not in whitelist_badges:
                 return \
                     {'message': 'The tag {} for id {} with type {} and resource_type {} '
