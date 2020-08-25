@@ -176,7 +176,7 @@ class AtlasProxy(BaseProxy):
         result = pattern.match(bookmark_qn)
         return result.groupdict() if result else dict()
 
-    def _get_user_detail(self, user_id: str, fallback: str = None) -> Union[Dict, str]:
+    def _get_user_details(self, user_id: str, fallback: str = None) -> Union[Dict, str]:
         """
         Helper function to help get the user details if the `USER_DETAIL_METHOD` is configured,
         else uses the user_id for both email and user_id properties.
@@ -401,7 +401,7 @@ class AtlasProxy(BaseProxy):
 
         for owner in active_owners:
             owner_qn = owner['displayText']
-            owner_data = self._get_user_detail(owner_qn)
+            owner_data = self._get_user_details(owner_qn)
             owners_detail.append(User(**owner_data))
 
         return owners_detail or [User(email=fallback_owner, user_id=fallback_owner)]
@@ -505,7 +505,7 @@ class AtlasProxy(BaseProxy):
         :return: None, as it simply adds the owner.
         """
         # Generating owner_info to validate if the user exists
-        owner_info = self._get_user_detail(owner, fallback=owner)
+        owner_info = self._get_user_details(owner, fallback=owner)
 
         if not owner_info:
             raise NotFoundException(f'User "{owner}" does not exist.')
@@ -891,7 +891,7 @@ class AtlasProxy(BaseProxy):
 
             for read_entity in read_entities:
                 reader_qn = read_entity.relationshipAttributes['user']['displayText']
-                reader_details = self._get_user_detail(reader_qn)
+                reader_details = self._get_user_details(reader_qn)
                 reader = Reader(user=User(**reader_details), read_count=read_entity.attributes['count'])
 
                 results.append(reader)
