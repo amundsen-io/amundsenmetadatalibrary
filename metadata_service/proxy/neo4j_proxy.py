@@ -15,11 +15,7 @@ from amundsen_common.models.table import (Application, Column, Reader, Source,
                                           Statistics, Table, User,
                                           Watermark, ProgrammaticDescription)
 from amundsen_common.models.table import Tag
-<<<<<<< HEAD
 from amundsen_common.models.table import Badge as TableBadge
-=======
-from amundsen_common.models.table import Badge
->>>>>>> working BadgeAPI..?
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -193,10 +189,6 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (tbl)-[:LAST_UPDATED_AT]->(t:Timestamp)
         OPTIONAL MATCH (owner:User)<-[:OWNER]-(tbl)
         OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
-<<<<<<< HEAD
-=======
-        OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
->>>>>>> working BadgeAPI..?
         OPTIONAL MATCH (tbl)-[:HAS_BADGE]->(badge:Badge)
         OPTIONAL MATCH (tbl)-[:SOURCE]->(src:Source)
         OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(prog_descriptions:Programmatic_Description)
@@ -241,29 +233,13 @@ class Neo4jProxy(BaseProxy):
                 tags.append(tag_result)
 
         badges = []
-<<<<<<< HEAD
-=======
-        # kept this for backwards compatibility
-        if table_records.get('legacy_badge_records'):
-            tag_records = table_records['legacy_badge_records']
-            for record in tag_records:
-                badge_result = Tag(tag_name=record['key'],
-                                 tag_type=record['tag_type'])
-                tags.append(badge_result)
->>>>>>> working BadgeAPI..?
         # this is for any badges added with BadgeAPI instead of TagAPI
         if table_records.get('badge_records'):
             badge_records = table_records['badge_records']
             for record in badge_records:
-<<<<<<< HEAD
                 badge_result = TableBadge(badge_name=record['key'],
                                           category=record['category'],
                                           badge_type=record['badge_type'])
-=======
-                badge_result = Badge(badge_name=record['key'],
-                                    category=record['category'],
-                                    badge_type=record['badge_type'])
->>>>>>> working BadgeAPI..?
                 badges.append(badge_result)
 
         application_record = table_records['application']
@@ -596,7 +572,6 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def add_badge(self, *,
-<<<<<<< HEAD
                   id: str,
                   badge_name: str,
                   category: str = '',
@@ -609,18 +584,6 @@ class Neo4jProxy(BaseProxy):
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
 
-=======
-                id: str,
-                badge_name: str,
-                category: str = '',
-                badge_type: str = '',
-                resource_type: ResourceType = ResourceType.Table) -> None:
-        # TODO log that a new badge was created
-
-        validation_query = \
-            'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
-        
->>>>>>> working BadgeAPI..?
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
         on CREATE SET u={key: $badge_name, category: $category, badge_type: $badge_type}
@@ -628,12 +591,8 @@ class Neo4jProxy(BaseProxy):
         """)
 
         upsert_badge_relation_query = textwrap.dedent("""
-<<<<<<< HEAD
         MATCH(n1:Badge {{key: $badge_name, category: $category, badge_type: $badge_type}}),
         (n2:{resource_type} {{key: $key}})
-=======
-        MATCH(n1:Badge {{key: $badge_name, category: $category, badge_type: $badge_type}}), (n2:{resource_type} {{key:$key}})
->>>>>>> working BadgeAPI..?
         MERGE (n1)-[r1:BADGE_FOR]->(n2)-[r2:HAS_BADGE]->(n1)
         RETURN n1.key, n2.key
         """.format(resource_type=resource_type.name))
@@ -643,7 +602,6 @@ class Neo4jProxy(BaseProxy):
             tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
                 raise NotFoundException('id {} does not exist'.format(id))
-<<<<<<< HEAD
 
             tx.run(upsert_badge_query, {'badge_name': badge_name,
                                         'category': category,
@@ -661,27 +619,12 @@ class Neo4jProxy(BaseProxy):
                                                                      resource=id,
                                                                      resource_type=resource_type,
                                                                      q=upsert_badge_relation_query))
-=======
-            
-            result = tx.run(upsert_badge_query, {'badge_name': badge_name,
-                                            'category': category,
-                                            'badge_type': badge_type
-                                            })
-            if not result.single():
-                raise RuntimeError('failed to create relation between'
-                                'badge {badge} and resource {resource} of resource type'
-                                '{resource_type}'.format(
-                                    badge=badge_name,
-                                    resource=resource,
-                                    resource_type=resource_type))
->>>>>>> working BadgeAPI..?
             tx.commit()
         except Exception as e:
             if not tx.closed():
                 tx.rollback()
             raise e
 
-<<<<<<< HEAD
     @timer_with_counter
     def delete_badge(self, id: str,
                      badge_name: str,
@@ -716,29 +659,16 @@ class Neo4jProxy(BaseProxy):
     @timer_with_counter
     def get_badges(self) -> List:
         LOGGER.info('Get all badges')
-=======
-
-    @timer_with_counter
-    def get_badges(self) -> List:
-        # TODO logger
->>>>>>> working BadgeAPI..?
         query = textwrap.dedent("""
         MATCH (b:Badge) RETURN b as badge
         """)
         records = self._execute_cypher_query(statement=query,
-<<<<<<< HEAD
                                              param_dict={})
         results = []
         for record in records:
             results.append(Badge(badge_name=record['badge']['key'],
                                  category=record['badge']['category'],
                                  badge_type=record['badge']['badge_type']))
-=======
-                                            param_dict={})
-        results = []
-        for record in records:
-            results.append(Badge)
->>>>>>> working BadgeAPI..?
 
         return results
 
