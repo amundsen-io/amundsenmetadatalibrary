@@ -53,32 +53,17 @@ class TagCommon:
         :param resource_type:
         :param tag:
         :param tag_type:
-        :param sentiment:
-        :param category:
         :return:
         """
 
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
         if tag_type == BADGE_TYPE:
-<<<<<<< HEAD
             # TODO remove adding badge functionality, still don't allow tags to have badge names
             # TODO update unit tests
             return \
                 {'message': 'Badges should be added using /badges/, tag_type=badge no longer valid'}, \
                 HTTPStatus.NOT_ACCEPTABLE
 
-=======
-            # TODO should i add amessage here to pevent people from using TagAPI to add badges and use BadgeAPI instead?
-            if tag not in whitelist_badges:
-                return \
-                    {'message': 'The tag {} for id {} with type {} and resource_type {} '
-                                'is not added successfully as badge '
-                                'is not part of the whitelist'.format(tag,
-                                                                      id,
-                                                                      tag_type,
-                                                                      resource_type.name)}, \
-                    HTTPStatus.NOT_FOUND
->>>>>>> working BadgeAPI..?
         else:
             if tag in whitelist_badges:
                 return \
