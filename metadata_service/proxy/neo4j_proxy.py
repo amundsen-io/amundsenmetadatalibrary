@@ -617,7 +617,7 @@ class Neo4jProxy(BaseProxy):
                                 'badge {badge} and resource {resource} of resource type'
                                 '{resource_type}'.format(
                                     badge=badge_name,
-                                    resource=resource,
+                                    resource=id,
                                     resource_type=resource_type))
             tx.commit()
         except Exception as e:
