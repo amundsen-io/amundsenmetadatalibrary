@@ -691,7 +691,7 @@ class AtlasProxy(BaseProxy):
                 )
         return tags
 
-    def _get_resource_followed_by_user(self, user_id: str, resource_type: str) \
+    def _get_resources_followed_by_user(self, user_id: str, resource_type: str) \
             -> List[Union[PopularTable, DashboardSummary]]:
         """
         ToDo (Verdan): Dashboard still needs to be implemented.
@@ -725,18 +725,18 @@ class AtlasProxy(BaseProxy):
         # Fetches the bookmark entities based on filters
         search_results = self._driver.search_basic.create(data=params)
 
-        results = []
+        resources = []
         for record in search_results.entities:
             table_info = self._extract_info_from_uri(table_uri=record.attributes[self.ENTITY_URI_KEY])
             res = self._parse_bookmark_qn(record.attributes[self.QN_KEY])
-            results.append(PopularTable(
+            resources.append(PopularTable(
                 database=table_info['entity'],
                 cluster=res['cluster'],
                 schema=res['db'],
                 name=res['table']))
-        return results
+        return resources
 
-    def _get_resource_owned_by_user(self, user_id: str, resource_type: str) \
+    def _get_resources_owned_by_user(self, user_id: str, resource_type: str) \
             -> List[Union[PopularTable, DashboardSummary, Any]]:
         """
         ToDo (Verdan): Dashboard still needs to be implemented.
@@ -745,7 +745,7 @@ class AtlasProxy(BaseProxy):
         :param resource_type: Type of a resource that returns, could be table, dashboard etc.
         :return: A list of PopularTable, DashboardSummary or any other resource.
         """
-        owned_by_resources = list()
+        resources = list()
         user_entity = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_id).entity
 
         if not user_entity:
@@ -761,22 +761,22 @@ class AtlasProxy(BaseProxy):
 
         entities = extract_entities(self._driver.entity_bulk(guid=resource_guids, ignoreRelationships=True))
         if resource_type == self.TABLE_ENTITY:
-            owned_by_resources = self._serialize_popular_tables(entities)
+            resources = self._serialize_popular_tables(entities)
 
-        return owned_by_resources
+        return resources
 
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
         pass
 
     def get_table_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, Any]:
-        results = list()
+        tables = list()
         if relation_type == UserResourceRel.follow:
-            results = self._get_resource_followed_by_user(user_id=user_email, resource_type=self.TABLE_ENTITY)
+            tables = self._get_resources_followed_by_user(user_id=user_email, resource_type=self.TABLE_ENTITY)
         elif relation_type == UserResourceRel.own:
-            results = self._get_resource_owned_by_user(user_id=user_email, resource_type=self.TABLE_ENTITY)
+            tables = self._get_resources_owned_by_user(user_id=user_email, resource_type=self.TABLE_ENTITY)
 
-        return {'table': results}
+        return {'table': tables}
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, List[PopularTable]]:
         user = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_email).entity
