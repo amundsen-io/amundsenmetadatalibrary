@@ -54,12 +54,12 @@ components:
           badge_name:
             type: string
             description: 'name of the badge'
-          sentiment:
-            type: string
-            description: 'negative, neutral, positive, or warning badge'
           category:
             type: string
             description: 'category that badge belongs to'
+          badge_type:
+            type: string
+            description: 'negative, neutral, positive, or warning badge'
     TableReaderFields:
       type: object
       properties:
