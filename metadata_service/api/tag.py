@@ -53,8 +53,6 @@ class TagCommon:
         :param resource_type:
         :param tag:
         :param tag_type:
-        :param sentiment:
-        :param category:
         :return:
         """
 
