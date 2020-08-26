@@ -16,7 +16,7 @@ from metadata_service.proxy.base_proxy import BaseProxy
 
 badge_fields = {
     'badge_name': fields.String,
-    'sentiment': fields.String,
+    'category': fields.String,
     'badge_type': fields.String,
 }
 
@@ -46,20 +46,20 @@ class BadgeCommon:
             category: str = '',
             badge_type: str = '') -> Tuple[Any, HTTPStatus]:
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
-        if sentiment == '' or category == '':
+        if badge_type == '' or category == '':
             return \
             {'message': 'The badge {} for id {} is not added successfully because '
                         'category `{}` and badge_type {} parameters are required '
-                        'for badges'.format(tag, id, category, badge_type)}
+                        'for badges'.format(badge_name, id, category, badge_type)}
 
         # need to check whether the badge is part of the whitelist:
         if badge_name not in whitelist_badges:
             return \
                 {'message': 'The badge {} for id {} with badge_type {} and resource_type {} '
                             'is not added successfully as badge '
-                            'is not part of the whitelist'.format(tag,
+                            'is not part of the whitelist'.format(badge_name,
                                                                     id,
-                                                                    tag_type,
+                                                                    badge_type,
                                                                     resource_type.name)}, \
                 HTTPStatus.NOT_FOUND
         
