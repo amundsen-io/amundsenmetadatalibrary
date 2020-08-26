@@ -1,6 +1,6 @@
 Get badges
 ---
-badges:
+tags:
   - 'badge'
 responses:
   200:
