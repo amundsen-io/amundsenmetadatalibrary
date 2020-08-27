@@ -708,6 +708,7 @@ class Neo4jProxy(BaseProxy):
         """.format(resource_type=resource_type.name))
 
         try:
+            
             tx = self._driver.session().begin_transaction()
             tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
