@@ -12,6 +12,7 @@ from flask_restful import Resource, reqparse
 
 from metadata_service.api import BaseAPI
 from metadata_service.api.tag import TagCommon
+from metadata_service.api.badge import BadgeCommon
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.entity.dashboard_summary import DashboardSummarySchema
 from metadata_service.exception import NotFoundException
@@ -166,6 +167,8 @@ class TableBadgeAPI(Resource):
         self.parser.add_argument('category', type=str, required=True)
         self.parser.add_argument('badge_type', type=str, required=True)
         super(TableBadgeAPI, self).__init__()
+
+        self._badge_common = BadgeCommon(client=self.client)
     
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:

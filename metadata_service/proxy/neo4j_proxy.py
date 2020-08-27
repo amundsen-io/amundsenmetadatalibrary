@@ -606,7 +606,7 @@ class Neo4jProxy(BaseProxy):
             tx = self._driver.session().begin_transaction()
             tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
-                raise NotFoundException('id {} does not exist'.format(id))
+                raise NotFoundException('id {} does not exist {}'.format(id, tbl_result.single()))
             
             tx.run(upsert_badge_query, {'badge_name': badge_name,
                                             'category': category,
@@ -682,6 +682,7 @@ class Neo4jProxy(BaseProxy):
         """.format(resource_type=resource_type.name))
 
         try:
+            
             tx = self._driver.session().begin_transaction()
             tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
