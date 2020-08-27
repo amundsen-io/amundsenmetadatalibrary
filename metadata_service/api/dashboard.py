@@ -91,6 +91,16 @@ class DashboardBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        args = self.parser.parse_args()
+        # TODO should I have default here?
+        category = args.get('category', '')
+        badge_type = args.get('badge_type', '')
+
+        return self._badge_common.put(id=id,
+                                    resource_type=ResourceType.Dashboard,
+                                    badge_name=badge,
+                                    category=category,
+                                    badge_type=badge_type)
         
 
 class DashboardTagAPI(Resource):
