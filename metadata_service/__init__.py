@@ -94,7 +94,7 @@ def create_app(*, config_module_class: str) -> Flask:
     api.add_resource(TableTagAPI,
                      '/table/<path:id>/tag/<tag>')
     api.add_resource(TableBadgeAPI,
-                     '/table/<path:id>/badge/<tag>')
+                     '/table/<path:id>/badge/<badge>')
     api.add_resource(TableOwnerAPI,
                      '/table/<path:table_uri>/owner/<owner>')
     api.add_resource(TableDashboardAPI,
@@ -127,7 +127,7 @@ def create_app(*, config_module_class: str) -> Flask:
     api.add_resource(DashboardTagAPI,
                      '/dashboard/<path:id>/tag/<tag>')
     api.add_resource(DashboardBadgeAPI,
-                     '/dashboard/<path:id>/badge/<tag>')
+                     '/dashboard/<path:id>/badge/<badge>')
     app.register_blueprint(api_bp)
 
     if app.config.get('SWAGGER_ENABLED'):
