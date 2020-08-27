@@ -92,7 +92,6 @@ class DashboardBadgeAPI(Resource):
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
-
         category = args.get('category', '')
         badge_type = args.get('badge_type', '')
 
