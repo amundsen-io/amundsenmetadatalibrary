@@ -15,12 +15,12 @@ from flask import Flask, Blueprint
 from flask_restful import Api
 
 from metadata_service.api.column import ColumnDescriptionAPI
-from metadata_service.api.dashboard import DashboardDetailAPI, DashboardDescriptionAPI, DashboardTagAPI
+from metadata_service.api.dashboard import DashboardDetailAPI, DashboardDescriptionAPI, DashboardTagAPI, DashboardBadgeAPI
 from metadata_service.api.healthcheck import healthcheck
 from metadata_service.api.popular_tables import PopularTablesAPI
 from metadata_service.api.system import Neo4jDetailAPI
 from metadata_service.api.table \
-    import TableDetailAPI, TableOwnerAPI, TableTagAPI, TableDescriptionAPI, TableDashboardAPI
+    import TableDetailAPI, TableOwnerAPI, TableTagAPI, TableBadgeAPI, TableDescriptionAPI, TableDashboardAPI
 from metadata_service.api.tag import TagAPI
 from metadata_service.api.badge import BadgeAPI
 from metadata_service.api.user import (UserDetailAPI, UserFollowAPI,
@@ -93,7 +93,8 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/table/<path:id>/description')
     api.add_resource(TableTagAPI,
                      '/table/<path:id>/tag/<tag>')
-# TODO add table resource for badge
+    api.add_resource(TableBadgeAPI,
+                     '/table/<path:id>/badge/<tag>')
     api.add_resource(TableOwnerAPI,
                      '/table/<path:table_uri>/owner/<owner>')
     api.add_resource(TableDashboardAPI,
@@ -125,6 +126,8 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/dashboard/<path:id>/description')
     api.add_resource(DashboardTagAPI,
                      '/dashboard/<path:id>/tag/<tag>')
+    api.add_resource(DashboardBadgeAPI,
+                     '/dashboard/<path:id>/badge/<tag>')
     app.register_blueprint(api_bp)
 
     if app.config.get('SWAGGER_ENABLED'):
