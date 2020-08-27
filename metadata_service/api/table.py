@@ -159,6 +159,27 @@ class TableTagAPI(Resource):
                                        tag=tag,
                                        tag_type=tag_type)
 
+class TableBadgeAPI(Resource):
+    def __init__(self) -> None:
+        self.client = get_proxy_client()
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('category', type=str, required=True)
+        self.parser.add_argument('badge_type', type=str, required=True)
+        super(TableBadgeAPI, self).__init__()
+    
+    @swag_from('swagger_doc/badge/badge_put.yml')
+    def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        args = self.parser.parse_args()
+        # TODO should I have default here?
+        category = args.get('category', '')
+        badge_type = args.get('badge_type', '')
+
+        return self._badge_common.put(id=id,
+                                    resource_type=ResourceType.Dashboard,
+                                    badge_name=badge,
+                                    category=category,
+                                    badge_type=badge_type)
+        
 
 class TableDashboardAPI(BaseAPI):
     """
