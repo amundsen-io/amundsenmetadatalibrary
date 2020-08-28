@@ -644,7 +644,9 @@ class Neo4jProxy(BaseProxy):
                                             param_dict={})
         results = []
         for record in records:
-            results.append(Badge)
+            results.append(Badge(badge_name=record['badge']['key'],
+                                category=record['badge']['category'],
+                                badge_type=record['badge']['badge_type']))
 
         return results
 
