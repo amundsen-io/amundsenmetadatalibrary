@@ -87,7 +87,7 @@ class Neo4jProxy(BaseProxy):
 
         readers = self._exec_usage_query(table_uri)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, prog_descs = \
+        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, new_badges, prog_descs = \
             self._exec_table_query(table_uri)
 
         table = Table(database=last_neo4j_record['db']['name'],
@@ -96,6 +96,7 @@ class Neo4jProxy(BaseProxy):
                       name=last_neo4j_record['tbl']['name'],
                       tags=tags,
                       badges=badges,
+                      new_badges=new_badges,
                       description=self._safe_get(last_neo4j_record, 'tbl_dscrpt', 'description'),
                       columns=cols,
                       owners=owners,
@@ -232,15 +233,18 @@ class Neo4jProxy(BaseProxy):
                 tag_result = Tag(tag_name=record['key'],
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
+        
+        badges = []
         # kept this for backwards compatibility
         if table_records.get('legacy_badge_records'):
             tag_records = table_records['legacy_badge_records']
             for record in tag_records:
                 badge_result = Tag(tag_name=record['key'],
                                  tag_type=record['tag_type'])
-                tags.append(badge_result)
+                badges.append(badge_result)
         
-        badges = []
+        # change to badges once tag badges are deprecated
+        new_badges = []
         # this is for any badges added with BadgeAPI instead of TagAPI
         if table_records.get('badge_records'):
             badge_records = table_records['badge_records']
@@ -248,7 +252,7 @@ class Neo4jProxy(BaseProxy):
                 badge_result = TableBadge(badge_name=record['key'],
                                     category=record['category'],
                                     badge_type=record['badge_type'])
-                badges.append(badge_result)
+                new_badges.append(badge_result)
 
         application_record = table_records['application']
         if application_record is not None:
@@ -276,7 +280,7 @@ class Neo4jProxy(BaseProxy):
             table_records.get('prog_descriptions', [])
         )
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges, prog_descriptions
 
     def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
         prog_descriptions = []
@@ -632,7 +636,6 @@ class Neo4jProxy(BaseProxy):
             if not tx.closed():
                 tx.rollback()
             raise e
-
 
     @timer_with_counter
     def get_badges(self) -> List:
@@ -1177,21 +1180,23 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (d)-[:LAST_UPDATED_AT]->(t:Timestamp)
         OPTIONAL MATCH (d)-[:OWNER]->(owner:User)
         WITH c, dg, d, description, last_exec, last_success_exec, t, collect(owner) as owners
-        OPTIONAL MATCH (d)-[:TAGGED_BY]->(tag:Tag)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags
+        OPTIONAL MATCH (d)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
+        OPTIONAL MATCH (d)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
+        OPTIONAL MATCH (d)-[:HAS_BADGE]->(badge:Badge)
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags, collect(legacy_badge) as legacy_badges, collect(badge) as badges
         OPTIONAL MATCH (d)-[read:READ_BY]->(:User)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
         sum(read.read_count) as recent_view_count
         OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
         recent_view_count, collect({name: query.name, url: query.url, query_text: query.query_text}) as queries
         OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)-[:HAS_CHART]->(chart:Chart)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
         recent_view_count, queries, collect(chart) as charts
         OPTIONAL MATCH (d)-[:DASHBOARD_WITH_TABLE]->(table:Table)<-[:TABLE]-(schema:Schema)
         <-[:SCHEMA]-(cluster:Cluster)<-[:CLUSTER]-(db:Database)
         OPTIONAL MATCH (table)-[:DESCRIPTION]->(table_description:Description)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, recent_view_count, queries, charts,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges, recent_view_count, queries, charts,
         collect({name: table.name, schema: schema.name, cluster: cluster.name, database: db.name,
         description: table_description.description}) as tables
         RETURN
@@ -1210,44 +1215,70 @@ class Neo4jProxy(BaseProxy):
         toInteger(t.timestamp) as updated_timestamp,
         owners,
         tags,
+        legacy_badges,
+        badges,
         recent_view_count,
         queries,
         charts,
         tables;
         """
                                                      )
-        record = self._execute_cypher_query(statement=get_dashboard_detail_query,
-                                            param_dict={'query_key': id}).single()
+        dashboard_records = self._execute_cypher_query(statement=get_dashboard_detail_query,
+                                            param_dict={'query_key': id,
+                                                        'tag_normal_type': 'default',
+                                                        'tag_badge_type': 'badge'}).single()
 
-        if not record:
+        if not dashboard_records:
             raise NotFoundException('No dashboard exist with URI: {}'.format(id))
 
-        owners = [self._build_user_from_record(record=owner) for owner in record['owners']]
-        tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in record['tags']]
-        chart_names = [chart['name'] for chart in record['charts'] if 'name' in chart and chart['name']]
-        # TODO Deprecate query_names in favor of queries after several releases from v2.5.0
-        query_names = [query['name'] for query in record['queries'] if 'name' in query and query['name']]
-        queries = [DashboardQueryEntity(**query) for query in record['queries']
-                   if query.get('name') or query.get('url') or query.get('text')]
-        tables = [PopularTable(**table) for table in record['tables'] if 'name' in table and table['name']]
+        owners = [self._build_user_from_record(record=owner) for owner in dashboard_records['owners']]
+        tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_records['tags']]
+        
+        badges = []
+        # kept this for backwards compatibility
+        if dashboard_records.get('legacy_badges'):
+            tag_records = dashboard_records['legacy_badges']
+            for record in tag_records:
+                badge_result = Tag(tag_name=record['key'],
+                                 tag_type=record['tag_type'])
+                badges.append(badge_result)
+        
+        new_badges = []
+        # this is for any badges added with BadgeAPI instead of TagAPI
+        if dashboard_records.get('badges'):
+            badge_records = dashboard_records['badges']
+            for record in badge_records:
+                badge_result = TableBadge(badge_name=record['key'],
+                                    category=record['category'],
+                                    badge_type=record['badge_type'])
+                new_badges.append(badge_result)
 
-        return DashboardDetailEntity(uri=record['uri'],
-                                     cluster=record['cluster_name'],
-                                     url=record['url'],
-                                     name=record['name'],
-                                     product=record['product'],
-                                     created_timestamp=record['created_timestamp'],
-                                     description=self._safe_get(record, 'description'),
-                                     group_name=self._safe_get(record, 'group_name'),
-                                     group_url=self._safe_get(record, 'group_url'),
-                                     last_successful_run_timestamp=self._safe_get(record,
+        chart_names = [chart['name'] for chart in dashboard_records['charts'] if 'name' in chart and chart['name']]
+        # TODO Deprecate query_names in favor of queries after several releases from v2.5.0
+        query_names = [query['name'] for query in dashboard_records['queries'] if 'name' in query and query['name']]
+        queries = [DashboardQueryEntity(**query) for query in dashboard_records['queries']
+                   if query.get('name') or query.get('url') or query.get('text')]
+        tables = [PopularTable(**table) for table in dashboard_records['tables'] if 'name' in table and table['name']]
+
+        return DashboardDetailEntity(uri=dashboard_records['uri'],
+                                     cluster=dashboard_records['cluster_name'],
+                                     url=dashboard_records['url'],
+                                     name=dashboard_records['name'],
+                                     product=dashboard_records['product'],
+                                     created_timestamp=dashboard_records['created_timestamp'],
+                                     description=self._safe_get(dashboard_records, 'description'),
+                                     group_name=self._safe_get(dashboard_records, 'group_name'),
+                                     group_url=self._safe_get(dashboard_records, 'group_url'),
+                                     last_successful_run_timestamp=self._safe_get(dashboard_records,
                                                                                   'last_successful_run_timestamp'),
-                                     last_run_timestamp=self._safe_get(record, 'last_run_timestamp'),
-                                     last_run_state=self._safe_get(record, 'last_run_state'),
-                                     updated_timestamp=self._safe_get(record, 'updated_timestamp'),
+                                     last_run_timestamp=self._safe_get(dashboard_records, 'last_run_timestamp'),
+                                     last_run_state=self._safe_get(dashboard_records, 'last_run_state'),
+                                     updated_timestamp=self._safe_get(dashboard_records, 'updated_timestamp'),
                                      owners=owners,
                                      tags=tags,
-                                     recent_view_count=record['recent_view_count'],
+                                     badges=badges,
+                                     new_badges=new_badges,
+                                     recent_view_count=dashboard_records['recent_view_count'],
                                      chart_names=chart_names,
                                      query_names=query_names,
                                      queries=queries,
