@@ -585,7 +585,9 @@ class Neo4jProxy(BaseProxy):
                 category: str = '',
                 badge_type: str = '',
                 resource_type: ResourceType = ResourceType.Table) -> None:
-        # TODO log that a new badge was created
+        
+        LOGGER.info('New badge {} for id {} with category {}, badge type '
+        '{}, and resource type {}'.format(badge_name, id, category, badge_type, resource_type.name))
 
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
@@ -616,7 +618,7 @@ class Neo4jProxy(BaseProxy):
                                                         'key': id,
                                                         'category': category,
                                                         'badge_type': badge_type})
-                                                        
+
             if not result.single():
                 raise RuntimeError('failed to create relation between '
                                 'badge {badge} and resource {resource} of resource type '
