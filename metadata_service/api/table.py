@@ -178,7 +178,7 @@ class TableBadgeAPI(Resource):
         badge_type = args.get('badge_type', '')
 
         return self._badge_common.put(id=id,
-                                    resource_type=ResourceType.Dashboard,
+                                    resource_type=ResourceType.Table,
                                     badge_name=badge,
                                     category=category,
                                     badge_type=badge_type)
