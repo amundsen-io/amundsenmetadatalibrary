@@ -87,7 +87,7 @@ class Neo4jProxy(BaseProxy):
 
         readers = self._exec_usage_query(table_uri)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, prog_descs = \
+        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, new_badges, prog_descs = \
             self._exec_table_query(table_uri)
 
         table = Table(database=last_neo4j_record['db']['name'],
@@ -96,6 +96,7 @@ class Neo4jProxy(BaseProxy):
                       name=last_neo4j_record['tbl']['name'],
                       tags=tags,
                       badges=badges,
+                      new_badges=new_badges,
                       description=self._safe_get(last_neo4j_record, 'tbl_dscrpt', 'description'),
                       columns=cols,
                       owners=owners,
@@ -267,7 +268,7 @@ class Neo4jProxy(BaseProxy):
             table_records.get('prog_descriptions', [])
         )
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges, prog_descriptions
 
     def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
         prog_descriptions = []
@@ -1199,6 +1200,7 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (d)-[:OWNER]->(owner:User)
         WITH c, dg, d, description, last_exec, last_success_exec, t, collect(owner) as owners
         OPTIONAL MATCH (d)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
+<<<<<<< HEAD
         OPTIONAL MATCH (d)-[:HAS_BADGE]->(badge:Badge)
         WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags,
         collect(badge) as badges
@@ -1210,12 +1212,29 @@ class Neo4jProxy(BaseProxy):
         recent_view_count, collect({name: query.name, url: query.url, query_text: query.query_text}) as queries
         OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)-[:HAS_CHART]->(chart:Chart)
         WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
+=======
+        OPTIONAL MATCH (d)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
+        OPTIONAL MATCH (d)-[:HAS_BADGE]->(badge:Badge)
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags, collect(legacy_badge) as legacy_badges, collect(badge) as badges
+        OPTIONAL MATCH (d)-[read:READ_BY]->(:User)
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+        sum(read.read_count) as recent_view_count
+        OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+        recent_view_count, collect({name: query.name, url: query.url, query_text: query.query_text}) as queries
+        OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)-[:HAS_CHART]->(chart:Chart)
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+>>>>>>> Got badges on dashboards
         recent_view_count, queries, collect(chart) as charts
         OPTIONAL MATCH (d)-[:DASHBOARD_WITH_TABLE]->(table:Table)<-[:TABLE]-(schema:Schema)
         <-[:SCHEMA]-(cluster:Cluster)<-[:CLUSTER]-(db:Database)
         OPTIONAL MATCH (table)-[:DESCRIPTION]->(table_description:Description)
+<<<<<<< HEAD
         WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
         recent_view_count, queries, charts,
+=======
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges, recent_view_count, queries, charts,
+>>>>>>> Got badges on dashboards
         collect({name: table.name, schema: schema.name, cluster: cluster.name, database: db.name,
         description: table_description.description}) as tables
         RETURN
