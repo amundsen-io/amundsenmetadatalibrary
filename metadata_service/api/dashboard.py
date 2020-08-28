@@ -85,14 +85,14 @@ class DashboardBadgeAPI(Resource):
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('category', type=str, required=True)
         self.parser.add_argument('badge_type', type=str, required=True)
-        super(DashboardTagAPI, self).__init__()
+        super(DashboardBadgeAPI, self).__init__()
 
         self._badge_common = BadgeCommon(client=self.client)
 
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
-        # TODO should I have default here?
+
         category = args.get('category', '')
         badge_type = args.get('badge_type', '')
 
