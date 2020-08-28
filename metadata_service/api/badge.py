@@ -75,7 +75,7 @@ class BadgeCommon:
                         id,
                         category,
                         badge_type)}, HTTPStatus.OK
-        except NotFoundException:
+        except Exception as e:
             return {'message': 'The badge {} for id {} with category {} '
                     'and type {} failed to be added'.format(
                         badge_name,

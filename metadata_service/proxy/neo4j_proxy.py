@@ -608,17 +608,23 @@ class Neo4jProxy(BaseProxy):
             if not tbl_result.single():
                 raise NotFoundException('id {} does not exist'.format(id))
             
-            result = tx.run(upsert_badge_query, {'badge_name': badge_name,
+            tx.run(upsert_badge_query, {'badge_name': badge_name,
                                             'category': category,
                                             'badge_type': badge_type
                                             })
+            result = tx.run(upsert_badge_relation_query, {'badge_name': badge_name,
+                                                        'key': id,
+                                                        'category': category,
+                                                        'badge_type': badge_type})
+                                                        
             if not result.single():
-                raise RuntimeError('failed to create relation between'
-                                'badge {badge} and resource {resource} of resource type'
-                                '{resource_type}'.format(
+                raise RuntimeError('failed to create relation between '
+                                'badge {badge} and resource {resource} of resource type '
+                                '{resource_type} MORE {q}'.format(
                                     badge=badge_name,
                                     resource=id,
-                                    resource_type=resource_type))
+                                    resource_type=resource_type,
+                                    q=upsert_badge_relation_query))
             tx.commit()
         except Exception as e:
             if not tx.closed():
