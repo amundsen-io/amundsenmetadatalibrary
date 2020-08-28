@@ -231,7 +231,6 @@ class Neo4jProxy(BaseProxy):
                 tag_result = Tag(tag_name=record['key'],
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
-
         badges = []
         # this is for any badges added with BadgeAPI instead of TagAPI
         if table_records.get('badge_records'):
