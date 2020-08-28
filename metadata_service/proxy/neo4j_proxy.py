@@ -15,7 +15,7 @@ from amundsen_common.models.table import (Application, Column, Reader, Source,
                                           Statistics, Table, User,
                                           Watermark, ProgrammaticDescription)
 from amundsen_common.models.table import Tag
-from amundsen_common.models.table import Badge
+from amundsen_common.models.table import Badge as TableBadge
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -232,8 +232,6 @@ class Neo4jProxy(BaseProxy):
                 tag_result = Tag(tag_name=record['key'],
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
-
-        badges = []
         # kept this for backwards compatibility
         if table_records.get('legacy_badge_records'):
             tag_records = table_records['legacy_badge_records']
@@ -241,11 +239,13 @@ class Neo4jProxy(BaseProxy):
                 badge_result = Tag(tag_name=record['key'],
                                  tag_type=record['tag_type'])
                 tags.append(badge_result)
+        
+        badges = []
         # this is for any badges added with BadgeAPI instead of TagAPI
         if table_records.get('badge_records'):
             badge_records = table_records['badge_records']
             for record in badge_records:
-                badge_result = Badge(badge_name=record['key'],
+                badge_result = TableBadge(badge_name=record['key'],
                                     category=record['category'],
                                     badge_type=record['badge_type'])
                 badges.append(badge_result)
@@ -636,7 +636,7 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def get_badges(self) -> List:
-        # TODO logger
+        LOGGER.info('Get all badges')
         query = textwrap.dedent("""
         MATCH (b:Badge) RETURN b as badge
         """)
