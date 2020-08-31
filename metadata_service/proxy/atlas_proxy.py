@@ -390,7 +390,7 @@ class AtlasProxy(BaseProxy):
 
         return parsed_reports
 
-    def _get_owners(self, data_owners: list, fallback_owner: str) -> List[User]:
+    def _get_owners(self, data_owners: list, fallback_owner: str = None) -> List[User]:
         owners_detail = list()
         active_owners = filter(lambda item:
                                item['entityStatus'] == Status.ACTIVE and
@@ -402,7 +402,12 @@ class AtlasProxy(BaseProxy):
             owner_data = self._get_user_details(owner_qn)
             owners_detail.append(User(**owner_data))
 
-        return owners_detail or [User(**self._get_user_details(fallback_owner))]
+        # To avoid the duplication,
+        # we are checking if the fallback is not in data_owners
+        if fallback_owner and (fallback_owner not in data_owners):
+            owners_detail.append(User(**self._get_user_details(fallback_owner)))
+
+        return owners_detail
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
         pass
@@ -774,7 +779,7 @@ class AtlasProxy(BaseProxy):
                 'criterion': [
                     {
                         'attributeName': 'owner',
-                        'operator': 'contains',
+                        'operator': 'startsWith',
                         'attributeValue': user_id.lower()
                     }
                 ]
