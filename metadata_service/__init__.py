@@ -15,7 +15,8 @@ from flask import Flask, Blueprint
 from flask_restful import Api
 
 from metadata_service.api.column import ColumnDescriptionAPI
-from metadata_service.api.dashboard import DashboardDetailAPI, DashboardDescriptionAPI, DashboardTagAPI, DashboardBadgeAPI
+from metadata_service.api.dashboard import (DashboardDetailAPI, DashboardDescriptionAPI,
+                                            DashboardTagAPI, DashboardBadgeAPI)
 from metadata_service.api.healthcheck import healthcheck
 from metadata_service.api.popular_tables import PopularTablesAPI
 from metadata_service.api.system import Neo4jDetailAPI
@@ -106,7 +107,7 @@ def create_app(*, config_module_class: str) -> Flask:
     api.add_resource(TagAPI,
                      '/tags/')
     api.add_resource(BadgeAPI,
-                    '/badges/')
+                     '/badges/')
     api.add_resource(UserDetailAPI,
                      '/user',
                      '/user/<path:id>')
