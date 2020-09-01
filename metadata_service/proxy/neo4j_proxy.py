@@ -636,6 +636,34 @@ class Neo4jProxy(BaseProxy):
             if not tx.closed():
                 tx.rollback()
             raise e
+    
+    @timer_with_counter
+    def delete_badge(self, id: str,
+                    badge_name: str,
+                    category: str,
+                    badge_type: str,
+                    resource_type: ResourceType = ResourceType.Table) -> None:
+        
+        LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category, badge_type))
+
+        # only deletes relationshop between badge and resource
+        delete_query = textwrap.dedent("""
+        MATCH (b:Badge {{key:$badge_name, category:$category, badge_type: $badge_type}})-
+        [r1:BADGE_FOR]->(n:{resource_type} {{key: $key}})-[r2:HAS_BADGE]->(n) DELETE r1,r2
+        """.format(resource_type=resource_type.name))
+
+        try:
+            tx = self._driver.session().begin_transaction()
+            tx.run(delete_query, {'badge_name': badge_name,
+                                    'key': id,
+                                    'category': category,
+                                    'badge_type': badge_type})
+            tx.commit()
+        except Exception as e:
+            # propagate the exception back to api
+            if not tx.closed():
+                tx.rollback()
+            raise e
 
     @timer_with_counter
     def get_badges(self) -> List:
