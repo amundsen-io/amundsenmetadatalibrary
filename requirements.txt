@@ -37,7 +37,7 @@ amundsen-common>=0.3.6,<1.0
 
 flasgger==0.9.3
 Flask-RESTful==0.3.6
-Flask==1.0.2
+Flask==1.1.2
 flask-cors==3.0.8
 gremlinpython==3.4.3
 aniso8601==3.0.0
