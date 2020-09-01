@@ -182,7 +182,18 @@ class TableBadgeAPI(Resource):
                                     badge_name=badge,
                                     category=category,
                                     badge_type=badge_type)
-        
+    
+    @swag_from('swagger_doc/badge/badge_delete.yml')
+    def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        args = self.parser.parse_args()
+        category = args.get('category', '')
+        badge_type = args.get('badge_type', '')
+
+        return self._badge_common.delete(id=id,
+                                        resource_type=ResourceType.Table,
+                                        badge_name=badge,
+                                        category=category,
+                                        badge_type=badge_type)
 
 class TableBadgeAPI(Resource):
     def __init__(self) -> None:

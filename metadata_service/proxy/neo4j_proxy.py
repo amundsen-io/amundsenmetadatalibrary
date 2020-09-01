@@ -655,6 +655,34 @@ class Neo4jProxy(BaseProxy):
             if not tx.closed():
                 tx.rollback()
             raise e
+    
+    @timer_with_counter
+    def delete_badge(self, id: str,
+                    badge_name: str,
+                    category: str,
+                    badge_type: str,
+                    resource_type: ResourceType = ResourceType.Table) -> None:
+        
+        LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category, badge_type))
+
+        # only deletes relationshop between badge and resource
+        delete_query = textwrap.dedent("""
+        MATCH (b:Badge {{key:$badge_name, category:$category, badge_type: $badge_type}})-
+        [r1:BADGE_FOR]->(n:{resource_type} {{key: $key}})-[r2:HAS_BADGE]->(n) DELETE r1,r2
+        """.format(resource_type=resource_type.name))
+
+        try:
+            tx = self._driver.session().begin_transaction()
+            tx.run(delete_query, {'badge_name': badge_name,
+                                    'key': id,
+                                    'category': category,
+                                    'badge_type': badge_type})
+            tx.commit()
+        except Exception as e:
+            # propagate the exception back to api
+            if not tx.closed():
+                tx.rollback()
+            raise e
 
     @timer_with_counter
     def get_badges(self) -> List:
@@ -1200,7 +1228,6 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (d)-[:OWNER]->(owner:User)
         WITH c, dg, d, description, last_exec, last_success_exec, t, collect(owner) as owners
         OPTIONAL MATCH (d)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
-<<<<<<< HEAD
         OPTIONAL MATCH (d)-[:HAS_BADGE]->(badge:Badge)
         WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags,
         collect(badge) as badges
@@ -1212,29 +1239,12 @@ class Neo4jProxy(BaseProxy):
         recent_view_count, collect({name: query.name, url: query.url, query_text: query.query_text}) as queries
         OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)-[:HAS_CHART]->(chart:Chart)
         WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
-=======
-        OPTIONAL MATCH (d)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
-        OPTIONAL MATCH (d)-[:HAS_BADGE]->(badge:Badge)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags, collect(legacy_badge) as legacy_badges, collect(badge) as badges
-        OPTIONAL MATCH (d)-[read:READ_BY]->(:User)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
-        sum(read.read_count) as recent_view_count
-        OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
-        recent_view_count, collect({name: query.name, url: query.url, query_text: query.query_text}) as queries
-        OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)-[:HAS_CHART]->(chart:Chart)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
->>>>>>> Got badges on dashboards
         recent_view_count, queries, collect(chart) as charts
         OPTIONAL MATCH (d)-[:DASHBOARD_WITH_TABLE]->(table:Table)<-[:TABLE]-(schema:Schema)
         <-[:SCHEMA]-(cluster:Cluster)<-[:CLUSTER]-(db:Database)
         OPTIONAL MATCH (table)-[:DESCRIPTION]->(table_description:Description)
-<<<<<<< HEAD
         WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
         recent_view_count, queries, charts,
-=======
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges, recent_view_count, queries, charts,
->>>>>>> Got badges on dashboards
         collect({name: table.name, schema: schema.name, cluster: cluster.name, database: db.name,
         description: table_description.description}) as tables
         RETURN
