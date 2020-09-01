@@ -240,7 +240,7 @@ class Neo4jProxy(BaseProxy):
             tag_records = table_records['legacy_badge_records']
             for record in tag_records:
                 badge_result = Tag(tag_name=record['key'],
-                                 tag_type=record['tag_type'])
+                                   tag_type=record['tag_type'])
                 badges.append(badge_result)
         
         # change to badges once tag badges are deprecated
@@ -250,8 +250,8 @@ class Neo4jProxy(BaseProxy):
             badge_records = table_records['badge_records']
             for record in badge_records:
                 badge_result = TableBadge(badge_name=record['key'],
-                                    category=record['category'],
-                                    badge_type=record['badge_type'])
+                                          category=record['category'],
+                                          badge_type=record['badge_type'])
                 new_badges.append(badge_result)
 
         application_record = table_records['application']
@@ -280,7 +280,8 @@ class Neo4jProxy(BaseProxy):
             table_records.get('prog_descriptions', [])
         )
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges, prog_descriptions
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges,
+        prog_descriptions
 
     def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
         prog_descriptions = []
@@ -584,18 +585,18 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def add_badge(self, *,
-                id: str,
-                badge_name: str,
-                category: str = '',
-                badge_type: str = '',
-                resource_type: ResourceType = ResourceType.Table) -> None:
-        
+                  id: str,
+                  badge_name: str,
+                  category: str = '',
+                  badge_type: str = '',
+                  resource_type: ResourceType = ResourceType.Table) -> None:
+
         LOGGER.info('New badge {} for id {} with category {}, badge type '
-        '{}, and resource type {}'.format(badge_name, id, category, badge_type, resource_type.name))
+                    '{}, and resource type {}'.format(badge_name, id, category, badge_type, resource_type.name))
 
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
-        
+
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
         on CREATE SET u={key: $badge_name, category: $category, badge_type: $badge_type}
@@ -603,7 +604,8 @@ class Neo4jProxy(BaseProxy):
         """)
 
         upsert_badge_relation_query = textwrap.dedent("""
-        MATCH(n1:Badge {{key: $badge_name, category: $category, badge_type: $badge_type}}), (n2:{resource_type} {{key:$key}})
+        MATCH(n1:Badge {{key: $badge_name, category: $category, badge_type: $badge_type}}),
+        (n2:{resource_type} {{key: $key}})
         MERGE (n1)-[r1:BADGE_FOR]->(n2)-[r2:HAS_BADGE]->(n1)
         RETURN n1.key, n2.key
         """.format(resource_type=resource_type.name))
@@ -613,38 +615,37 @@ class Neo4jProxy(BaseProxy):
             tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
                 raise NotFoundException('id {} does not exist'.format(id))
-            
+
             tx.run(upsert_badge_query, {'badge_name': badge_name,
-                                            'category': category,
-                                            'badge_type': badge_type
-                                            })
+                                        'category': category,
+                                        'badge_type': badge_type})
             result = tx.run(upsert_badge_relation_query, {'badge_name': badge_name,
-                                                        'key': id,
-                                                        'category': category,
-                                                        'badge_type': badge_type})
+                                                          'key': id,
+                                                          'category': category,
+                                                          'badge_type': badge_type})
 
             if not result.single():
                 raise RuntimeError('failed to create relation between '
-                                'badge {badge} and resource {resource} of resource type '
-                                '{resource_type} MORE {q}'.format(
-                                    badge=badge_name,
-                                    resource=id,
-                                    resource_type=resource_type,
-                                    q=upsert_badge_relation_query))
+                                   'badge {badge} and resource {resource} of resource type '
+                                   '{resource_type} MORE {q}'.format(badge=badge_name,
+                                                                     resource=id,
+                                                                     resource_type=resource_type,
+                                                                     q=upsert_badge_relation_query))
             tx.commit()
         except Exception as e:
             if not tx.closed():
                 tx.rollback()
             raise e
-    
+
     @timer_with_counter
     def delete_badge(self, id: str,
-                    badge_name: str,
-                    category: str,
-                    badge_type: str,
-                    resource_type: ResourceType = ResourceType.Table) -> None:
-        
-        LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category, badge_type))
+                     badge_name: str,
+                     category: str,
+                     badge_type: str,
+                     resource_type: ResourceType = ResourceType.Table) -> None:
+
+        LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category,
+                                                                                      badge_type))
 
         # only deletes relationshop between badge and resource
         delete_query = textwrap.dedent("""
@@ -655,9 +656,9 @@ class Neo4jProxy(BaseProxy):
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'badge_name': badge_name,
-                                    'key': id,
-                                    'category': category,
-                                    'badge_type': badge_type})
+                                  'key': id,
+                                  'category': category,
+                                  'badge_type': badge_type})
             tx.commit()
         except Exception as e:
             # propagate the exception back to api
@@ -672,12 +673,12 @@ class Neo4jProxy(BaseProxy):
         MATCH (b:Badge) RETURN b as badge
         """)
         records = self._execute_cypher_query(statement=query,
-                                            param_dict={})
+                                             param_dict={})
         results = []
         for record in records:
             results.append(Badge(badge_name=record['badge']['key'],
-                                category=record['badge']['category'],
-                                badge_type=record['badge']['badge_type']))
+                                 category=record['badge']['category'],
+                                 badge_type=record['badge']['badge_type']))
 
         return results
 
@@ -1211,7 +1212,8 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (d)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
         OPTIONAL MATCH (d)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
         OPTIONAL MATCH (d)-[:HAS_BADGE]->(badge:Badge)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags, collect(legacy_badge) as legacy_badges, collect(badge) as badges
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags, collect(legacy_badge)
+        as legacy_badges, collect(badge) as badges
         OPTIONAL MATCH (d)-[read:READ_BY]->(:User)
         WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
         sum(read.read_count) as recent_view_count
@@ -1224,7 +1226,8 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (d)-[:DASHBOARD_WITH_TABLE]->(table:Table)<-[:TABLE]-(schema:Schema)
         <-[:SCHEMA]-(cluster:Cluster)<-[:CLUSTER]-(db:Database)
         OPTIONAL MATCH (table)-[:DESCRIPTION]->(table_description:Description)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges, recent_view_count, queries, charts,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+        recent_view_count, queries, charts,
         collect({name: table.name, schema: schema.name, cluster: cluster.name, database: db.name,
         description: table_description.description}) as tables
         RETURN
@@ -1252,33 +1255,33 @@ class Neo4jProxy(BaseProxy):
         """
                                                      )
         dashboard_records = self._execute_cypher_query(statement=get_dashboard_detail_query,
-                                            param_dict={'query_key': id,
-                                                        'tag_normal_type': 'default',
-                                                        'tag_badge_type': 'badge'}).single()
+                                                       param_dict={'query_key': id,
+                                                                   'tag_normal_type': 'default',
+                                                                   'tag_badge_type': 'badge'}).single()
 
         if not dashboard_records:
             raise NotFoundException('No dashboard exist with URI: {}'.format(id))
 
         owners = [self._build_user_from_record(record=owner) for owner in dashboard_records['owners']]
         tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_records['tags']]
-        
+
         badges = []
         # kept this for backwards compatibility
         if dashboard_records.get('legacy_badges'):
             tag_records = dashboard_records['legacy_badges']
             for record in tag_records:
                 badge_result = Tag(tag_name=record['key'],
-                                 tag_type=record['tag_type'])
+                                   tag_type=record['tag_type'])
                 badges.append(badge_result)
-        
+
         new_badges = []
         # this is for any badges added with BadgeAPI instead of TagAPI
         if dashboard_records.get('badges'):
             badge_records = dashboard_records['badges']
             for record in badge_records:
                 badge_result = TableBadge(badge_name=record['key'],
-                                    category=record['category'],
-                                    badge_type=record['badge_type'])
+                                          category=record['category'],
+                                          badge_type=record['badge_type'])
                 new_badges.append(badge_result)
 
         chart_names = [chart['name'] for chart in dashboard_records['charts'] if 'name' in chart and chart['name']]
