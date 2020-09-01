@@ -30,8 +30,7 @@ parameters:
     type: string
     schema:
       type: string
-    required: false
-    default: 'neutral'
+    required: true
     example: 'positive'
 responses:
   200:

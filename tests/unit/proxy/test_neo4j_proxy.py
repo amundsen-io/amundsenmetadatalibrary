@@ -147,6 +147,7 @@ class TestNeo4jProxy(unittest.TestCase):
             expected = Table(database='hive', cluster='gold', schema='foo_schema', name='foo_table',
                              tags=[Tag(tag_name='test', tag_type='default')],
                              badges=[Tag(tag_name='golden', tag_type='badge')],
+                             # TODO fix this test once functionality is finalized
                              table_readers=[], description='foo description',
                              watermarks=[Watermark(watermark_type='high_watermark',
                                                    partition_key='ds',
