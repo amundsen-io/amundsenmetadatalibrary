@@ -42,7 +42,7 @@ class BadgeAPI(Resource):
 class BadgeCommon:
     def __init__(self, client: BaseProxy) -> None:
         self.client = client
-    
+
     def put(self, id: str, resource_type: ResourceType,
             badge_name: str,
             category: str = '',
@@ -52,7 +52,8 @@ class BadgeCommon:
             return \
                 {'message': 'The badge {} for id {} is not added successfully because '
                             'category `{}` and badge_type {} parameters are required '
-                            'for badges'.format(badge_name, id, category, badge_type)}
+                            'for badges'.format(badge_name, id, category, badge_type)}, \
+                HTTPStatus.NOT_FOUND
 
         # need to check whether the badge is part of the whitelist:
         if badge_name not in whitelist_badges:
