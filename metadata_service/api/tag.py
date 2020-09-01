@@ -58,7 +58,9 @@ class TagCommon:
 
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
         if tag_type == BADGE_TYPE:
-            # TODO should i add amessage here to pevent people from using TagAPI to add badges and use BadgeAPI instead?
+            # TODO modify this to instead suggest the user use /badge/ to add badges
+            # TODO remove adding badge functionality, still don't allow tags to have badge names
+            # TODO update unit tests
             if tag not in whitelist_badges:
                 return \
                     {'message': 'The tag {} for id {} with type {} and resource_type {} '
