@@ -58,18 +58,12 @@ class TagCommon:
 
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
         if tag_type == BADGE_TYPE:
-            # TODO modify this to instead suggest the user use /badge/ to add badges
             # TODO remove adding badge functionality, still don't allow tags to have badge names
             # TODO update unit tests
-            if tag not in whitelist_badges:
-                return \
-                    {'message': 'The tag {} for id {} with type {} and resource_type {} '
-                                'is not added successfully as badge '
-                                'is not part of the whitelist'.format(tag,
-                                                                      id,
-                                                                      tag_type,
-                                                                      resource_type.name)}, \
-                    HTTPStatus.NOT_FOUND
+            return \
+                {'message': 'Badges should be added using /badges/, tag_type=badge no longer valid'}, \
+                HTTPStatus.NOT_FOUND
+
         else:
             if tag in whitelist_badges:
                 return \
@@ -81,24 +75,24 @@ class TagCommon:
                                                                       resource_type.name)}, \
                     HTTPStatus.CONFLICT
 
-        try:
-            self.client.add_tag(id=id,
-                                tag=tag,
-                                tag_type=tag_type,
-                                resource_type=resource_type)
-            return {'message': 'The tag {} for id {} with type {} and resource_type {} '
-                               'is added successfully'.format(tag,
-                                                              id,
-                                                              tag_type,
-                                                              resource_type.name)}, HTTPStatus.OK
-        except NotFoundException:
-            return \
-                {'message': 'The tag {} for table_uri {} with type {} and resource_type {} '
-                            'is not added successfully'.format(tag,
-                                                               id,
-                                                               tag_type,
-                                                               resource_type.name)}, \
-                HTTPStatus.NOT_FOUND
+            try:
+                self.client.add_tag(id=id,
+                                    tag=tag,
+                                    tag_type=tag_type,
+                                    resource_type=resource_type)
+                return {'message': 'The tag {} for id {} with type {} and resource_type {} '
+                                   'is added successfully'.format(tag,
+                                                                  id,
+                                                                  tag_type,
+                                                                  resource_type.name)}, HTTPStatus.OK
+            except NotFoundException:
+                return \
+                    {'message': 'The tag {} for table_uri {} with type {} and resource_type {} '
+                                'is not added successfully'.format(tag,
+                                                                   id,
+                                                                   tag_type,
+                                                                   resource_type.name)}, \
+                    HTTPStatus.NOT_FOUND
 
     def delete(self, id: str, tag: str,
                resource_type: ResourceType, tag_type: str = 'default') -> Tuple[Any, HTTPStatus]:
