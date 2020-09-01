@@ -268,7 +268,8 @@ class Neo4jProxy(BaseProxy):
             table_records.get('prog_descriptions', [])
         )
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges, prog_descriptions
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges,
+        prog_descriptions
 
     def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
         prog_descriptions = []
@@ -606,7 +607,6 @@ class Neo4jProxy(BaseProxy):
             tx.run(upsert_badge_query, {'badge_name': badge_name,
                                         'category': category,
                                         'badge_type': badge_type})
-
             result = tx.run(upsert_badge_relation_query, {'badge_name': badge_name,
                                                           'key': id,
                                                           'category': category,
@@ -658,12 +658,13 @@ class Neo4jProxy(BaseProxy):
     
     @timer_with_counter
     def delete_badge(self, id: str,
-                    badge_name: str,
-                    category: str,
-                    badge_type: str,
-                    resource_type: ResourceType = ResourceType.Table) -> None:
-        
-        LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category, badge_type))
+                     badge_name: str,
+                     category: str,
+                     badge_type: str,
+                     resource_type: ResourceType = ResourceType.Table) -> None:
+
+        LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category,
+                                                                                      badge_type))
 
         # only deletes relationshop between badge and resource
         delete_query = textwrap.dedent("""
@@ -674,9 +675,9 @@ class Neo4jProxy(BaseProxy):
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'badge_name': badge_name,
-                                    'key': id,
-                                    'category': category,
-                                    'badge_type': badge_type})
+                                  'key': id,
+                                  'category': category,
+                                  'badge_type': badge_type})
             tx.commit()
         except Exception as e:
             # propagate the exception back to api

@@ -24,6 +24,7 @@ badges_fields = {
     'badges': fields.List(fields.Nested(badge_fields))
 }
 
+
 class BadgeAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
@@ -41,7 +42,6 @@ class BadgeAPI(Resource):
 class BadgeCommon:
     def __init__(self, client: BaseProxy) -> None:
         self.client = client
-
     def put(self, id: str, resource_type: ResourceType,
             badge_name: str,
             category: str = '',
