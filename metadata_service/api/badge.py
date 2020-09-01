@@ -82,3 +82,29 @@ class BadgeCommon:
                         id,
                         category,
                         badge_type, e)}, HTTPStatus.NOT_FOUND
+    
+    def delete(self, id: str, badge_name: str,
+            category: str,
+            badge_type: str,
+            resource_type: ResourceType) -> Tuple[Any, HTTPStatus]:
+        try:
+            self.client.delete_badge(id=id,
+                                    resource_type=resource_type,
+                                    badge_name=badge_name,
+                                    category=category,
+                                    badge_type=badge_type)
+            return {'message': 'The badge {} for id {} with category {}, badge type {} '
+                               'and resource_type {} was deleted successfully'.format(badge_name,
+                                                                id,
+                                                                category,
+                                                                badge_type,
+                                                                resource_type.name)}, HTTPStatus.OK
+        except NotFoundException:
+            return \
+                {'message': 'The badge {} for id {} with category {}, badge type {} '
+                               'and resource_type {} was not deleted successfully'.format(badge_name,
+                                                                id,
+                                                                category,
+                                                                badge_type,
+                                                                resource_type.name)}, \
+                HTTPStatus.NOT_FOUND

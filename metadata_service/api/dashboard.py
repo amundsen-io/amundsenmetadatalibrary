@@ -77,7 +77,7 @@ class DashboardDescriptionAPI(BaseAPI):
 
 class DashboardBadgeAPI(Resource):
     """
-    DashboardTagAPI that supports PUT and DELETE operation to add or delete badges
+    DashboardBadgeAPI that supports PUT and DELETE operation to add or delete badges
     on Dashboard
     """
     def __init__(self):
@@ -101,7 +101,18 @@ class DashboardBadgeAPI(Resource):
                                     badge_name=badge,
                                     category=category,
                                     badge_type=badge_type)
+    
+    @swag_from('swagger_doc/badge/badge_delete.yml')
+    def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        args = self.parser.parse_args()
+        category = args.get('category', '')
+        badge_type = args.get('badge_type', '')
         
+        return self._badge_common.delete(id=id,
+                                    resource_type=ResourceType.Dashboard,
+                                    badge_name=badge,
+                                    category=category,
+                                    badge_type=badge_type)
 
 class DashboardTagAPI(Resource):
     """
