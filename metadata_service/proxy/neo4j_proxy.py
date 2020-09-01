@@ -87,7 +87,7 @@ class Neo4jProxy(BaseProxy):
 
         readers = self._exec_usage_query(table_uri)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, new_badges, prog_descs = \
+        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, prog_descs = \
             self._exec_table_query(table_uri)
 
         table = Table(database=last_neo4j_record['db']['name'],
@@ -96,7 +96,6 @@ class Neo4jProxy(BaseProxy):
                       name=last_neo4j_record['tbl']['name'],
                       tags=tags,
                       badges=badges,
-                      new_badges=new_badges,
                       description=self._safe_get(last_neo4j_record, 'tbl_dscrpt', 'description'),
                       columns=cols,
                       owners=owners,
@@ -190,7 +189,6 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (tbl)-[:LAST_UPDATED_AT]->(t:Timestamp)
         OPTIONAL MATCH (owner:User)<-[:OWNER]-(tbl)
         OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
-        OPTIONAL MATCH (tbl)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
         OPTIONAL MATCH (tbl)-[:HAS_BADGE]->(badge:Badge)
         OPTIONAL MATCH (tbl)-[:SOURCE]->(src:Source)
         OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(prog_descriptions:Programmatic_Description)
@@ -199,7 +197,6 @@ class Neo4jProxy(BaseProxy):
         t.last_updated_timestamp as last_updated_timestamp,
         collect(distinct owner) as owner_records,
         collect(distinct tag) as tag_records,
-        collect(distinct legacy_badge) as legacy_badge_records,
         collect(distinct badge) as badge_records,
         src,
         collect(distinct prog_descriptions) as prog_descriptions
@@ -233,18 +230,8 @@ class Neo4jProxy(BaseProxy):
                 tag_result = Tag(tag_name=record['key'],
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
-        
+
         badges = []
-        # kept this for backwards compatibility
-        if table_records.get('legacy_badge_records'):
-            tag_records = table_records['legacy_badge_records']
-            for record in tag_records:
-                badge_result = Tag(tag_name=record['key'],
-                                   tag_type=record['tag_type'])
-                badges.append(badge_result)
-        
-        # change to badges once tag badges are deprecated
-        new_badges = []
         # this is for any badges added with BadgeAPI instead of TagAPI
         if table_records.get('badge_records'):
             badge_records = table_records['badge_records']
@@ -252,7 +239,7 @@ class Neo4jProxy(BaseProxy):
                 badge_result = TableBadge(badge_name=record['key'],
                                           category=record['category'],
                                           badge_type=record['badge_type'])
-                new_badges.append(badge_result)
+                badges.append(badge_result)
 
         application_record = table_records['application']
         if application_record is not None:
@@ -280,8 +267,7 @@ class Neo4jProxy(BaseProxy):
             table_records.get('prog_descriptions', [])
         )
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges,
-        prog_descriptions
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
 
     def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
         prog_descriptions = []
@@ -718,7 +704,6 @@ class Neo4jProxy(BaseProxy):
         """.format(resource_type=resource_type.name))
 
         try:
-            
             tx = self._driver.session().begin_transaction()
             tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
@@ -1210,23 +1195,22 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (d)-[:OWNER]->(owner:User)
         WITH c, dg, d, description, last_exec, last_success_exec, t, collect(owner) as owners
         OPTIONAL MATCH (d)-[:TAGGED_BY]->(tag:Tag{tag_type: $tag_normal_type})
-        OPTIONAL MATCH (d)-[:TAGGED_BY]->(legacy_badge:Tag{tag_type: $tag_badge_type})
         OPTIONAL MATCH (d)-[:HAS_BADGE]->(badge:Badge)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags, collect(legacy_badge)
-        as legacy_badges, collect(badge) as badges
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, collect(tag) as tags,
+        collect(badge) as badges
         OPTIONAL MATCH (d)-[read:READ_BY]->(:User)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
         sum(read.read_count) as recent_view_count
         OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
         recent_view_count, collect({name: query.name, url: query.url, query_text: query.query_text}) as queries
         OPTIONAL MATCH (d)-[:HAS_QUERY]->(query:Query)-[:HAS_CHART]->(chart:Chart)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
         recent_view_count, queries, collect(chart) as charts
         OPTIONAL MATCH (d)-[:DASHBOARD_WITH_TABLE]->(table:Table)<-[:TABLE]-(schema:Schema)
         <-[:SCHEMA]-(cluster:Cluster)<-[:CLUSTER]-(db:Database)
         OPTIONAL MATCH (table)-[:DESCRIPTION]->(table_description:Description)
-        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, legacy_badges, badges,
+        WITH c, dg, d, description, last_exec, last_success_exec, t, owners, tags, badges,
         recent_view_count, queries, charts,
         collect({name: table.name, schema: schema.name, cluster: cluster.name, database: db.name,
         description: table_description.description}) as tables
@@ -1246,7 +1230,6 @@ class Neo4jProxy(BaseProxy):
         toInteger(t.timestamp) as updated_timestamp,
         owners,
         tags,
-        legacy_badges,
         badges,
         recent_view_count,
         queries,
@@ -1265,24 +1248,9 @@ class Neo4jProxy(BaseProxy):
         owners = [self._build_user_from_record(record=owner) for owner in dashboard_records['owners']]
         tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_records['tags']]
 
-        badges = []
-        # kept this for backwards compatibility
-        if dashboard_records.get('legacy_badges'):
-            tag_records = dashboard_records['legacy_badges']
-            for record in tag_records:
-                badge_result = Tag(tag_name=record['key'],
-                                   tag_type=record['tag_type'])
-                badges.append(badge_result)
-
-        new_badges = []
-        # this is for any badges added with BadgeAPI instead of TagAPI
-        if dashboard_records.get('badges'):
-            badge_records = dashboard_records['badges']
-            for record in badge_records:
-                badge_result = TableBadge(badge_name=record['key'],
-                                          category=record['category'],
-                                          badge_type=record['badge_type'])
-                new_badges.append(badge_result)
+        badges = [TableBadge(badge_name=badge['key'],
+                             category=badge['category'],
+                             badge_type=badge['badge_type']) for badge in dashboard_records['badges']]
 
         chart_names = [chart['name'] for chart in dashboard_records['charts'] if 'name' in chart and chart['name']]
         # TODO Deprecate query_names in favor of queries after several releases from v2.5.0
@@ -1308,7 +1276,6 @@ class Neo4jProxy(BaseProxy):
                                      owners=owners,
                                      tags=tags,
                                      badges=badges,
-                                     new_badges=new_badges,
                                      recent_view_count=dashboard_records['recent_view_count'],
                                      chart_names=chart_names,
                                      query_names=query_names,
