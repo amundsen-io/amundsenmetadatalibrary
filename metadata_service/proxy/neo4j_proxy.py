@@ -87,7 +87,7 @@ class Neo4jProxy(BaseProxy):
 
         readers = self._exec_usage_query(table_uri)
 
-        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, new_badges, prog_descs = \
+        wmk_results, table_writer, timestamp_value, owners, tags, source, badges, prog_descs = \
             self._exec_table_query(table_uri)
 
         table = Table(database=last_neo4j_record['db']['name'],
@@ -96,7 +96,6 @@ class Neo4jProxy(BaseProxy):
                       name=last_neo4j_record['tbl']['name'],
                       tags=tags,
                       badges=badges,
-                      new_badges=new_badges,
                       description=self._safe_get(last_neo4j_record, 'tbl_dscrpt', 'description'),
                       columns=cols,
                       owners=owners,
@@ -198,7 +197,6 @@ class Neo4jProxy(BaseProxy):
         t.last_updated_timestamp as last_updated_timestamp,
         collect(distinct owner) as owner_records,
         collect(distinct tag) as tag_records,
-        collect(distinct legacy_badge) as legacy_badge_records,
         collect(distinct badge) as badge_records,
         src,
         collect(distinct prog_descriptions) as prog_descriptions
@@ -268,8 +266,7 @@ class Neo4jProxy(BaseProxy):
             table_records.get('prog_descriptions', [])
         )
 
-        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, new_badges,
-        prog_descriptions
+        return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
 
     def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
         prog_descriptions = []
@@ -737,7 +734,6 @@ class Neo4jProxy(BaseProxy):
         """.format(resource_type=resource_type.name))
 
         try:
-            
             tx = self._driver.session().begin_transaction()
             tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
