@@ -36,8 +36,7 @@ class DashboardDetail:
     queries: List[DashboardQuery] = attr.ib(factory=list)
     tables: List[PopularTable] = attr.ib(factory=list)
     tags: List[Tag] = attr.ib(factory=list)
-    badges: List[Tag] = attr.ib(factory=list)
-    new_badges: List[Badge] = attr.ib(factory=list)
+    badges: List[Badge] = attr.ib(factory=list)
     recent_view_count: Optional[int] = attr.ib(default=0)
 
 
