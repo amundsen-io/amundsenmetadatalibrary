@@ -331,12 +331,68 @@ class TestAtlasProxy(unittest.TestCase, Data):
         res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
                                                     relation_type=UserResourceRel.own)
 
+        self.assertEqual(len(res.get("table")), 1)
+
         ent1_attrs = cast(dict, self.entity1['attributes'])
 
         expected = [PopularTable(database=self.entity_type, cluster=self.cluster, schema=self.db,
                                  name=ent1_attrs['name'], description=ent1_attrs['description'])]
 
         self.assertEqual({'table': expected}, res)
+
+    def test_get_resources_owned_by_user_success(self) -> None:
+        unique_attr_response = MagicMock()
+        unique_attr_response.entity = Data.user_entity_2
+        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+
+        entity_bulk_result = MagicMock()
+        entity_bulk_result.entities = [DottedDict(self.entity1)]
+        self.proxy._driver.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+
+        res = self.proxy._get_resources_owned_by_user(user_id='test_user_2',
+                                                      resource_type=ResourceType.Table.name)
+
+        self.assertEqual(len(res), 1)
+
+        ent1_attrs = cast(dict, self.entity1['attributes'])
+
+        expected = [PopularTable(database=self.entity_type, cluster=self.cluster, schema=self.db,
+                                 name=ent1_attrs['name'], description=ent1_attrs['description'])]
+
+        self.assertEqual(expected, res)
+
+    def test_get_resources_owned_by_user_no_user(self) -> None:
+        unique_attr_response = MagicMock()
+        unique_attr_response.entity = None
+        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        with self.assertRaises(NotFoundException):
+            self.proxy._get_resources_owned_by_user(user_id='test_user_2',
+                                                    resource_type=ResourceType.Table.name)
+
+    def test_get_resources_owned_by_user_default_owner(self) -> None:
+        unique_attr_response = MagicMock()
+        unique_attr_response.entity = Data.user_entity_2
+        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+
+        basic_search_result = MagicMock()
+        basic_search_result.entities = self.reader_entities
+
+        entity2 = MagicMock()
+        entity2.guid = self.entity2['guid']
+
+        basic_search_response = MagicMock()
+        basic_search_response.entities = [entity2]
+
+        self.proxy._driver.search_basic.create = MagicMock(return_value=basic_search_response)
+
+        entity_bulk_result = MagicMock()
+        entity_bulk_result.entities = [DottedDict(self.entity1)]
+        self.proxy._driver.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+
+        res = self.proxy._get_resources_owned_by_user(user_id='test_user_2',
+                                                      resource_type=ResourceType.Table.name)
+
+        self.assertEqual(len(res), 1)
 
     def test_add_resource_relation_by_user(self) -> None:
         bookmark_entity = self._mock_get_bookmark_entity()

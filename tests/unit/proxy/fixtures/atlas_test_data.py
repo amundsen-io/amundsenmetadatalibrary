@@ -230,8 +230,14 @@ class Data:
             "owns": [{
                 "entityStatus": "ACTIVE",
                 "relationshipStatus": "ACTIVE",
-                "typeName": "Table",
+                "typeName": entity_type,
                 "guid": entity1["guid"]
+            },
+            {
+                "entityStatus": "ACTIVE",
+                "relationshipStatus": "DELETED",
+                "typeName": entity_type,
+                "guid": entity2["guid"]
             }]
         }
     }

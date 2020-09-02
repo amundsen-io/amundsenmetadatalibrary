@@ -758,6 +758,14 @@ class AtlasProxy(BaseProxy):
         :return: A list of PopularTable, DashboardSummary or any other resource.
         """
         resources = list()
+        if resource_type == ResourceType.Table.name:
+            type_regex = "(.*)_table$"
+        # elif resource_type == ResourceType.Dashboard.name:
+        #     type_regex = "Dashboard"
+        else:
+            LOGGER.exception(f'Resource Type ({resource_type}) is not yet implemented')
+            raise NotImplemented
+
         user_entity = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_id).entity
 
         if not user_entity:
@@ -768,7 +776,7 @@ class AtlasProxy(BaseProxy):
         for item in user_entity[self.REL_ATTRS_KEY].get('owns') or list():
             if (item['entityStatus'] == Status.ACTIVE and
                     item['relationshipStatus'] == Status.ACTIVE and
-                    item['typeName'] == resource_type):
+                    re.compile(type_regex).match(item['typeName'])):
                 resource_guids.add(item[self.GUID_KEY])
 
         params = {
@@ -792,7 +800,7 @@ class AtlasProxy(BaseProxy):
 
         if resource_guids:
             entities = extract_entities(self._driver.entity_bulk(guid=list(resource_guids), ignoreRelationships=True))
-            if resource_type == self.TABLE_ENTITY:
+            if resource_type == ResourceType.Table.name:
                 resources = self._serialize_popular_tables(entities)
         else:
             LOGGER.info(f'User ({user_id}) does not own any "{resource_type}"')
@@ -806,9 +814,11 @@ class AtlasProxy(BaseProxy):
     def get_table_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, Any]:
         tables = list()
         if relation_type == UserResourceRel.follow:
-            tables = self._get_resources_followed_by_user(user_id=user_email, resource_type=self.TABLE_ENTITY)
+            tables = self._get_resources_followed_by_user(user_id=user_email,
+                                                          resource_type=ResourceType.Table.name)
         elif relation_type == UserResourceRel.own:
-            tables = self._get_resources_owned_by_user(user_id=user_email, resource_type=self.TABLE_ENTITY)
+            tables = self._get_resources_owned_by_user(user_id=user_email,
+                                                       resource_type=ResourceType.Table.name)
 
         return {'table': tables}
 
