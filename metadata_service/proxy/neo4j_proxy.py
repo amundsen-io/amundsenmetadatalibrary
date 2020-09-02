@@ -583,6 +583,10 @@ class Neo4jProxy(BaseProxy):
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
 
+        # unique_name_query = \
+        #     'MATCH (n: {resource_type} {{key: &key}})-[:HAS_BADGE]->(b:Badge {key: $badge_name}) return b'\
+        #     .format(resource_type=resource_type.name, badge_name=badge_name)
+
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
         on CREATE SET u={key: $badge_name, category: $category, badge_type: $badge_type}
