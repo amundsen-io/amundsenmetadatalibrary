@@ -392,6 +392,7 @@ class AtlasProxy(BaseProxy):
 
     def _get_owners(self, data_owners: list, fallback_owner: str = None) -> List[User]:
         owners_detail = list()
+        active_owners_list = list()
         active_owners = filter(lambda item:
                                item['entityStatus'] == Status.ACTIVE and
                                item['relationshipStatus'] == Status.ACTIVE,
@@ -401,10 +402,11 @@ class AtlasProxy(BaseProxy):
             owner_qn = owner['displayText']
             owner_data = self._get_user_details(owner_qn)
             owners_detail.append(User(**owner_data))
+            active_owners_list.append(owner_qn)
 
         # To avoid the duplication,
         # we are checking if the fallback is not in data_owners
-        if fallback_owner and (fallback_owner not in data_owners):
+        if fallback_owner and (fallback_owner not in active_owners_list):
             owners_detail.append(User(**self._get_user_details(fallback_owner)))
 
         return owners_detail

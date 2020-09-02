@@ -461,6 +461,70 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
             assert result == 0
 
+    def test_get_user_detail_default(self) -> None:
+        user_id = "dummy@email.com"
+        user_details = self.proxy._get_user_details(user_id=user_id)
+        self.assertDictEqual(user_details, {'email': user_id, 'user_id': user_id})
+
+    def test_get_user_detail_config_method(self) -> None:
+        user_id = "dummy@email.com"
+        response = {'email': user_id, 'user_id': user_id, 'first_name': 'First', 'last_name': 'Last'}
+
+        def custom_function(id):
+            return response
+
+        self.app.config['USER_DETAIL_METHOD'] = custom_function
+
+        user_details = self.proxy._get_user_details(user_id=user_id)
+        self.assertDictEqual(user_details, response)
+        self.app.config['USER_DETAIL_METHOD'] = None
+
+    def test_get_owners_details_no_owner_no_fallback(self):
+        res = self.proxy._get_owners(data_owners=list(), fallback_owner=None)
+        self.assertEqual(len(res), 0)
+
+    def test_get_owners_details_only_fallback(self):
+        self.app.config['USER_DETAIL_METHOD'] = None
+        user_id = "dummy@email.com"
+        res = self.proxy._get_owners(data_owners=list(), fallback_owner=user_id)
+        self.assertEqual(1, len(res))
+        self.assertListEqual(res, [User(**{'email': user_id, 'user_id': user_id})])
+
+    def test_get_owners_details_only_active(self):
+        self.app.config['USER_DETAIL_METHOD'] = None
+        data_owners = self.entity1.get("relationshipAttributes").get("ownedBy")
+        # pass both active and inactive as parameter
+        self.assertEqual(len(data_owners), 2)
+
+        res = self.proxy._get_owners(data_owners=data_owners)
+        # _get_owners should return only active
+        self.assertEqual(1, len(res))
+        self.assertEqual(res[0].user_id, 'active_owned_by')
+
+    def test_get_owners_details_owner_and_fallback(self):
+        self.app.config['USER_DETAIL_METHOD'] = None
+        user_id = "dummy@email.com"
+
+        data_owners = self.entity1.get("relationshipAttributes").get("ownedBy")
+        # pass both active and inactive as parameter
+        self.assertEqual(len(data_owners), 2)
+
+        res = self.proxy._get_owners(data_owners=data_owners, fallback_owner=user_id)
+        # _get_owners should return only active AND the fallback_owner
+        self.assertEqual(2, len(res))
+        self.assertEqual(res[1].user_id, user_id)
+
+    def test_get_owners_details_owner_and_fallback_duplicates(self):
+        self.app.config['USER_DETAIL_METHOD'] = None
+        data_owners = self.entity1.get("relationshipAttributes").get("ownedBy")
+        user_id = data_owners[0]["displayText"]
+        self.assertEqual(len(data_owners), 2)
+
+        res = self.proxy._get_owners(data_owners=data_owners, fallback_owner=user_id)
+        # _get_owners should return only active AND the fallback_owner,
+        # but in case where it is duplicate, should return only 1
+        self.assertEqual(1, len(res))
+
 
 if __name__ == '__main__':
     unittest.main()
