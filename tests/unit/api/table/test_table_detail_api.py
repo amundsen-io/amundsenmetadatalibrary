@@ -65,7 +65,7 @@ API_RESPONSE = {
 
 
 class TestTableDetailAPI(TableTestCase):
-    @pytest.skip('The test is flaky in CI')
+    @pytest.mark.skip(reason='The test is flaky in CI')
     def test_should_get_column_details(self) -> None:
         self.mock_proxy.get_table.return_value = QUERY_RESPONSE
 
