@@ -45,6 +45,41 @@ class TestGremlinProxy(unittest.TestCase):
         self.proxy = AbstractGremlinProxy(key_property_name='key', remote_connection=DriverRemoteConnection('ws://localhost:8182/gremlin', 'g'))
         self.test_user_1 = User(user_id="test_user_1@gmail.com", email="test_user_1@gmail.com")
         self.test_user_2 = User(user_id="test_user_2@gmail.com", email="test_user_2@gmail.com")
+        self.test_column_1 = Column(
+            name="test_column_1",
+            description="test_column_1 description",
+            col_type="VARCHAR(128)",
+            sort_order=1,
+            stats=[]
+        )
+        self.test_column_2 = Column(
+            name="test_column_2",
+            description="test_column_2 description",
+            col_type="INTEGER",
+            sort_order=2,
+            stats=[Statistics(
+                stat_type="AVERAGE",
+                stat_val="3"
+            )]
+        )
+        test_table_columns = [
+            self.test_column_1,
+            self.test_column_2
+        ]
+        self.test_table = Table(
+            database='test_db',
+            cluster='test_cluster',
+            schema='test_schema',
+            name='test_name',
+            columns=test_table_columns,
+            is_view=False
+        )
+        self.table_id = "{db}://{cluster}.{schema}/{tbl}".format(
+            db=self.test_table.database,
+            cluster=self.test_table.cluster,
+            schema=self.test_table.schema,
+            tbl=self.test_table.name
+        )
 
     def tearDown(self) -> None:
         self.proxy.g.E().drop().iterate()
@@ -393,56 +428,18 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(len(result), 2)
 
     def test_get_table(self):
-        test_table_columns = [
-            Column(
-                name="test_column_1",
-                description="test_column_1 description",
-                col_type="VARCHAR(128)",
-                sort_order=1,
-                stats=[]
-            ),
-            Column(
-                name="test_column_2",
-                description="test_column_2 description",
-                col_type="INTEGER",
-                sort_order=2,
-                stats=[Statistics(
-                    stat_type="AVERAGE",
-                    stat_val="3"
-                )]
-            ),
-        ]
-        test_table = Table(
-            database='test_db',
-            cluster='test_cluster',
-            schema='test_schema',
-            name='test_name',
-            columns=test_table_columns
-        )
 
-        table_id = "{db}://{cluster}.{schema}/{tbl}".format(
-            db=test_table.database,
-            cluster=test_table.cluster,
-            schema=test_table.schema,
-            tbl=test_table.name
-        )
-        test_table.tags = [
-            Tag(
-                tag_type="default",
-                tag_name="test_tag"
-            )
-        ]
-        test_table.table_readers = [
+        self.test_table.table_readers = [
             Reader(
                 user=self.test_user_1,
                 read_count=5
             )
         ]
-        test_table.description = "This is a test description"
-        test_table.owners = [
+        self.test_table.description = "This is a test description"
+        self.test_table.owners = [
             self.test_user_1
         ]
-        test_table.watermarks = [
+        self.test_table.watermarks = [
             Watermark(
                 watermark_type='test_water_mark',
                 partition_key='1',
@@ -450,10 +447,46 @@ class TestGremlinProxy(unittest.TestCase):
                 create_time=datetime.utcnow()
             )
         ]
-        test_table.is_view = False
-        self._create_test_table(test_table)
-        result = self.proxy.get_table(table_uri=table_id)
+
+        self._create_test_table(self.test_table)
+
+        result = self.proxy.get_table(table_uri=self.table_id)
         self.assertIsNotNone(result)
+        self.assertEqual(self.test_table.database, result.database)
+        self.assertEqual(self.test_table.cluster, result.cluster)
+        self.assertEqual(self.test_table.schema, result.schema)
+        self.assertEqual(self.test_table.name, result.name)
+        self.assertEqual(self.test_table.is_view, result.is_view)
+        result_columns = result.columns
+        self.assertEqual(len(result_columns), 2)
+        result_column_test_1 = [result_column for result_column in result_columns if result_column.name == self.test_column_1.name][0]
+        result_column_test_2 = [result_column for result_column in result_columns if result_column.name == self.test_column_2.name][0]
+        self.assertEqual(result_column_test_1.sort_order, self.test_column_1.sort_order)
+        self.assertEqual(result_column_test_1.description, self.test_column_1.description)
+        self.assertEqual(result_column_test_1.col_type, self.test_column_1.col_type)
+
+        self.assertEqual(result_column_test_2.sort_order, self.test_column_2.sort_order)
+        self.assertEqual(result_column_test_2.description, self.test_column_2.description)
+        self.assertEqual(result_column_test_2.col_type, self.test_column_2.col_type)
+
+    def test_get_table_with_tags(self):
+        test_tag = Tag(
+            tag_type="default",
+            tag_name="test_tag"
+        )
+
+        self.test_table.tags = [
+            test_tag
+        ]
+        self._create_test_table(self.test_table)
+
+
+        result = self.proxy.get_table(table_uri=self.table_id)
+
+        self.assertEqual(1, len(result.tags))
+        result_tag = result.tags[0]
+        self.assertEqual(result_tag.tag_type, test_tag.tag_type)
+        self.assertEqual(result_tag.tag_name, test_tag.tag_name)
 
 
 
