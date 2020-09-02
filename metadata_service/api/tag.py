@@ -62,7 +62,7 @@ class TagCommon:
             # TODO update unit tests
             return \
                 {'message': 'Badges should be added using /badges/, tag_type=badge no longer valid'}, \
-                HTTPStatus.NOT_FOUND
+                HTTPStatus.NOT_ACCEPTABLE
 
         else:
             if tag in whitelist_badges:
