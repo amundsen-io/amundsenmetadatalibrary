@@ -1,5 +1,6 @@
 import copy
 import textwrap
+from datetime import datetime
 import unittest
 from typing import Any, Dict, List  # noqa: F401
 
@@ -76,14 +77,16 @@ class TestGremlinProxy(unittest.TestCase):
             node_id=table_id,
             node_label="Table",
             node_properties={
-                'name':table.name,
-                'is_view':table.is_view
+                'name': table.name,
+                'is_view': table.is_view
             }
         )
         self._create_test_table_database(table.database)
         self._create_test_table_cluster(table)
-        self._create_test_table_schema(table)
-        self._create_test_table_source(table, table.source)
+        self._create_test_table_schema(table, table_id)
+        if table.source:
+            self._create_test_table_source(table, table.source)
+
         for tag in table.tags:
             self._create_test_tag(tag, table_id)
 
@@ -120,6 +123,7 @@ class TestGremlinProxy(unittest.TestCase):
             db=table.database,
             cluster=table.cluster
         )
+        database_id = 'database://{db}'.format(db=table.database)
         self.proxy.upsert_node(
             node_id=cluster_id,
             node_label='Cluster',
@@ -127,12 +131,28 @@ class TestGremlinProxy(unittest.TestCase):
                 'name': table.cluster
             }
         )
+        self.proxy.upsert_edge(
+            start_node_id=cluster_id,
+            end_node_id=database_id,
+            edge_label="CLUSTER_OF",
+            edge_properties={}
+        )
+        self.proxy.upsert_edge(
+            start_node_id=database_id,
+            end_node_id=cluster_id,
+            edge_label="CLUSTER",
+            edge_properties={}
+        )
 
-    def _create_test_table_schema(self, table: Table):
+    def _create_test_table_schema(self, table: Table, table_id: str):
         schema_id = '{db}://{cluster}.{schema}'.format(
             db=table.database,
             cluster=table.cluster,
             schema=table.schema
+        )
+        cluster_id = '{db}://{cluster}'.format(
+            db=table.database,
+            cluster=table.cluster
         )
         self.proxy.upsert_node(
             node_id=schema_id,
@@ -140,6 +160,31 @@ class TestGremlinProxy(unittest.TestCase):
             node_properties={
                 'name': table.schema
             }
+        )
+        # table to Schema
+        self.proxy.upsert_edge(
+            start_node_id=table_id,
+            end_node_id=schema_id,
+            edge_label="TABLE_OF",
+            edge_properties={}
+        )
+        self.proxy.upsert_edge(
+            start_node_id=schema_id,
+            end_node_id=table_id,
+            edge_label="TABLE",
+            edge_properties={}
+        )
+        self.proxy.upsert_edge(
+            start_node_id=cluster_id,
+            end_node_id=schema_id,
+            edge_label="SCHEMA",
+            edge_properties={}
+        )
+        self.proxy.upsert_edge(
+            start_node_id=schema_id,
+            end_node_id=cluster_id,
+            edge_label="SCHEMA_OF",
+            edge_properties={}
         )
 
     def _create_test_table_source(self, table: Table, source: Source):
@@ -236,7 +281,7 @@ class TestGremlinProxy(unittest.TestCase):
         )
         self.proxy.upsert_edge(
             start_node_id=entity_id,
-            end_node_id=description,
+            end_node_id=description_id,
             edge_label="DESCRIPTION",
             edge_properties={}
         )
@@ -338,9 +383,78 @@ class TestGremlinProxy(unittest.TestCase):
 
     def test_get_user(self):
         self._create_test_users(users=[self.test_user_1])
-        result = self.proxy.get_user(id="test_user@gmail.com")
+        result = self.proxy.get_user(id=self.test_user_1.user_id)
         self.assertEqual(self.test_user_1.user_id, result.user_id)
         self.assertEqual(self.test_user_1.email, result.email)
+
+    def test_get_users(self):
+        self._create_test_users(users=[self.test_user_1, self.test_user_2])
+        result = self.proxy.get_users()
+        self.assertEqual(len(result), 2)
+
+    def test_get_table(self):
+        test_table_columns = [
+            Column(
+                name="test_column_1",
+                description="test_column_1 description",
+                col_type="VARCHAR(128)",
+                sort_order=1,
+                stats=[]
+            ),
+            Column(
+                name="test_column_2",
+                description="test_column_2 description",
+                col_type="INTEGER",
+                sort_order=2,
+                stats=[Statistics(
+                    stat_type="AVERAGE",
+                    stat_val="3"
+                )]
+            ),
+        ]
+        test_table = Table(
+            database='test_db',
+            cluster='test_cluster',
+            schema='test_schema',
+            name='test_name',
+            columns=test_table_columns
+        )
+
+        table_id = "{db}://{cluster}.{schema}/{tbl}".format(
+            db=test_table.database,
+            cluster=test_table.cluster,
+            schema=test_table.schema,
+            tbl=test_table.name
+        )
+        test_table.tags = [
+            Tag(
+                tag_type="default",
+                tag_name="test_tag"
+            )
+        ]
+        test_table.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=5
+            )
+        ]
+        test_table.description = "This is a test description"
+        test_table.owners = [
+            self.test_user_1
+        ]
+        test_table.watermarks = [
+            Watermark(
+                watermark_type='test_water_mark',
+                partition_key='1',
+                partition_value='25',
+                create_time=datetime.utcnow()
+            )
+        ]
+        test_table.is_view = False
+        self._create_test_table(test_table)
+        result = self.proxy.get_table(table_uri=table_id)
+        self.assertIsNotNone(result)
+
 
 
 if __name__ == '__main__':

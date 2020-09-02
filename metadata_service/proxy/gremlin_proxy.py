@@ -120,20 +120,20 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_users(self) -> List[UserEntity]:
         users_result = self.g.V().hasLabel('User').project('id', 'email'). \
-            by(__.id()). \
+            by(self.key_property_name). \
             by('email').\
             toList()
         users = []
         for user_result in users_result:
             user = UserEntity(
-                id=user_result.get('id'),
+                user_id=user_result.get('id'),
                 email=user_result.get('email')
             )
             users.append(user)
         return users
 
     def get_table(self, *, table_uri: str) -> Table:
-        result = self.g.V().hasId(table_uri). \
+        result = self.g.V().has(self.key_property_name, table_uri). \
             project(
                 'database',
                 'cluster',
@@ -218,7 +218,7 @@ class AbstractGremlinProxy(BaseProxy):
         return table
 
     def _get_table_users(self, *, table_uri):
-        records = self.g.V(table_uri). \
+        records = self.g.V().has(self.key_property_name, table_uri). \
             out('READ_BY'). \
             project('email', 'read_count'). \
             by('email'). \
@@ -582,7 +582,7 @@ class AbstractGremlinProxy(BaseProxy):
             fold(). \
             coalesce(__.unfold(), create_traversal)
         for key, value in node_properties.items():
-            if not value:
+            if value is None:
                 continue
             tx = tx.property(Cardinality.single, key, value)
 
@@ -615,8 +615,8 @@ class AbstractGremlinProxy(BaseProxy):
             to_vertex_id=end_node_id,
             label=edge_label
         )
-        create_traversal = __.V(start_node_id).addE(edge_label).to(__.V(end_node_id)).property(self.key_property_name, edge_id)
-        tx = tx.V(start_node_id).outE(edge_label).has(self.key_property_name, edge_id). \
+        create_traversal = __.V().has(self.key_property_name, start_node_id).addE(edge_label).to(__.V().has(self.key_property_name, end_node_id)).property(self.key_property_name, edge_id)
+        tx = tx.V().has(self.key_property_name, start_node_id).outE(edge_label).has(self.key_property_name, edge_id). \
             fold(). \
             coalesce(__.unfold(), create_traversal)
         for key, value in edge_properties.items():
