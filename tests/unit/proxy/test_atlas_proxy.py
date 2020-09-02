@@ -331,7 +331,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
         res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
                                                     relation_type=UserResourceRel.own)
 
-        self.assertEqual(len(res.get("table")), 1)
+        self.assertEqual(len(res.get("table")), 1)  # type: ignore
 
         ent1_attrs = cast(dict, self.entity1['attributes'])
 
@@ -470,7 +470,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
         user_id = "dummy@email.com"
         response = {'email': user_id, 'user_id': user_id, 'first_name': 'First', 'last_name': 'Last'}
 
-        def custom_function(id):
+        def custom_function(id: str) -> Dict[str, Any]:
             return response
 
         self.app.config['USER_DETAIL_METHOD'] = custom_function
@@ -479,20 +479,20 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertDictEqual(user_details, response)
         self.app.config['USER_DETAIL_METHOD'] = None
 
-    def test_get_owners_details_no_owner_no_fallback(self):
+    def test_get_owners_details_no_owner_no_fallback(self) -> None:
         res = self.proxy._get_owners(data_owners=list(), fallback_owner=None)
         self.assertEqual(len(res), 0)
 
-    def test_get_owners_details_only_fallback(self):
+    def test_get_owners_details_only_fallback(self) -> None:
         self.app.config['USER_DETAIL_METHOD'] = None
         user_id = "dummy@email.com"
         res = self.proxy._get_owners(data_owners=list(), fallback_owner=user_id)
         self.assertEqual(1, len(res))
         self.assertListEqual(res, [User(**{'email': user_id, 'user_id': user_id})])
 
-    def test_get_owners_details_only_active(self):
+    def test_get_owners_details_only_active(self) -> None:
         self.app.config['USER_DETAIL_METHOD'] = None
-        data_owners = self.entity1.get("relationshipAttributes").get("ownedBy")
+        data_owners = cast(dict, self.entity1)["relationshipAttributes"]["ownedBy"]
         # pass both active and inactive as parameter
         self.assertEqual(len(data_owners), 2)
 
@@ -501,11 +501,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(1, len(res))
         self.assertEqual(res[0].user_id, 'active_owned_by')
 
-    def test_get_owners_details_owner_and_fallback(self):
+    def test_get_owners_details_owner_and_fallback(self) -> None:
         self.app.config['USER_DETAIL_METHOD'] = None
         user_id = "dummy@email.com"
 
-        data_owners = self.entity1.get("relationshipAttributes").get("ownedBy")
+        data_owners = cast(dict, self.entity1)["relationshipAttributes"]["ownedBy"]
         # pass both active and inactive as parameter
         self.assertEqual(len(data_owners), 2)
 
@@ -514,9 +514,9 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(2, len(res))
         self.assertEqual(res[1].user_id, user_id)
 
-    def test_get_owners_details_owner_and_fallback_duplicates(self):
+    def test_get_owners_details_owner_and_fallback_duplicates(self) -> None:
         self.app.config['USER_DETAIL_METHOD'] = None
-        data_owners = self.entity1.get("relationshipAttributes").get("ownedBy")
+        data_owners = cast(dict, self.entity1)["relationshipAttributes"]["ownedBy"]
         user_id = data_owners[0]["displayText"]
         self.assertEqual(len(data_owners), 2)
 
