@@ -220,7 +220,8 @@ class AbstractGremlinProxy(BaseProxy):
     def _get_table_users(self, *, table_uri):
         records = self.g.V().has(self.key_property_name, table_uri). \
             out('READ_BY'). \
-            project('email', 'read_count'). \
+            project('user_id', 'email', 'read_count'). \
+            by(self.key_property_name). \
             by('email'). \
             by(__.coalesce(__.inE('READ_BY').values('read_count'), __.constant(0))). \
             order().by(__.select('read_count'), Order.desc). \
@@ -228,7 +229,7 @@ class AbstractGremlinProxy(BaseProxy):
 
         readers = []  # type: List[Reader]
         for record in records:
-            reader = Reader(user=UserEntity(email=record['email']),
+            reader = Reader(user=UserEntity(email=record['email'], user_id=record['user_id']),
                             read_count=record['read_count'])
             readers.append(reader)
 

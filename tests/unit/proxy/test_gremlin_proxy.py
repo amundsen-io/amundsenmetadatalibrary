@@ -429,12 +429,6 @@ class TestGremlinProxy(unittest.TestCase):
 
     def test_get_table(self):
 
-        self.test_table.table_readers = [
-            Reader(
-                user=self.test_user_1,
-                read_count=5
-            )
-        ]
         self.test_table.description = "This is a test description"
         self.test_table.owners = [
             self.test_user_1
@@ -487,6 +481,26 @@ class TestGremlinProxy(unittest.TestCase):
         result_tag = result.tags[0]
         self.assertEqual(result_tag.tag_type, test_tag.tag_type)
         self.assertEqual(result_tag.tag_name, test_tag.tag_name)
+
+    def test_get_table_with_readers(self):
+        test_reader = Reader(
+            user=self.test_user_1,
+            read_count=5
+        )
+        self.test_table.table_readers = [
+            test_reader
+        ]
+        self._create_test_table(self.test_table)
+
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual(1, len(result.table_readers))
+        result_table_reader = result.table_readers[0]
+        self.assertEqual(result_table_reader.user.user_id, self.test_user_1.user_id)
+        self.assertEqual(result_table_reader.user.email, self.test_user_1.email)
+        self.assertEqual(result_table_reader.read_count, test_reader.read_count)
+
+
+
 
 
 
