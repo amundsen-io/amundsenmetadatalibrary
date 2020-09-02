@@ -1,7 +1,7 @@
 # Copyright Contributors to the Amundsen project.
 # SPDX-License-Identifier: Apache-2.0
 
-from unittest.mock import patch, Mock
+from mock import patch, Mock
 
 from tests.unit.test_basics import BasicTestCase
 
