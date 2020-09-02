@@ -108,3 +108,4 @@ We have Swagger documentation setup with OpenApi 3.0.2. This documentation is ge
 
 ## Code structure
 Please visit [Code Structure](docs/structure.md) to read how different modules are structured in Amundsen Metadata service.
+
