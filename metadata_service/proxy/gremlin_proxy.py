@@ -7,7 +7,7 @@ import gremlin_python
 from gremlin_python.process.traversal import T, Order, gt, Cardinality
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Table, Column, Reader, Tag
+from amundsen_common.models.table import Table, Column, Reader, Tag, Watermark
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from gremlin_python.driver.driver_remote_connection import \
@@ -145,7 +145,8 @@ class AbstractGremlinProxy(BaseProxy):
                 'description',
                 'columns',
                 'tags',
-                'owners'
+                'owners',
+                'water_marks'
             ). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
@@ -164,11 +165,17 @@ class AbstractGremlinProxy(BaseProxy):
                by('sort_order').fold()). \
             by(__.inE('TAG').outV().project('tag_id', 'tag_type').by(self.key_property_name).by(__.values('tag_type')).fold()).\
             by(__.inE('OWNER').outV().values('email').fold()).\
-            next()
+            by(__.out("WATERMARK").project('key', 'partition_key', 'partition_value', 'create_time').\
+               by(self.key_property_name).\
+               by('partition_key').\
+               by('partition_value').\
+               by('create_time').fold()
+            ).next()
 
         column_nodes = result['columns']
         tag_nodes = result['tags']
         owner_nodes = result['owners']
+        water_mark_nodes = result['water_marks']
         readers = self._get_table_users(table_uri=table_uri)
         columns = []
         for column_node in column_nodes:
@@ -203,6 +210,18 @@ class AbstractGremlinProxy(BaseProxy):
                     email=owner
                 )
             )
+        water_marks = []
+        for water_mark in water_mark_nodes:
+            watermark_type = water_mark['key'].split('/')[-2]
+            water_marks.append(
+                Watermark(
+                    watermark_type=watermark_type,
+                    partition_key=water_mark['partition_key'],
+                    partition_value=water_mark['partition_value'],
+                    create_time=water_mark['create_time']
+                )
+            )
+
         table = Table(
             schema=result.get('schema'),
             database=result.get('database'),
@@ -213,7 +232,8 @@ class AbstractGremlinProxy(BaseProxy):
             columns=columns,
             is_view=result.get('is_view'),
             tags=tags,
-            owners=owners
+            owners=owners,
+            watermarks=water_marks
         )
         return table
 

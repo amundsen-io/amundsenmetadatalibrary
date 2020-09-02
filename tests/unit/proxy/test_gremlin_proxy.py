@@ -382,18 +382,18 @@ class TestGremlinProxy(unittest.TestCase):
         self.proxy.upsert_edge(
             start_node_id=user.user_id,
             end_node_id=table_id,
-            edge_label="OWNER_OF",
+            edge_label="OWNER",
             edge_properties={}
         )
         self.proxy.upsert_edge(
             start_node_id=table_id,
             end_node_id=user.user_id,
-            edge_label="OWNER",
+            edge_label="OWNER_OF",
             edge_properties={}
         )
 
     def _create_table_watermark(self, water_mark: Watermark, table_id):
-        water_mark_id = table_id + '/' + water_mark.partition_key
+        water_mark_id = table_id + '/' + water_mark.watermark_type + '/'
         self.proxy.upsert_node(
             node_id=water_mark_id,
             node_label="Watermark",
@@ -428,11 +428,6 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(len(result), 2)
 
     def test_get_table(self):
-
-        self.test_table.description = "This is a test description"
-        self.test_table.owners = [
-            self.test_user_1
-        ]
         self.test_table.watermarks = [
             Watermark(
                 watermark_type='test_water_mark',
@@ -468,12 +463,10 @@ class TestGremlinProxy(unittest.TestCase):
             tag_type="default",
             tag_name="test_tag"
         )
-
         self.test_table.tags = [
             test_tag
         ]
         self._create_test_table(self.test_table)
-
 
         result = self.proxy.get_table(table_uri=self.table_id)
 
@@ -499,9 +492,40 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(result_table_reader.user.email, self.test_user_1.email)
         self.assertEqual(result_table_reader.read_count, test_reader.read_count)
 
+    def test_get_table_with_description(self):
+        self.test_table.description = "This is a test description"
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual("This is a test description", result.description)
 
+    def test_get_table_with_owners(self):
+        self.test_table.owners = [
+            self.test_user_1
+        ]
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual(1, len(result.owners))
+        result_owner = result.owners[0]
+        self.assertEqual(result_owner.email, self.test_user_1.email)
 
-
+    def test_get_table_with_watermarks(self):
+        now = datetime.utcnow()
+        test_water_mark = Watermark(
+            watermark_type='test_water_mark',
+            partition_key='1',
+            partition_value='25',
+            create_time=now
+        )
+        self.test_table.watermarks = [
+            test_water_mark
+        ]
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual(len(result.watermarks), 1)
+        result_water_mark = result.watermarks[0]
+        self.assertEqual(result_water_mark.watermark_type, test_water_mark.watermark_type)
+        self.assertEqual(result_water_mark.partition_key, test_water_mark.partition_key)
+        self.assertEqual(result_water_mark.partition_value, test_water_mark.partition_value)
 
 
 if __name__ == '__main__':
