@@ -583,10 +583,6 @@ class Neo4jProxy(BaseProxy):
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
 
-        # unique_name_query = \
-        #     'MATCH (n: {resource_type} {{key: &key}})-[:HAS_BADGE]->(b:Badge {key: $badge_name}) return b'\
-        #     .format(resource_type=resource_type.name, badge_name=badge_name)
-
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
         on CREATE SET u={key: $badge_name, category: $category, badge_type: $badge_type}
@@ -609,6 +605,7 @@ class Neo4jProxy(BaseProxy):
             tx.run(upsert_badge_query, {'badge_name': badge_name,
                                         'category': category,
                                         'badge_type': badge_type})
+
             result = tx.run(upsert_badge_relation_query, {'badge_name': badge_name,
                                                           'key': id,
                                                           'category': category,
@@ -634,6 +631,8 @@ class Neo4jProxy(BaseProxy):
                      badge_type: str,
                      resource_type: ResourceType = ResourceType.Table) -> None:
 
+        # TODO for some reason when deleting it will say it was successful
+        # even when the badge never existed to begin with
         LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category,
                                                                                       badge_type))
 
