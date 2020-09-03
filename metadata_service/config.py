@@ -58,7 +58,30 @@ class Config:
     STATISTICS_FORMAT_SPEC: Dict[str, Dict] = {}
 
     # whitelist badges
-    WHITELIST_BADGES: List[str] = []
+    WHITELIST_BADGES: List[Dict] = [{'badge_name': 'alpha',
+                                     'category': 'table_status',
+                                     'badge_type': 'neutral'},
+                                    {'badge_name': 'beta',
+                                     'category': 'table_status',
+                                     'badge_type': 'neutral'},
+                                    {'badge_name': 'GA',
+                                     'category': 'table_status',
+                                     'badge_type': 'positive'},
+                                    {'badge_name': 'deprecated',
+                                     'category': 'table_status',
+                                     'badge_type': 'negative'},
+                                    {'badge_name': 'recommended',
+                                     'category': 'recommended',
+                                     'badge_type': 'positive'},
+                                    {'badge_name': 'Core Concepts',
+                                     'category': 'coco',
+                                     'badge_type': 'positive'},
+                                    {'badge_name': 'primary key',
+                                     'category': 'column_type',
+                                     'badge_type': 'neutral'},
+                                    {'badge_name': 'partition column',
+                                     'category': 'column_type',
+                                     'badge_type': 'neutral'}]
 
     SWAGGER_ENABLED = False
 
@@ -80,12 +103,17 @@ class LocalConfig(Config):
     DEBUG = True
     TESTING = False
     LOG_LEVEL = 'DEBUG'
-    LOCAL_HOST = '0.0.0.0'
+    # LOCAL_HOST = '0.0.0.0'
+    LOCAL_HOST = 'amundsenneo4j-staging.lyft.net'
+
+    PROXY_USER = os.environ.get('CREDENTIALS_PROXY_USER', 'neo4j')
+    PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', '1234abcd!') 
+    PROXY_ENCRYPTED = False
 
     PROXY_HOST = os.environ.get('PROXY_HOST', f'bolt://{LOCAL_HOST}')
     PROXY_PORT = os.environ.get('PROXY_PORT', 7687)
     PROXY_CLIENT = PROXY_CLIENTS[os.environ.get('PROXY_CLIENT', 'NEO4J')]
-    PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'True')))
+    # PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'True')))
     PROXY_VALIDATE_SSL = bool(distutils.util.strtobool(os.environ.get(PROXY_VALIDATE_SSL, 'False')))
 
     JANUS_GRAPH_URL = None
