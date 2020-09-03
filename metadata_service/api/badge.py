@@ -47,7 +47,7 @@ class BadgeCommon:
             badge_name: str,
             category: str = '',
             badge_type: str = '') -> Tuple[Any, HTTPStatus]:
-        whitelist_badges = app.config.get('WHITELIST_BADGES', [])
+
         if badge_type == '' or category == '':
             return \
                 {'message': 'The badge {} for id {} is not added successfully because '
@@ -55,6 +55,9 @@ class BadgeCommon:
                             'for badges'.format(badge_name, id, category, badge_type)}, \
                 HTTPStatus.NOT_FOUND
 
+        # TODO check resource type is column when adding a badge of category column after
+        # implementing column level badges
+        whitelist_badges = app.config.get('WHITELIST_BADGES', [])
         incomimg_badge = {'badge_name': badge_name,
                           'category': category,
                           'badge_type': badge_type}

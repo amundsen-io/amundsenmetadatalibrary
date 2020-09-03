@@ -77,10 +77,10 @@ class Config:
                                      'category': 'coco',
                                      'badge_type': 'positive'},
                                     {'badge_name': 'primary key',
-                                     'category': 'column_type',
+                                     'category': 'column',
                                      'badge_type': 'neutral'},
                                     {'badge_name': 'partition column',
-                                     'category': 'column_type',
+                                     'category': 'column',
                                      'badge_type': 'neutral'}]
 
     SWAGGER_ENABLED = False
