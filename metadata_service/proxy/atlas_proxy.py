@@ -450,7 +450,8 @@ class AtlasProxy(BaseProxy):
 
             reports_guids = [report.get("guid") for report in attrs.get("reports") or list()]
 
-            is_view = True if attrs.get('tableType', 'table').lower().find('view') != -1 else False
+            table_type = attrs.get('tableType') if attrs.get('tableType') else 'table'
+            is_view = True if table_type.lower().find('view') != -1 else False
 
             table = Table(
                 database=table_details.get('typeName'),
