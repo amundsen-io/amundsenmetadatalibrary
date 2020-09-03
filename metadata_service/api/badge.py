@@ -55,13 +55,17 @@ class BadgeCommon:
                             'for badges'.format(badge_name, id, category, badge_type)}, \
                 HTTPStatus.NOT_FOUND
 
-        # need to check whether the badge is part of the whitelist:
-        if badge_name not in whitelist_badges:
+        incomimg_badge = {'badge_name': badge_name,
+                          'category': category,
+                          'badge_type': badge_type}
+        # need to check whether the badge combination is part of the whitelist:
+        if incomimg_badge not in whitelist_badges:
             return \
-                {'message': 'The badge {} for id {} with badge_type {} and resource_type {} '
-                            'is not added successfully as badge '
+                {'message': 'The badge {} for id {} with category {} badge_type {} and resource_type {} '
+                            'is not added successfully because this combination of values '
                             'is not part of the whitelist'.format(badge_name,
                                                                   id,
+                                                                  category,
                                                                   badge_type,
                                                                   resource_type.name)}, \
                 HTTPStatus.NOT_FOUND
