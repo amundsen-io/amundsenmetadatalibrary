@@ -581,6 +581,11 @@ class AtlasProxy(BaseProxy):
                            "entityGuids": [entity.entity[self.GUID_KEY]]}
         self._driver.entity_bulk_classification.create(data=entity_bulk_tag)
 
+    def add_badge(self, *, id: str, badge_name: str, category: str = '',
+                  badge_type: str = '', resource_type: ResourceType) -> None:
+        # Not implemented
+        raise NotImplementedError
+
     def delete_tag(self, *, id: str, tag: str, tag_type: str,
                    resource_type: ResourceType = ResourceType.Table) -> None:
         """
@@ -598,6 +603,11 @@ class AtlasProxy(BaseProxy):
             # FixMe (Verdan): Too broad exception. Please make it specific
             LOGGER.exception('For some reason this deletes the classification '
                              'but also always return exception. {}'.format(str(ex)))
+
+    def delete_badge(self, *, id: str, badge_name: str, category: str, badge_type: str,
+                     resource_type: ResourceType) -> None:
+        # Not implemented
+        raise NotImplementedError
 
     def put_column_description(self, *,
                                table_uri: str,
@@ -714,6 +724,15 @@ class AtlasProxy(BaseProxy):
         :param resource_type: Type of a resource that returns, could be table, dashboard etc.
         :return: A list of PopularTable, DashboardSummary or any other resource.
         """
+    def get_badges(self) -> List:
+        # Not implemented
+        return []
+
+    def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
+            -> Dict[str, List[DashboardSummary]]:
+        pass
+
+    def get_table_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, Any]:
         params = {
             'typeName': self.BOOKMARK_TYPE,
             'offset': '0',

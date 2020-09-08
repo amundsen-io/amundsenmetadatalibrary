@@ -80,7 +80,7 @@ class DashboardBadgeAPI(Resource):
     DashboardBadgeAPI that supports PUT and DELETE operation to add or delete badges
     on Dashboard
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('category', type=str, required=True)
