@@ -536,6 +536,20 @@ class TestGremlinProxy(unittest.TestCase):
         result = self.proxy.get_table(table_uri=self.table_id)
         self.assertEqual(0, len(result.owners))
 
+    def test_add_owner_to_table(self):
+        self._create_test_users(users=[self.test_user_1])
+        self._create_test_table(self.test_table)
+        self.proxy.add_owner(table_uri=self.table_id, owner=self.test_user_1.email)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual(1, len(result.owners))
+        result_owner = result.owners[0]
+        self.assertEqual(result_owner.email, self.test_user_1.email)
+
+    def test_get_table_description(self):
+        self.test_table.description = "This is a test description"
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table_description(table_uri=self.table_id)
+        self.assertEqual(result, "This is a test description")
 
 if __name__ == '__main__':
     unittest.main()

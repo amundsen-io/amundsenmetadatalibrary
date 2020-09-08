@@ -271,7 +271,6 @@ class AbstractGremlinProxy(BaseProxy):
             __.has(self.key_property_name, forward_key)
         ).drop().iterate()
 
-
     def add_owner(self, *, table_uri: str, owner: str) -> None:
         user = self.get_user(id=owner)
         self.upsert_edge(
@@ -283,7 +282,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
-        result = self.g.V(table_uri).out('DESCRIPTION').values('description').next()
+        result = self.g.V().has(self.key_property_name, table_uri).out('DESCRIPTION').values('description').next()
         return result
 
     def put_table_description(self, *,
