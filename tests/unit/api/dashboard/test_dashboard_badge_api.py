@@ -9,7 +9,7 @@ from unittest.mock import patch, Mock
 from tests.unit.test_basics import BasicTestCase
 
 DASHBOARD_NAME = 'magic'
-BADGE_NAME = 'foo'
+BADGE_NAME = 'alpha'
 
 
 class DashboardBadgeAPI(BasicTestCase):
@@ -32,13 +32,17 @@ class DashboardBadgeAPI(BasicTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_block_badge_missing_category_or_badge_type(self) -> None:
-        self.app.config['WHITELIST_BADGES'] = [BADGE_NAME]
+        self.app.config['WHITELIST_BADGES'] = [{'badge_name': 'alpha',
+                                                'category': 'table_status',
+                                                'badge_type': 'neutral'}]
         response = self.app.test_client().put(f'/dashboard/{DASHBOARD_NAME}/badge/{BADGE_NAME}')
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_badge_with_category_and_badge_type(self) -> None:
-        self.app.config['WHITELIST_BADGES'] = [BADGE_NAME]
+        self.app.config['WHITELIST_BADGES'] = [{'badge_name': 'alpha',
+                                                'category': 'table_status',
+                                                'badge_type': 'neutral'}]
         response = self.app.test_client().put(f'/dashboard/{DASHBOARD_NAME}/badge/{BADGE_NAME}?category=table_status&'
                                               'badge_type=neutral')
 
