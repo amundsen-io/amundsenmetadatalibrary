@@ -11,7 +11,7 @@ from metadata_service.api.badge import BadgeCommon
 from metadata_service.entity.resource_type import ResourceType
 from tests.unit.api.dashboard.dashboard_test_case import DashboardTestCase
 
-BADGE_NAME = 'foo'
+BADGE_NAME = 'alpha'
 CATEGORY = 'table_status'
 BADGE_TYPE = 'neutral'
 
@@ -34,7 +34,9 @@ class TestDashboardBadgeAPI(DashboardTestCase):
         self.assertFalse(current_app is None)
 
     def test_badge_on_reserved_badge_name(self) -> None:
-        self.app.config['WHITELIST_BADGES'] = [BADGE_NAME]
+        self.app.config['WHITELIST_BADGES'] = [{'badge_name': 'alpha',
+                                                'category': 'table_status',
+                                                'badge_type': 'neutral'}]
 
         mock_proxy = MagicMock()
 
