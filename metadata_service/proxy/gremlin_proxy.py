@@ -366,7 +366,10 @@ class AbstractGremlinProxy(BaseProxy):
             label="TAGGED_BY"
         )
         tx = self.g
-        tx = tx.E([ forward_edge_id,reverse_edge_id]).drop()
+        tx = tx.E().or_(
+            __.has(self.key_property_name, forward_edge_id),
+            __.has(self.key_property_name, reverse_edge_id)
+        ).drop()
         tx.iterate()
 
     def put_column_description(self, *,
@@ -398,7 +401,7 @@ class AbstractGremlinProxy(BaseProxy):
                                table_uri: str,
                                column_name: str) -> Union[str, None]:
         column_uri = table_uri + '/' + column_name + '/_description' # type: str
-        return self.g.V(column_uri).values('description').next()
+        return self.g.V().has(self.key_property_name, column_uri).values('description').next()
 
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
         table_uris = self._get_popular_tables(num_entries)
