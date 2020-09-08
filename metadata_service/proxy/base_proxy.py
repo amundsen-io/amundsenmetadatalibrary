@@ -57,7 +57,17 @@ class BaseProxy(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def add_badge(self, *, id: str, badge_name: str, category: str = '',
+                  badge_type: str = '', resource_type: ResourceType) -> None:
+        pass
+
+    @abstractmethod
     def delete_tag(self, *, id: str, tag: str, tag_type: str, resource_type: ResourceType) -> None:
+        pass
+
+    @abstractmethod
+    def delete_badge(self, *, id: str, badge_name: str, category: str, badge_type: str,
+                     resource_type: ResourceType) -> None:
         pass
 
     @abstractmethod
@@ -85,9 +95,9 @@ class BaseProxy(metaclass=ABCMeta):
     def get_tags(self) -> List:
         pass
 
-    # @abstractmethod
-    # def get_badges(self) -> List:
-    #     pass
+    @abstractmethod
+    def get_badges(self) -> List:
+        pass
 
     @abstractmethod
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
