@@ -527,6 +527,15 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(result_water_mark.partition_key, test_water_mark.partition_key)
         self.assertEqual(result_water_mark.partition_value, test_water_mark.partition_value)
 
+    def test_delete_owner_from_table(self):
+        self.test_table.owners = [
+            self.test_user_1
+        ]
+        self._create_test_table(self.test_table)
+        self.proxy.delete_owner(table_uri=self.table_id, owner=self.test_user_1.email)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual(0, len(result.owners))
+
 
 if __name__ == '__main__':
     unittest.main()

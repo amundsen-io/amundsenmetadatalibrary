@@ -261,7 +261,16 @@ class AbstractGremlinProxy(BaseProxy):
             to_vertex_id=table_uri,
             label="OWNER"
         )
-        self.g.E().hasId(forward_key).drop().iterate()
+        reverse_key = "{from_vertex_id}_{to_vertex_id}_{label}".format(
+            from_vertex_id=table_uri,
+            to_vertex_id=owner,
+            label="OWNER_OF"
+        )
+        self.g.E().or_(
+            __.has(self.key_property_name, reverse_key),
+            __.has(self.key_property_name, forward_key)
+        ).drop().iterate()
+
 
     def add_owner(self, *, table_uri: str, owner: str) -> None:
         user = self.get_user(id=owner)
