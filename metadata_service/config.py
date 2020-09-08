@@ -107,7 +107,7 @@ class LocalConfig(Config):
     LOCAL_HOST = 'amundsenneo4j-staging.lyft.net'
 
     PROXY_USER = os.environ.get('CREDENTIALS_PROXY_USER', 'neo4j')
-    PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', '1234abcd!') 
+    PROXY_PASSWORD = os.environ.get('CREDENTIALS_PROXY_PASSWORD', '1234abcd!')
     PROXY_ENCRYPTED = False
 
     PROXY_HOST = os.environ.get('PROXY_HOST', f'bolt://{LOCAL_HOST}')
