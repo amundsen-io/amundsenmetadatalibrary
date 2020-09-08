@@ -16,7 +16,7 @@ CATEGORY = 'table_status'
 BADGE_TYPE = 'neutral'
 
 
-class TestDashboardBAdgeAPI(DashboardTestCase):
+class TestDashboardBadgeAPI(DashboardTestCase):
     """
         Test the service if it can standup
         """
