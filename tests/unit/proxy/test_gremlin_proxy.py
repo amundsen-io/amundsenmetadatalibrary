@@ -299,7 +299,7 @@ class TestGremlinProxy(unittest.TestCase):
         )
 
     def _create_test_description(self, description: str, entity_id: str):
-        description_id = entity_id + "/_description",
+        description_id = entity_id + "/_description"
         self.proxy.upsert_node(
             node_id=description_id,
             node_label="Description",
@@ -550,6 +550,24 @@ class TestGremlinProxy(unittest.TestCase):
         self._create_test_table(self.test_table)
         result = self.proxy.get_table_description(table_uri=self.table_id)
         self.assertEqual(result, "This is a test description")
+
+    def test_updating_table_description(self):
+        self.test_table.description = "This is a test description"
+        self._create_test_table(self.test_table)
+        self.proxy.put_table_description(table_uri=self.table_id, description="test2")
+        result = self.proxy.get_table_description(table_uri=self.table_id)
+        self.assertEqual(result, "test2")
+
+    def test_adding_a_tag_to_table(self):
+        self._create_test_table(self.test_table)
+        self.proxy.add_tag(id=self.table_id, tag='test', tag_type='default')
+        result = self.proxy.get_table(table_uri=self.table_id)
+
+        self.assertEqual(1, len(result.tags))
+        result_tag = result.tags[0]
+        self.assertEqual(result_tag.tag_type, 'default')
+        self.assertEqual(result_tag.tag_name, 'test')
+
 
 if __name__ == '__main__':
     unittest.main()

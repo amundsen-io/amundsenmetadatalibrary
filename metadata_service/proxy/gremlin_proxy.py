@@ -315,6 +315,13 @@ class AbstractGremlinProxy(BaseProxy):
             edge_label="DESCRIPTION",
             edge_properties={}
         )
+        tx = self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=desc_key,
+            end_node_id=uri,
+            edge_label="DESCRIPTION_OF",
+            edge_properties={}
+        )
         tx.next()
 
     def add_tag(self, *, id: str, tag: str, tag_type: str, resource_type: ResourceType = ResourceType.Table) -> None:
