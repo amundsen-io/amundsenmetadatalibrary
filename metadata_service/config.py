@@ -58,7 +58,7 @@ class Config:
     STATISTICS_FORMAT_SPEC: Dict[str, Dict] = {}
 
     # whitelist badges
-    WHITELIST_BADGES: List[str] = []
+    WHITELIST_BADGES: List[Dict] = []
 
     SWAGGER_ENABLED = False
 
