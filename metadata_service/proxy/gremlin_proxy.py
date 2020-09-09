@@ -5,7 +5,7 @@ from random import randint
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
-from gremlin_python.process.traversal import T, Order, gt, Cardinality, within
+from gremlin_python.process.traversal import T, Order, gt, Cardinality, within, endingWith
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table, Column, Reader, Tag, Watermark
@@ -26,6 +26,8 @@ from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.proxy import BaseProxy
 from metadata_service.util import UserResourceRel
+from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
+from metadata_service.entity.dashboard_query import DashboardQuery as DashboardQueryEntity
 
 __all__ = ['AbstractGremlinProxy', 'GenericGremlinProxy']
 
@@ -43,6 +45,236 @@ def _parse_gremlin_server_error(exception: Exception) -> Dict[str, Any]:
         return {}
     # this is like '444: {...json object...}'
     return json.loads(exception.args[0][exception.args[0].index(': ') + 1:])
+
+
+class DashboardTraversal:
+    def __init__(self, g: GraphTraversalSource, dashboard_uri: str, key_property_name: str):
+        self.g = g
+        self.dashboard_uri = dashboard_uri
+        self.key_property_name = key_property_name
+
+    def get_dashboard(self):
+        ds_traversal = self.g.V().hasKey(self.key_property_name, self.dashboard_uri)
+        ds_traversal = ds_traversal.hasLabel("Dashboard")
+        ds_traversal = ds_traversal.project(
+            'cluster_name',
+            'uri',
+            'url',
+            'name',
+            'created_timestamp',
+            'description',
+            'group',
+            'last_successful_run_timestamp',
+            'last_run',
+            'updated_timestamp',
+            'owners',
+            'tags',
+            'recent_view_count',
+            'queries',
+            'charts',
+            'tables'
+        )
+        ds_traversal = ds_traversal.by(
+            __.out('DASHBOARD_OF').out('DASHBOARD_GROUP_OF').values('name')
+        )  # cluster_name
+        ds_traversal = ds_traversal.by(
+            self.key_property_name
+        )  # uri
+        ds_traversal = ds_traversal.by(
+            'dashboard_url'
+        )  # url
+        ds_traversal = ds_traversal.by(
+            'name'
+        )  # name
+        ds_traversal = ds_traversal.by(
+            'created_timestamp'
+        )  # created_timestamp
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_description_traversal()
+        )  # description
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_dashboard_group_traversal()
+        )  # group
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_last_successful_execution_traversal(self.key_property_name)
+        )  # last_successful_run_timestamp
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_last_execution_traversal(self.key_property_name)
+        )  # last_run
+        ds_traversal = ds_traversal.by(
+            __.out('LAST_UPDATED_AT').values('timestamp')
+        )  # updated_timestamp
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_owners_traversal(self.key_property_name)
+        )  # owners
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_tags_traversal()
+        )  # tags
+        ds_traversal = ds_traversal.by(
+            __.outE('READ_BY').values('read_count').fold().sum()
+        )  # recent_view_count
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_dashboard_query_traversal()
+        )  # queries
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_dashboard_chart_traversal()
+        )  # charts
+        ds_traversal = ds_traversal.by(
+            DashboardTraversal._create_dashboard_tables_traversal()
+        )  # tables
+
+        dashboard_result = ds_traversal.next()
+        owners = []
+        for owner in dashboard_result['owners']:
+            owners.append(UserEntity(
+                user_id=owner['user_id'],
+                email=owner['email']
+            ))
+        tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_result['tags']]
+        chart_names = dashboard_result['charts']
+        query_names = [query['name'] for query in dashboard_result['queries'] if 'name' in query and query['name']]
+        queries = [
+            DashboardQueryEntity(
+                name=query['name'],
+                url=query['url'],
+                query_text=query['query_text'],
+            )
+            for query in dashboard_result['queries']
+            if query.get('name') or query.get('url') or query.get('text')
+        ]
+        tables = [
+            PopularTable(
+                database=table['database_name'],
+                cluster=table['cluster_name'],
+                schema=table['schema_name'],
+                name=table['table_name'],
+                description=table['table_description']
+            )
+            for table in dashboard_result['tables']
+            if 'name' in table and table['name']
+        ]
+        product = dashboard_result['uri'].split('_')[0]
+        return DashboardDetailEntity(
+            uri=dashboard_result['uri'],
+            cluster=dashboard_result['cluster_name'],
+            url=dashboard_result['url'],
+            name=dashboard_result['name'],
+            product=product,
+            created_timestamp=dashboard_result['created_timestamp'],
+            description=dashboard_result.get('description'),
+            group_name=dashboard_result.get('group').get('name'),
+            group_url=dashboard_result.get('group').get('url'),
+            last_successful_run_timestamp=dashboard_result.get('last_successful_run_timestamp'),
+            last_run_timestamp=dashboard_result.get('last_run').get('timestamp'),
+            last_run_state=dashboard_result.get('last_run').get('state'),
+            updated_timestamp=dashboard_result.get('updated_timestamp'),
+            owners=owners,
+            tags=tags,
+            recent_view_count=dashboard_result['recent_view_count'],
+            chart_names=chart_names,
+            query_names=query_names,
+            queries=queries,
+            tables=tables
+        )
+
+    @staticmethod
+    def _create_dashboard_group_traversal():
+        dashboard_group_traversal = __.out('DASHBOARD_OF').project(
+            'name',
+            'url'
+        )
+        dashboard_group_traversal = dashboard_group_traversal.by(
+            'name',
+        )  # name
+        dashboard_group_traversal = dashboard_group_traversal.by(
+            'name',
+        )  # url
+        return dashboard_group_traversal
+
+    @staticmethod
+    def _create_description_traversal():
+        description_traversal = __.out('DESCRIPTION')
+        description_traversal = description_traversal.coalesce(
+            __.values('description'),
+            __.constant('')
+        )
+        return description_traversal
+
+    @staticmethod
+    def _create_last_execution_traversal(key_property_name: str):
+        last_execution_traversal = __.out('EXECUTED')
+        last_execution_traversal = last_execution_traversal.filter(
+            __.has(key_property_name, endingWith('_last_execution'))
+        )
+        last_execution_traversal = last_execution_traversal.project('timestamp', 'state')
+        last_execution_traversal = last_execution_traversal.by('timestamp')
+        last_execution_traversal = last_execution_traversal.by('state')
+        return last_execution_traversal.next()
+
+    @staticmethod
+    def _create_last_successful_execution_traversal(key_property_name: str):
+        last_successful_execution_traversal = __.out('EXECUTED')
+        last_successful_execution_traversal = last_successful_execution_traversal.filter(
+            __.has(key_property_name, endingWith('_last_successful_execution'))
+        )
+        return last_successful_execution_traversal.values('timestamp')
+
+    @staticmethod
+    def _create_owners_traversal(key_property_name: str):
+        owners_traversal = __.out('OWNER')
+        owners_traversal = owners_traversal.project('id', 'email')
+        owners_traversal = owners_traversal.by(key_property_name)
+        owners_traversal = owners_traversal.by('email')
+        return owners_traversal.fold()
+
+    @staticmethod
+    def _create_tags_traversal():
+        tags_traversal = __.out('TAGGED_BY')
+        return tags_traversal.fold()
+
+    @staticmethod
+    def _create_dashboard_query_traversal():
+        dash_query_traversal = __.out("HAS_QUERY")
+        dash_query_traversal = dash_query_traversal.project(
+            'name',
+            'url',
+            'query_text'
+        )
+        dash_query_traversal = dash_query_traversal.by('name')
+        dash_query_traversal = dash_query_traversal.by('url')
+        dash_query_traversal = dash_query_traversal.by('query_text')
+        return dash_query_traversal.fold()
+
+    @staticmethod
+    def _create_dashboard_chart_traversal():
+        dash_query_traversal = __.out("HAS_QUERY").out("HAS_CHART")
+        return dash_query_traversal.values('name').fold()
+
+    @staticmethod
+    def _create_dashboard_tables_traversal():
+        dash_board_tables_traversal = __.out('DASHBOARD_WITH_TABLE').hasLabel('Table')
+        dash_board_tables_traversal = dash_board_tables_traversal.project(
+            'table_name', 'schema_name', 'cluster_name', 'database_name', 'table_description'
+        )
+        dash_board_tables_traversal = dash_board_tables_traversal.by(
+            'name'
+        )  # table_name
+        dash_board_tables_traversal = dash_board_tables_traversal.by(
+            __.out('TABLE_OF').values('name')
+        )  # schema_name
+        dash_board_tables_traversal = dash_board_tables_traversal.by(
+            __.out('TABLE_OF').out('SCHEMA_OF').values('name')
+        )  # cluster_name
+        dash_board_tables_traversal = dash_board_tables_traversal.by(
+            __.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')
+        )  # database_name
+        dash_board_tables_traversal = dash_board_tables_traversal.by(
+            __.coalesce(
+                __.out('DESCRIPTION').values('description'),
+                __.constant('')
+            )
+        )  # table_description
+        return dash_board_tables_traversal.fold()
 
 
 class AbstractGremlinProxy(BaseProxy):
@@ -663,7 +895,42 @@ class AbstractGremlinProxy(BaseProxy):
     def get_dashboard(self,
                       dashboard_uri: str,
                       ) -> DashboardDetailEntity:
-        pass
+        ds_traversal = self.g.V().hasKey(self.key_property_name, dashboard_uri)
+        ds_traversal = ds_traversal.project(
+            'cluster_name',
+            'uri',
+            'name',
+            'product',
+            'created_timestamp',
+            'description',
+            'group',
+            'group_name',
+            'group_url',
+            'last_successful_run_timestamp',
+            'last_run_timestamp',
+            'last_run_state',
+            'updated_timestamp',
+            'owners',
+            'tags',
+            'recent_view_count',
+            'queries',
+            'charts',
+            'tables'
+        )
+
+        dashboard_group_traversal = __.out('DASHBOARD_OF').project(
+            'name',
+            'url'
+        )
+        dashboard_group_traversal = dashboard_group_traversal.by(
+            'name',
+        )  # name
+        dashboard_group_traversal = dashboard_group_traversal.by(
+            'name',
+        )  # url
+        ds_traversal = ds_traversal.by(
+            __.out('DASHBOARD_OF').out('DASHBOARD_GROUP_OF').values('name')
+        )  # cluster name
 
     def get_dashboard_description(self, *,
                                   id: str) -> Description:

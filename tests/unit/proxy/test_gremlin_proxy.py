@@ -1,11 +1,8 @@
 import copy
-import textwrap
 from datetime import datetime
 import unittest
 from typing import Any, Dict, List  # noqa: F401
 
-from amundsen_common.models.dashboard import DashboardSummary
-from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (
     Application, Column, Source,
     Statistics, Table, Tag, User,
@@ -13,28 +10,14 @@ from amundsen_common.models.table import (
     Reader,
 
 )
-from amundsen_common.models.user import UserSchema
-from mock import MagicMock, patch
-from neo4j import GraphDatabase
 
 from metadata_service.proxy.gremlin_proxy import AbstractGremlinProxy
-from gremlin_python.process.traversal import T, Cardinality
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 from metadata_service import create_app
 from metadata_service.entity.dashboard_detail import DashboardDetail
 from metadata_service.entity.dashboard_query import DashboardQuery
 from metadata_service.entity.resource_type import ResourceType
-from metadata_service.entity.tag_detail import TagDetail
-from metadata_service.exception import NotFoundException
-from metadata_service.proxy.neo4j_proxy import Neo4jProxy
 from metadata_service.util import UserResourceRel
-
-
-TABLE_NODE_PROPERTIES = [
-    'name',
-    'is_view'
-]
-
 
 class TestGremlinProxy(unittest.TestCase):
 
@@ -926,5 +909,11 @@ class TestGremlinProxy(unittest.TestCase):
         )
         result = self.proxy.get_latest_updated_ts()
         self.assertAlmostEqual(result, int(now.timestamp()))
+
+    def test_get_lastest_updated_ts_no_node(self):
+        result = self.proxy.get_latest_updated_ts()
+        self.assertIsNone(result)
+
+
 if __name__ == '__main__':
     unittest.main()
