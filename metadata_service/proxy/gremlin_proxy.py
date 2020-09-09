@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from random import randint
 from typing import Any, Dict, List, Mapping, Optional, Union
 
@@ -455,9 +456,19 @@ class AbstractGremlinProxy(BaseProxy):
             toList()
         return [result['table_key'] for result in results]
 
-    def get_latest_updated_ts(self) -> int:
-        # TODO
-        pass
+    def get_latest_updated_ts(self) -> Optional[int]:
+        """
+        API method to fetch last updated / index timestamp for neo4j, es
+
+        :return:
+        """
+        updated_traversal = self.g.V().has(self.key_property_name, 'amundsen_updated_timestamp')
+        updated_traversal = updated_traversal.hasLabel('Updatedtimestamp').values('datetime')
+        if updated_traversal.hasNext():
+            result = updated_traversal.next()
+            if isinstance(result, datetime):
+                return int(result.timestamp())
+        return None
 
     def get_tags(self) -> List:
         records = self.g.V().hasLabel('Tag').project('tag_name', 'tag_count').\

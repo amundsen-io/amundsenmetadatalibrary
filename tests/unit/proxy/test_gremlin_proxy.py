@@ -914,5 +914,17 @@ class TestGremlinProxy(unittest.TestCase):
             relation_type=UserResourceRel.follow
         )
         self.assertEqual(len(result['table']), 0)
+
+    def test_get_latest_updated_ts(self):
+        now = datetime(year=2020, month=10, day=10, hour=1, minute=1)
+        self.proxy.upsert_node(
+            node_id='amundsen_updated_timestamp',
+            node_label='Updatedtimestamp',
+            node_properties={
+                'datetime': now
+            }
+        )
+        result = self.proxy.get_latest_updated_ts()
+        self.assertAlmostEqual(result, int(now.timestamp()))
 if __name__ == '__main__':
     unittest.main()
