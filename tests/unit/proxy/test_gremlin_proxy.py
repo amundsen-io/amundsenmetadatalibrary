@@ -43,6 +43,7 @@ class TestGremlinProxy(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.proxy = AbstractGremlinProxy(key_property_name='key', remote_connection=DriverRemoteConnection('ws://localhost:8182/gremlin', 'g'))
+        self.clear_graph()
         self.test_user_1 = User(user_id="test_user_1@gmail.com", email="test_user_1@gmail.com")
         self.test_user_2 = User(user_id="test_user_2@gmail.com", email="test_user_2@gmail.com")
         self.test_column_1 = Column(
@@ -82,6 +83,9 @@ class TestGremlinProxy(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
+        self.clear_graph()
+
+    def clear_graph(self):
         self.proxy.g.E().drop().iterate()
         self.proxy.g.V().drop().iterate()
 
@@ -380,7 +384,7 @@ class TestGremlinProxy(unittest.TestCase):
     def _create_table_ownership(self, user: User, table_id: str):
         self._create_test_user(user)
         self.proxy.upsert_edge(
-            start_node_id=user.user_id,
+            start_node_id=user.email,
             end_node_id=table_id,
             edge_label="OWNER",
             edge_properties={}
@@ -691,6 +695,65 @@ class TestGremlinProxy(unittest.TestCase):
         second_item = result[1]
         self.assertEqual(second_item.name, self.test_table.name)
 
+    def test_get_tags(self):
+        test_tag = Tag(
+            tag_type="default",
+            tag_name="test_tag"
+        )
+        self.test_table.tags = [
+            test_tag
+        ]
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_tags()
+        self.assertEqual(len(result), 1)
+
+    def test_get_tag_with_no_tables(self):
+        self.proxy.upsert_node(
+            node_id="test_tag_1",
+            node_label="Tag",
+            node_properties={
+                'tag_type': "default"
+            }
+        )
+        self.proxy.upsert_node(
+            node_id="test_tag_2",
+            node_label="Tag",
+            node_properties={
+                'tag_type': "default"
+            }
+        )
+        result = self.proxy.get_tags()
+        self.assertEqual(len(result), 2)
+
+    def test_get_table_by_user_relation_follow(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.upsert_edge(
+            start_node_id=self.test_user_1.email,
+            end_node_id=self.table_id,
+            edge_label="FOLLOW",
+            edge_properties={}
+        )
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.follow
+        )
+        self.assertEqual(len(result['table']), 1)
+        followed_table = result['table'][0]
+        self.assertEqual(self.test_table.name, followed_table.name)
+
+    def test_get_table_by_user_relation_owned(self):
+        self.test_table.owners = [
+            self.test_user_1
+        ]
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.own
+        )
+        self.assertEqual(len(result['table']), 1)
+        owned_table = result['table'][0]
+        self.assertEqual(self.test_table.name, owned_table.name)
 
 
 if __name__ == '__main__':

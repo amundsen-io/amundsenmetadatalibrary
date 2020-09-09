@@ -422,7 +422,7 @@ class AbstractGremlinProxy(BaseProxy):
             by(__.out('TABLE_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
-            by(__.coalesce(__.out('DESCRIPTION_OF').values('description'), __.constant(''))). \
+            by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))). \
             toList()
 
         popular_tables = []
@@ -456,6 +456,7 @@ class AbstractGremlinProxy(BaseProxy):
         return [result['table_key'] for result in results]
 
     def get_latest_updated_ts(self) -> int:
+        # TODO
         pass
 
     def get_tags(self) -> List:
@@ -473,6 +474,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
+        # TODO
         pass
 
     def get_table_by_user_relation(self, *,
@@ -492,7 +494,7 @@ class AbstractGremlinProxy(BaseProxy):
             by(__.out('TABLE_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
-            by(__.coalesce(__.out('DESCRIPTION_OF').values('description'), __.constant(''))).toList()
+            by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))).toList()
 
         results = []
         for record in table_records:
