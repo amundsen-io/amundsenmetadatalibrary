@@ -4,7 +4,7 @@ from random import randint
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import gremlin_python
-from gremlin_python.process.traversal import T, Order, gt, Cardinality
+from gremlin_python.process.traversal import T, Order, gt, Cardinality, within
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table, Column, Reader, Tag, Watermark
@@ -395,12 +395,19 @@ class AbstractGremlinProxy(BaseProxy):
             edge_label="DESCRIPTION",
             edge_properties={}
         )
+        tx = self.upsert_edge_as_tx(
+            tx=tx,
+            start_node_id=desc_key,
+            end_node_id=column_uri,
+            edge_label="DESCRIPTION_OF",
+            edge_properties={}
+        )
         tx.next()
 
     def get_column_description(self, *,
                                table_uri: str,
                                column_name: str) -> Union[str, None]:
-        column_uri = table_uri + '/' + column_name + '/_description' # type: str
+        column_uri = table_uri + '/' + column_name + '/_description'  # type: str
         return self.g.V().has(self.key_property_name, column_uri).values('description').next()
 
     def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
@@ -408,8 +415,9 @@ class AbstractGremlinProxy(BaseProxy):
         if not table_uris:
             return []
 
-        records = self.g.V(table_uris). \
-            project('table_name', 'schema_name', 'cluster_name', 'database_name', 'table_description'). \
+        records = self.g.V().has(self.key_property_name, within(table_uris)). \
+            project('key', 'table_name', 'schema_name', 'cluster_name', 'database_name', 'table_description'). \
+            by(self.key_property_name). \
             by('name'). \
             by(__.out('TABLE_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
@@ -418,7 +426,8 @@ class AbstractGremlinProxy(BaseProxy):
             toList()
 
         popular_tables = []
-        for record in records:
+        for table_uri in table_uris:
+            record = [record for record in records if record['key'] == table_uri][0]
             popular_table = PopularTable(
                 database=record['database_name'],
                 cluster=record['cluster_name'],
@@ -434,9 +443,10 @@ class AbstractGremlinProxy(BaseProxy):
     def _get_popular_tables(self, num_entries: int):
         results = self.g.V().hasLabel('Table'). \
             where(__.outE('READ_BY').count().is_(gt(0))). \
-            project('table_key', 'score'). \
-            by(self.key_property_name).by(__.outE('READ_BY').count()). \
-            by(__.project('readers', 'total_reads').\
+            project('table_key', 'count', 'score'). \
+            by(self.key_property_name).\
+            by(__.outE('READ_BY').count()). \
+            by(__.project('readers', 'total_reads'). \
                by(__.outE('READ_BY').count()).\
                by(__.coalesce(__.outE('READ_BY').values('read_count'), __.constant(0)).sum()).\
                math('readers * log(total_reads)')). \

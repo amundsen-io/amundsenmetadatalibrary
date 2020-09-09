@@ -568,6 +568,130 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(result_tag.tag_type, 'default')
         self.assertEqual(result_tag.tag_name, 'test')
 
+    def test_adding_a_tag_to_table_with_existing_tag(self):
+        test_tag = Tag(
+            tag_type="default",
+            tag_name="test_tag"
+        )
+        self.test_table.tags = [
+            test_tag
+        ]
+        self._create_test_table(self.test_table)
+        self.proxy.add_tag(id=self.table_id, tag='test', tag_type='default')
+        result = self.proxy.get_table(table_uri=self.table_id)
+
+        self.assertEqual(2, len(result.tags))
+
+    def test_deleting_a_tag(self):
+        test_tag = Tag(
+            tag_type="default",
+            tag_name="test_tag"
+        )
+        self.test_table.tags = [
+            test_tag
+        ]
+        self._create_test_table(self.test_table)
+        self.proxy.delete_tag(id=self.table_id, tag='test_tag', tag_type='default')
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual(0, len(result.tags))
+
+    def test_get_column_description(self):
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_column_description(table_uri=self.table_id, column_name=self.test_column_2.name)
+        self.assertEqual(result, self.test_column_2.description)
+
+    def test_put_column_description(self):
+        self._create_test_table(self.test_table)
+        self.proxy.put_column_description(
+            table_uri=self.table_id,
+            column_name=self.test_column_2.name,
+            description="update"
+        )
+        result = self.proxy.get_column_description(table_uri=self.table_id, column_name=self.test_column_2.name)
+        self.assertEqual(result, "update")
+        self.proxy.put_column_description(
+            table_uri=self.table_id,
+            column_name=self.test_column_2.name,
+            description="update_2"
+        )
+        result = self.proxy.get_column_description(table_uri=self.table_id, column_name=self.test_column_2.name)
+        self.assertEqual(result, "update_2")
+
+    def test_get_popular_tables(self):
+        self.test_table.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=5
+            ),
+            Reader(
+                user=self.test_user_2,
+                read_count=5
+            ),
+            Reader(
+                user=User(
+                    user_id="test_user_3@gmail.com",
+                    email="test_user_3@gmail.com"
+                ),
+                read_count=1
+            ),
+            Reader(
+                user=User(
+                    user_id="test_user_4@gmail.com",
+                    email="test_user_4@gmail.com"
+                ),
+                read_count=2
+            ),
+            Reader(
+                user=User(
+                    user_id="test_user_5@gmail.com",
+                    email="test_user_5@gmail.com"
+                ),
+                read_count=1
+            ),
+        ]
+        self._create_test_table(self.test_table)
+        test_table_2 = copy.deepcopy(self.test_table)
+        test_table_2.name = 'test_table_2'
+        test_table_2.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=30
+            ),
+            Reader(
+                user=self.test_user_2,
+                read_count=10
+            ),
+            Reader(
+                user=User(
+                    user_id="test_user_3@gmail.com",
+                    email="test_user_3@gmail.com"
+                ),
+                read_count=5
+            ),
+            Reader(
+                user=User(
+                    user_id="test_user_4@gmail.com",
+                    email="test_user_4@gmail.com"
+                ),
+                read_count=8
+            ),
+            Reader(
+                user=User(
+                    user_id="test_user_5@gmail.com",
+                    email="test_user_5@gmail.com"
+                ),
+                read_count=7
+            ),
+        ]
+        self._create_test_table(test_table_2)
+        result = self.proxy.get_popular_tables(num_entries=5)
+        self.assertEqual(len(result), 2)
+        first_item = result[0]
+        self.assertEqual(first_item.name, 'test_table_2')
+        second_item = result[1]
+        self.assertEqual(second_item.name, self.test_table.name)
+
+
 
 if __name__ == '__main__':
     unittest.main()
