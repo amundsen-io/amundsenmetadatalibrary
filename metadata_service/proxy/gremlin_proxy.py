@@ -563,9 +563,6 @@ class AbstractGremlinProxy(BaseProxy):
             ))
         return {'table': results}
 
-
-
-
     def add_resource_relation_by_user(self, *,
                                       id: str,
                                       user_id: str,
@@ -596,6 +593,9 @@ class AbstractGremlinProxy(BaseProxy):
         elif relation_type == UserResourceRel.own:
             relation_label = "OWNER"
             reverse_relation_label = "OWNER_OF"
+        elif relation_type == UserResourceRel.read:
+            relation_label = "READ"
+            reverse_relation_label = "READ_BY"
         else:
             raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
 

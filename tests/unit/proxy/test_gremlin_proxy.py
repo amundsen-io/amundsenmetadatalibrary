@@ -84,6 +84,7 @@ class TestGremlinProxy(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.clear_graph()
+        self.proxy.close_driver()
 
     def clear_graph(self):
         self.proxy.g.E().drop().iterate()
@@ -794,7 +795,62 @@ class TestGremlinProxy(unittest.TestCase):
         second_result = table_result[1]
         self.assertEqual(second_result.name, self.test_table.name)
 
+    def test_add_resource_relation_by_user_read_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.read,
+            resource_type=ResourceType.Table
+        )
 
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.read
+        )
+        table_result = result['table']
+        self.assertEqual(len(table_result), 1)
+        table_result = table_result[0]
+        self.assertEqual(table_result.name, self.test_table.name)
+
+    def test_add_resource_relation_by_user_follow_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.follow,
+            resource_type=ResourceType.Table
+        )
+
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.follow
+        )
+        table_result = result['table']
+        self.assertEqual(len(table_result), 1)
+        table_result = table_result[0]
+        self.assertEqual(table_result.name, self.test_table.name)
+
+    def test_add_resource_relation_by_user_own_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.own,
+            resource_type=ResourceType.Table
+        )
+
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.own
+        )
+        table_result = result['table']
+        self.assertEqual(len(table_result), 1)
+        table_result = table_result[0]
+        self.assertEqual(table_result.name, self.test_table.name)
 
 if __name__ == '__main__':
     unittest.main()
