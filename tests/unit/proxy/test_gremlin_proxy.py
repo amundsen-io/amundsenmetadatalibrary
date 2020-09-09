@@ -96,14 +96,11 @@ class TestGremlinProxy(unittest.TestCase):
     def _create_test_user(self, user: User):
         user_dict = user.__dict__.copy()
         user_dict = {key: value for key, value in user_dict.items() if value}
-        proxy_transversal = self.proxy.g.addV('User').property(Cardinality.single, self.proxy.key_property_name, user.user_id)
-
-        for user_property_name, user_property_value in user_dict.items():
-            if user_property_name == 'user_id':
-                continue
-            proxy_transversal = proxy_transversal.property(Cardinality.single, user_property_name, user_property_value)
-
-        proxy_transversal.next()
+        self.proxy.upsert_node(
+            node_id=user.user_id,
+            node_label='User',
+            node_properties=user_dict
+        )
 
     def _create_test_table(self, table: Table):
         table_id = '{db}://{cluster}.{schema}/{tbl}'.format(
@@ -770,6 +767,33 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(len(result['table']), 1)
         read_table = result['table'][0]
         self.assertEqual(self.test_table.name, read_table.name)
+
+    def test_get_frequently_used_tables(self):
+        test_table_2 = copy.deepcopy(self.test_table)
+        self.test_table.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=5
+            )
+        ]
+        self._create_test_table(self.test_table)
+
+        test_table_2.name = 'test_table_2'
+        test_table_2.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=10
+            )
+        ]
+        self._create_test_table(test_table_2)
+        result = self.proxy.get_frequently_used_tables(user_email=self.test_user_1.email)
+        table_result = result['table']
+        self.assertEqual(len(table_result), 2)
+        first_result = table_result[0]
+        self.assertEqual(first_result.name, test_table_2.name)
+        second_result = table_result[1]
+        self.assertEqual(second_result.name, self.test_table.name)
+
 
 
 if __name__ == '__main__':

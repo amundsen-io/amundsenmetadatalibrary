@@ -508,7 +508,63 @@ class AbstractGremlinProxy(BaseProxy):
         return {ResourceType.Table.name.lower(): results}
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
-        pass
+        """
+        MATCH (user:User {key: $query_key})-[r:READ]->(tbl:Table)
+        WHERE EXISTS(r.published_tag) AND r.published_tag IS NOT NULL
+        WITH user, r, tbl ORDER BY r.published_tag DESC, r.read_count DESC LIMIT 50
+        MATCH (tbl:Table)<-[:TABLE]-(schema:Schema)<-[:SCHEMA]-(clstr:Cluster)<-[:CLUSTER]-(db:Database)
+        OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(tbl_dscrpt:Description)
+        RETURN db, clstr, schema, tbl, tbl_dscrpt
+        :param user_email:
+        :return:
+        """
+
+        frequent_traversal = self.g.V().has(self.key_property_name, user_email).outE('READ')
+        frequent_traversal = frequent_traversal.project(
+            'db',
+            'cluster',
+            'schema',
+            'table_name',
+            'table_description',
+            'read_count'
+        )
+        frequent_traversal = frequent_traversal.by(
+            __.inV().out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')
+        )  # db
+        frequent_traversal = frequent_traversal.by(
+            __.inV().out('TABLE_OF').out('SCHEMA_OF').values('name')
+        )  # cluster
+        frequent_traversal = frequent_traversal.by(
+            __.inV().out('TABLE_OF').values('name')
+        )  # schema
+        frequent_traversal = frequent_traversal.by(
+            __.inV().values('name')
+        )  # table_name
+        frequent_traversal = frequent_traversal.by(
+            __.inV().coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))
+        )  # table_description
+        frequent_traversal = frequent_traversal.by(
+            'read_count'
+        )  # read_count
+        frequent_traversal = frequent_traversal.order().by(__.select('read_count'), Order.desc)
+        frequent_traversal = frequent_traversal.limit(50)
+        table_records = frequent_traversal.toList()
+        if not table_records:
+            raise NotFoundException('User {user_id} does not READ any resources'.format(user_id=user_email))
+
+        results = []
+        for record in table_records:
+            results.append(PopularTable(
+                database=record['db'],
+                cluster=record['cluster'],
+                schema=record['schema'],
+                name=record['table_name'],
+                description=record['table_description']
+            ))
+        return {'table': results}
+
+
+
 
     def add_resource_relation_by_user(self, *,
                                       id: str,
@@ -705,6 +761,5 @@ class GenericGremlinProxy(AbstractGremlinProxy):
 
         super().__init__(key_property_name=key_property_name,
                          remote_connection=DriverRemoteConnection(**driver_remote_connection_options))
-
 
 
