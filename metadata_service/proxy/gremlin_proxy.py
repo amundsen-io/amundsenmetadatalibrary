@@ -503,7 +503,8 @@ class AbstractGremlinProxy(BaseProxy):
                 cluster=record['cluster_name'],
                 schema=record['schema_name'],
                 name=record['table_name'],
-                description=record['table_description']))
+                description=record['table_description']
+            ))
         return {ResourceType.Table.name.lower(): results}
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:

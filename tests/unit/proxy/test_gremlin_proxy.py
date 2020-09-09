@@ -755,6 +755,22 @@ class TestGremlinProxy(unittest.TestCase):
         owned_table = result['table'][0]
         self.assertEqual(self.test_table.name, owned_table.name)
 
+    def test_get_table_by_user_relation_read(self):
+        self.test_table.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=30
+            )
+        ]
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.read
+        )
+        self.assertEqual(len(result['table']), 1)
+        read_table = result['table'][0]
+        self.assertEqual(self.test_table.name, read_table.name)
+
 
 if __name__ == '__main__':
     unittest.main()
