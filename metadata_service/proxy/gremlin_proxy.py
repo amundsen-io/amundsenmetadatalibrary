@@ -628,6 +628,9 @@ class AbstractGremlinProxy(BaseProxy):
         elif relation_type == UserResourceRel.own:
             relation_label = "OWNER"
             reverse_relation_label = "OWNER_OF"
+        elif relation_type == UserResourceRel.read:
+            relation_label = "READ"
+            reverse_relation_label = "READ_BY"
         else:
             raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
         edge_ids = [
@@ -644,7 +647,7 @@ class AbstractGremlinProxy(BaseProxy):
                 label=reverse_relation_label
             ))
 
-        self.g.E(edge_ids).drop().iterate()
+        self.g.E().has(self.key_property_name, within(edge_ids)).drop().iterate()
 
     def get_dashboard(self,
                       dashboard_uri: str,
