@@ -16,10 +16,7 @@ CATEGORY = 'table_status'
 BADGE_TYPE = 'neutral'
 
 
-class TestDashboardBadgeAPI(DashboardTestCase):
-    """
-        Test the service if it can standup
-        """
+class TestBadgeCommon(DashboardTestCase):
 
     def setUp(self) -> None:
         self.app = create_app(
