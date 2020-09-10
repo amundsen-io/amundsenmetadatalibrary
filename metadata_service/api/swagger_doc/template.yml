@@ -48,7 +48,6 @@ components:
           type: integer
           description: 'Count of times used'
     Badge:
-    # TODO add column level badges later, probably will use this same object
         type: object
         properties:
           badge_name:
@@ -56,10 +55,10 @@ components:
             description: 'name of the badge'
           category:
             type: string
-            description: 'category that badge belongs to'
+            description: 'category that badge belongs to, generally we want to show only one badge of a single category on a any resource (ex: table_status, column, recommended)'
           badge_type:
             type: string
-            description: 'negative, neutral, positive, or warning badge'
+            description: 'sentiment of badges which determine their color in the frontend (ex: negative, neutral, positive, warning)'
     TableReaderFields:
       type: object
       properties:

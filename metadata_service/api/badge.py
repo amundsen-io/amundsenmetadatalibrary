@@ -49,8 +49,8 @@ class BadgeCommon:
 
         if badge_type == '' or category == '':
             return \
-                {'message': 'The badge {} for id {} is not added successfully because '
-                            'category `{}` and badge_type {} parameters are required '
+                {'message': 'The badge {} for resource id {} is not added successfully because '
+                            'category `{}` and badge_type `{}` parameters are required '
                             'for badges'.format(badge_name, id, category, badge_type)}, \
                 HTTPStatus.NOT_FOUND
 
@@ -63,13 +63,13 @@ class BadgeCommon:
         # need to check whether the badge combination is part of the whitelist:
         if incomimg_badge not in whitelist_badges:
             return \
-                {'message': 'The badge {} for id {} with category {} badge_type {} and resource_type {} '
-                            'is not added successfully because this combination of values '
-                            'is not part of the whitelist'.format(badge_name,
-                                                                  id,
-                                                                  category,
-                                                                  badge_type,
-                                                                  resource_type.name)}, \
+                {'message': 'The badge {} with category {} badge_type {} for resource id {} '
+                            'and resource_type {} is not added successfully because this combination '
+                            'of values is not part of the whitelist'.format(badge_name,
+                                                                            category,
+                                                                            badge_type,
+                                                                            id,
+                                                                            resource_type.name)}, \
                 HTTPStatus.NOT_FOUND
 
         try:
@@ -85,12 +85,13 @@ class BadgeCommon:
                         category,
                         badge_type)}, HTTPStatus.OK
         except Exception as e:
-            return {'message': 'The badge {} for id {} with category {} '
-                    'and type {} failed to be added {}'.format(
-                        badge_name,
-                        id,
-                        category,
-                        badge_type, e)}, HTTPStatus.NOT_FOUND
+            return {'message': 'The badge {} with category {}, badge type {} for resource id {} '
+                               'and resource_type {} failed to be added'.format(badge_name,
+                                                                                category,
+                                                                                badge_type,
+                                                                                id,
+                                                                                resource_type.name)}, \
+                HTTPStatus.NOT_FOUND
 
     def delete(self, id: str, badge_name: str,
                category: str,
@@ -103,19 +104,19 @@ class BadgeCommon:
                                      category=category,
                                      badge_type=badge_type)
             return \
-                {'message': 'The badge {} for id {} with category {}, badge type {} '
+                {'message': 'The badge {} with category {}, badge type {} for resource id {} '
                             'and resource_type {} was deleted successfully'.format(badge_name,
-                                                                                   id,
                                                                                    category,
                                                                                    badge_type,
+                                                                                   id,
                                                                                    resource_type.name)}, \
                 HTTPStatus.OK
         except NotFoundException:
             return \
-                {'message': 'The badge {} for id {} with category {}, badge type {} '
+                {'message': 'The badge {} with category {}, badge type {} for resource id {} '
                             'and resource_type {} was not deleted successfully'.format(badge_name,
-                                                                                       id,
                                                                                        category,
                                                                                        badge_type,
+                                                                                       id,
                                                                                        resource_type.name)}, \
                 HTTPStatus.NOT_FOUND
