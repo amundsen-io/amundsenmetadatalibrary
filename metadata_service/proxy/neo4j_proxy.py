@@ -1245,41 +1245,41 @@ class Neo4jProxy(BaseProxy):
                                                                   'tag_normal_type': 'default',
                                                                   'tag_badge_type': 'badge'}).single()
 
-        if not dashboard_records:
+        if not dashboard_record:
             raise NotFoundException('No dashboard exist with URI: {}'.format(id))
 
-        owners = [self._build_user_from_record(record=owner) for owner in dashboard_records['owners']]
-        tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_records['tags']]
+        owners = [self._build_user_from_record(record=owner) for owner in dashboard_record['owners']]
+        tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_record['tags']]
 
         badges = [TableBadge(badge_name=badge['key'],
                              category=badge['category'],
-                             badge_type=badge['badge_type']) for badge in dashboard_records['badges']]
+                             badge_type=badge['badge_type']) for badge in dashboard_record['badges']]
 
-        chart_names = [chart['name'] for chart in dashboard_records['charts'] if 'name' in chart and chart['name']]
+        chart_names = [chart['name'] for chart in dashboard_record['charts'] if 'name' in chart and chart['name']]
         # TODO Deprecate query_names in favor of queries after several releases from v2.5.0
-        query_names = [query['name'] for query in dashboard_records['queries'] if 'name' in query and query['name']]
-        queries = [DashboardQueryEntity(**query) for query in dashboard_records['queries']
+        query_names = [query['name'] for query in dashboard_record['queries'] if 'name' in query and query['name']]
+        queries = [DashboardQueryEntity(**query) for query in dashboard_record['queries']
                    if query.get('name') or query.get('url') or query.get('text')]
-        tables = [PopularTable(**table) for table in dashboard_records['tables'] if 'name' in table and table['name']]
+        tables = [PopularTable(**table) for table in dashboard_record['tables'] if 'name' in table and table['name']]
 
-        return DashboardDetailEntity(uri=dashboard_records['uri'],
-                                     cluster=dashboard_records['cluster_name'],
-                                     url=dashboard_records['url'],
-                                     name=dashboard_records['name'],
-                                     product=dashboard_records['product'],
-                                     created_timestamp=dashboard_records['created_timestamp'],
-                                     description=self._safe_get(dashboard_records, 'description'),
-                                     group_name=self._safe_get(dashboard_records, 'group_name'),
-                                     group_url=self._safe_get(dashboard_records, 'group_url'),
-                                     last_successful_run_timestamp=self._safe_get(dashboard_records,
+        return DashboardDetailEntity(uri=dashboard_record['uri'],
+                                     cluster=dashboard_record['cluster_name'],
+                                     url=dashboard_record['url'],
+                                     name=dashboard_record['name'],
+                                     product=dashboard_record['product'],
+                                     created_timestamp=dashboard_record['created_timestamp'],
+                                     description=self._safe_get(dashboard_record, 'description'),
+                                     group_name=self._safe_get(dashboard_record, 'group_name'),
+                                     group_url=self._safe_get(dashboard_record, 'group_url'),
+                                     last_successful_run_timestamp=self._safe_get(dashboard_record,
                                                                                   'last_successful_run_timestamp'),
-                                     last_run_timestamp=self._safe_get(dashboard_records, 'last_run_timestamp'),
-                                     last_run_state=self._safe_get(dashboard_records, 'last_run_state'),
-                                     updated_timestamp=self._safe_get(dashboard_records, 'updated_timestamp'),
+                                     last_run_timestamp=self._safe_get(dashboard_record, 'last_run_timestamp'),
+                                     last_run_state=self._safe_get(dashboard_record, 'last_run_state'),
+                                     updated_timestamp=self._safe_get(dashboard_record, 'updated_timestamp'),
                                      owners=owners,
                                      tags=tags,
                                      badges=badges,
-                                     recent_view_count=dashboard_records['recent_view_count'],
+                                     recent_view_count=dashboard_record['recent_view_count'],
                                      chart_names=chart_names,
                                      query_names=query_names,
                                      queries=queries,
