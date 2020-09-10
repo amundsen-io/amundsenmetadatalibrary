@@ -62,17 +62,21 @@ class BadgeCommon:
                                category=category,
                                badge_type=badge_type)
         # need to check whether the badge combination is part of the whitelist:
+
+        inWhitelist = False
         for badge in whitelist_badges:
-            if not incomimg_badge.equals(badge):
-                return \
-                    {'message': 'The badge {} with category {} badge_type {} for resource id {} '
-                                'and resource_type {} is not added successfully because this combination '
-                                'of values is not part of the whitelist'.format(badge_name,
-                                                                                category,
-                                                                                badge_type,
-                                                                                id,
-                                                                                resource_type.name)}, \
-                    HTTPStatus.NOT_FOUND
+            if incomimg_badge.equals(badge):
+                inWhitelist = True
+        if not inWhitelist:
+            return \
+                {'message': 'The badge {} with category {} badge_type {} for resource id {} '
+                            'and resource_type {} is not added successfully because this combination '
+                            'of values is not part of the whitelist'.format(badge_name,
+                                                                            category,
+                                                                            badge_type,
+                                                                            id,
+                                                                            resource_type.name)}, \
+                HTTPStatus.NOT_FOUND
 
         try:
             self.client.add_badge(id=id,
