@@ -10,6 +10,7 @@ from flasgger import swag_from
 from flask import current_app as app
 
 from metadata_service.entity.resource_type import ResourceType
+from metadata_service.entity.badge import Badge
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 from metadata_service.proxy.base_proxy import BaseProxy
@@ -58,9 +59,9 @@ class BadgeCommon:
         # TODO check resource type is column when adding a badge of category column after
         # implementing column level badges
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
-        incomimg_badge = {'badge_name': badge_name,
-                          'category': category,
-                          'badge_type': badge_type}
+        incomimg_badge = Badge(badge_name=badge_name,
+                               category=category,
+                               badge_type=badge_type)
         # need to check whether the badge combination is part of the whitelist:
 
         in_whitelist = False

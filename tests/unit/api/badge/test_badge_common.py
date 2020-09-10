@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 from metadata_service import create_app
 from metadata_service.api.badge import BadgeCommon
 from metadata_service.entity.resource_type import ResourceType
+from metadata_service.entity.badge import Badge
 from tests.unit.api.dashboard.dashboard_test_case import DashboardTestCase
 
 BADGE_NAME = 'alpha'
@@ -31,9 +32,9 @@ class TestBadgeCommon(DashboardTestCase):
         self.assertFalse(current_app is None)
 
     def test_badge_on_reserved_badge_name(self) -> None:
-        self.app.config['WHITELIST_BADGES'] = [{'badge_name': 'alpha',
-                                                'category': 'table_status',
-                                                'badge_type': 'neutral'}]
+        self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
+                                                     category='table_status',
+                                                     badge_type='neutral')]
 
         mock_proxy = MagicMock()
 
