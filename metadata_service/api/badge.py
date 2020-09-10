@@ -10,6 +10,7 @@ from flasgger import swag_from
 from flask import current_app as app
 
 from metadata_service.entity.resource_type import ResourceType
+from metadata_service.entity.badge import Badge
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 from metadata_service.proxy.base_proxy import BaseProxy
@@ -57,20 +58,21 @@ class BadgeCommon:
         # TODO check resource type is column when adding a badge of category column after
         # implementing column level badges
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
-        incomimg_badge = {'badge_name': badge_name,
-                          'category': category,
-                          'badge_type': badge_type}
+        incomimg_badge = Badge(badge_name=badge_name,
+                               category=category,
+                               badge_type=badge_type)
         # need to check whether the badge combination is part of the whitelist:
-        if incomimg_badge not in whitelist_badges:
-            return \
-                {'message': 'The badge {} with category {} badge_type {} for resource id {} '
-                            'and resource_type {} is not added successfully because this combination '
-                            'of values is not part of the whitelist'.format(badge_name,
-                                                                            category,
-                                                                            badge_type,
-                                                                            id,
-                                                                            resource_type.name)}, \
-                HTTPStatus.NOT_FOUND
+        for badge in whitelist_badges:
+            if not incomimg_badge.equals(badge):
+                return \
+                    {'message': 'The badge {} with category {} badge_type {} for resource id {} '
+                                'and resource_type {} is not added successfully because this combination '
+                                'of values is not part of the whitelist'.format(badge_name,
+                                                                                category,
+                                                                                badge_type,
+                                                                                id,
+                                                                                resource_type.name)}, \
+                    HTTPStatus.NOT_FOUND
 
         try:
             self.client.add_badge(id=id,
