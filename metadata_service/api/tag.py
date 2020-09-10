@@ -58,22 +58,21 @@ class TagCommon:
 
         whitelist_badges = app.config.get('WHITELIST_BADGES', [])
         if tag_type == BADGE_TYPE:
-            # TODO remove adding badge functionality, still don't allow tags to have badge names
-            # TODO update unit tests
             return \
                 {'message': 'Badges should be added using /badges/, tag_type=badge no longer valid'}, \
                 HTTPStatus.NOT_ACCEPTABLE
 
         else:
-            if tag in whitelist_badges:
-                return \
-                    {'message': 'The tag {} for id {} with type {} and resource_type {} '
-                                'is not added successfully as tag '
-                                'for it is reserved for badge'.format(tag,
-                                                                      id,
-                                                                      tag_type,
-                                                                      resource_type.name)}, \
-                    HTTPStatus.CONFLICT
+            for badge in whitelist_badges:
+                if tag == badge.badge_name:
+                    return \
+                        {'message': 'The tag {} for id {} with type {} and resource_type {} '
+                                    'is not added successfully as tag '
+                                    'for it is reserved for badge'.format(tag,
+                                                                          id,
+                                                                          tag_type,
+                                                                          resource_type.name)}, \
+                        HTTPStatus.CONFLICT
 
             try:
                 self.client.add_tag(id=id,
