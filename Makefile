@@ -18,7 +18,11 @@ lint:
 .PHONY: setup_gremlin_server
 setup_gremlin_server:
 	docker pull tinkerpop/gremlin-server:3.4.7
-	docker run -d -p 8182:8182 tinkerpop/gremlin-server:3.4.7
+	docker run -d -p 8182:8182 --name test-gremlin-server tinkerpop/gremlin-server:3.4.7
+
+.PHONY: teardown_gremlin_server
+teardown_gremlin_server:
+	docker kill test-gremlin-server
 
 .PHONY: mypy
 mypy:
