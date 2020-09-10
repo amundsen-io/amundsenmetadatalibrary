@@ -1240,10 +1240,10 @@ class Neo4jProxy(BaseProxy):
         tables;
         """
                                                      )
-        dashboard_records = self._execute_cypher_query(statement=get_dashboard_detail_query,
-                                                       param_dict={'query_key': id,
-                                                                   'tag_normal_type': 'default',
-                                                                   'tag_badge_type': 'badge'}).single()
+        dashboard_record = self._execute_cypher_query(statement=get_dashboard_detail_query,
+                                                      param_dict={'query_key': id,
+                                                                  'tag_normal_type': 'default',
+                                                                  'tag_badge_type': 'badge'}).single()
 
         if not dashboard_records:
             raise NotFoundException('No dashboard exist with URI: {}'.format(id))
