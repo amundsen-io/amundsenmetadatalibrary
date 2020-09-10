@@ -91,6 +91,13 @@ class DashboardBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        API to add a badge to existing Dashboard.
+
+        :param id:
+        :param badge:
+        :return:
+        """
         args = self.parser.parse_args()
         category = args.get('category', '')
         badge_type = args.get('badge_type', '')
@@ -103,6 +110,13 @@ class DashboardBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_delete.yml')
     def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        API to delete a badge from an existing Dashboard.
+
+        :param id:
+        :param badge:
+        :return:
+        """
         args = self.parser.parse_args()
         category = args.get('category', '')
         badge_type = args.get('badge_type', '')

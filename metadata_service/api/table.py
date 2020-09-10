@@ -162,6 +162,10 @@ class TableTagAPI(Resource):
 
 
 class TableBadgeAPI(Resource):
+    """
+    TableBadgeAPI that supports GET, PUT and DELETE operation to add or delete badge
+    on Table
+    """
     def __init__(self) -> None:
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
@@ -173,6 +177,13 @@ class TableBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        API to add a badge to existing Table.
+
+        :param id:
+        :param badge:
+        :return:
+        """
         args = self.parser.parse_args()
         # TODO should I have default here?
         category = args.get('category', '')
@@ -186,6 +197,13 @@ class TableBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_delete.yml')
     def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        API to delete a badge from an existing Table.
+
+        :param id:
+        :param badge:
+        :return:
+        """
         args = self.parser.parse_args()
         category = args.get('category', '')
         badge_type = args.get('badge_type', '')
