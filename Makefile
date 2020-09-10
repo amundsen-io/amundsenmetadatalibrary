@@ -29,7 +29,7 @@ mypy:
 	mypy --ignore-missing-imports --follow-imports=skip --strict-optional --warn-no-return .
 
 .PHONY: test
-test: test_unit lint mypy
+test: setup_gremlin_server test_unit lint mypy teardown_gremlin_server
 
 .PHONY: image
 image:
