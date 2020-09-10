@@ -13,7 +13,7 @@ TABLE_NAME = 'magic'
 BADGE_NAME = 'alpha'
 
 
-class TableBadgeAPI(BasicTestCase):
+class TestTableBadgeAPI(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
 
