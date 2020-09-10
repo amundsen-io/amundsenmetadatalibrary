@@ -12,7 +12,7 @@ DASHBOARD_NAME = 'magic'
 BADGE_NAME = 'alpha'
 
 
-class DashboardBadgeAPI(BasicTestCase):
+class TestDashboardBadgeAPI(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
 
