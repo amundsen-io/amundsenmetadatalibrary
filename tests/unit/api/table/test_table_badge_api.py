@@ -7,6 +7,7 @@ from http import HTTPStatus
 from unittest.mock import patch, Mock
 
 from tests.unit.test_basics import BasicTestCase
+from metadata_service.entity.badge import Badge
 
 TABLE_NAME = 'magic'
 BADGE_NAME = 'alpha'
@@ -32,17 +33,17 @@ class TestTableBadgeAPI(BasicTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_block_badge_missing_category_or_badge_type(self) -> None:
-        self.app.config['WHITELIST_BADGES'] = [{'badge_name': 'alpha',
-                                                'category': 'table_status',
-                                                'badge_type': 'neutral'}]
+        self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
+                                                     category='table_status',
+                                                     badge_type='neutral')]
         response = self.app.test_client().put(f'/table/{TABLE_NAME}/badge/{BADGE_NAME}')
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_badge_with_category_and_badge_type(self) -> None:
-        self.app.config['WHITELIST_BADGES'] = [{'badge_name': 'alpha',
-                                                'category': 'table_status',
-                                                'badge_type': 'neutral'}]
+        self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
+                                                     category='table_status',
+                                                     badge_type='neutral')]
         response = self.app.test_client().put(f'/table/{TABLE_NAME}/badge/{BADGE_NAME}?category=table_status&'
                                               'badge_type=neutral')
 
