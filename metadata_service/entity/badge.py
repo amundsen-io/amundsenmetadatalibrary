@@ -11,6 +11,10 @@ class Badge:
     category: str = attr.ib()
     badge_type: str = attr.ib()
 
+    def equals(self, other) -> bool:
+        return (self.badge_name == other.badge_name) and \
+               (self.category == other.category) and (self.badge_type == other.badge_type)
+
 
 class BadgeSchema(AttrsSchema):
     class Meta:
