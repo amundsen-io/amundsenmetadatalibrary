@@ -179,7 +179,7 @@ class AbstractGremlinProxy(BaseProxy):
                .by(self.key_property_name)
                .by("name")
                .by("description")
-               .by("application_url").fold()).\
+               .by(__.coalesce(__.values("application_url"), __.constant(''))).fold()).\
             next()
 
         column_nodes = result['columns']

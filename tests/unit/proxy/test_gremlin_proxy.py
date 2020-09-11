@@ -553,6 +553,19 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(app.id, 'application://test_cluster.my_app/job/table')
         self.assertEqual(app.name, 'my_app')
 
+    def test_get_table_with_writer_empty_url(self):
+        app = Application(
+            description='description',
+            id='application://test_cluster.my_app/job/table',
+            name='my_app'
+        )
+        self.test_table.table_writer = app
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        app = result.table_writer
+        self.assertIsNotNone(app)
+        self.assertEqual(app.application_url, '')
+
     def test_delete_owner_from_table(self):
         self.test_table.owners = [
             self.test_user_1
