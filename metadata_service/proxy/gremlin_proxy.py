@@ -174,12 +174,12 @@ class AbstractGremlinProxy(BaseProxy):
                by('partition_key').\
                by('partition_value').\
                by('create_time').fold()).\
-            by(__.out('DERIVED_FROM').\
+            by(__.coalesce(__.out('DERIVED_FROM').\
                project('application_id', 'name', 'description', 'application_url')
                .by(self.key_property_name)
                .by(__.coalesce(__.values("name"), __.constant('')))
                .by(__.coalesce(__.values("description"), __.constant('')))
-               .by(__.coalesce(__.values("application_url"), __.constant(''))).fold()).\
+               .by(__.coalesce(__.values("application_url"), __.constant(''))), __.constant({}))).\
             next()
 
         column_nodes = result['columns']
@@ -231,10 +231,9 @@ class AbstractGremlinProxy(BaseProxy):
                     create_time=water_mark['create_time']
                 )
             )
-        app_nodes = result['application']
+        app_node = result['application']
         table_writer = None
-        if app_nodes:
-            app_node = app_nodes[0]
+        if app_node:
             table_writer = Application(
                 application_url=app_node['application_url'],
                 description=app_node['description'],
