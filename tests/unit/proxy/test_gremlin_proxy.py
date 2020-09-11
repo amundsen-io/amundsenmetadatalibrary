@@ -1,11 +1,8 @@
 import copy
-import textwrap
 from datetime import datetime
 import unittest
 from typing import Any, Dict, List  # noqa: F401
 
-from amundsen_common.models.dashboard import DashboardSummary
-from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (
     Application, Column, Source,
     Statistics, Table, Tag, User,
@@ -13,28 +10,14 @@ from amundsen_common.models.table import (
     Reader,
 
 )
-from amundsen_common.models.user import UserSchema
-from mock import MagicMock, patch
-from neo4j import GraphDatabase
 
 from metadata_service.proxy.gremlin_proxy import AbstractGremlinProxy
-from gremlin_python.process.traversal import T, Cardinality
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 from metadata_service import create_app
 from metadata_service.entity.dashboard_detail import DashboardDetail
 from metadata_service.entity.dashboard_query import DashboardQuery
 from metadata_service.entity.resource_type import ResourceType
-from metadata_service.entity.tag_detail import TagDetail
-from metadata_service.exception import NotFoundException
-from metadata_service.proxy.neo4j_proxy import Neo4jProxy
 from metadata_service.util import UserResourceRel
-
-
-TABLE_NODE_PROPERTIES = [
-    'name',
-    'is_view'
-]
-
 
 class TestGremlinProxy(unittest.TestCase):
 
@@ -84,6 +67,7 @@ class TestGremlinProxy(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.clear_graph()
+        self.proxy.close_driver()
 
     def clear_graph(self):
         self.proxy.g.E().drop().iterate()
@@ -96,14 +80,11 @@ class TestGremlinProxy(unittest.TestCase):
     def _create_test_user(self, user: User):
         user_dict = user.__dict__.copy()
         user_dict = {key: value for key, value in user_dict.items() if value}
-        proxy_transversal = self.proxy.g.addV('User').property(Cardinality.single, self.proxy.key_property_name, user.user_id)
-
-        for user_property_name, user_property_value in user_dict.items():
-            if user_property_name == 'user_id':
-                continue
-            proxy_transversal = proxy_transversal.property(Cardinality.single, user_property_name, user_property_value)
-
-        proxy_transversal.next()
+        self.proxy.upsert_node(
+            node_id=user.user_id,
+            node_label='User',
+            node_properties=user_dict
+        )
 
     def _create_test_table(self, table: Table):
         table_id = '{db}://{cluster}.{schema}/{tbl}'.format(
@@ -811,6 +792,168 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(len(result['table']), 1)
         read_table = result['table'][0]
         self.assertEqual(self.test_table.name, read_table.name)
+
+    def test_get_frequently_used_tables(self):
+        test_table_2 = copy.deepcopy(self.test_table)
+        self.test_table.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=5
+            )
+        ]
+        self._create_test_table(self.test_table)
+
+        test_table_2.name = 'test_table_2'
+        test_table_2.table_readers = [
+            Reader(
+                user=self.test_user_1,
+                read_count=10
+            )
+        ]
+        self._create_test_table(test_table_2)
+        result = self.proxy.get_frequently_used_tables(user_email=self.test_user_1.email)
+        table_result = result['table']
+        self.assertEqual(len(table_result), 2)
+        first_result = table_result[0]
+        self.assertEqual(first_result.name, test_table_2.name)
+        second_result = table_result[1]
+        self.assertEqual(second_result.name, self.test_table.name)
+
+    def test_add_resource_relation_by_user_read_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.read,
+            resource_type=ResourceType.Table
+        )
+
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.read
+        )
+        table_result = result['table']
+        self.assertEqual(len(table_result), 1)
+        table_result = table_result[0]
+        self.assertEqual(table_result.name, self.test_table.name)
+
+    def test_add_resource_relation_by_user_follow_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.follow,
+            resource_type=ResourceType.Table
+        )
+
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.follow
+        )
+        table_result = result['table']
+        self.assertEqual(len(table_result), 1)
+        table_result = table_result[0]
+        self.assertEqual(table_result.name, self.test_table.name)
+
+    def test_add_resource_relation_by_user_own_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.own,
+            resource_type=ResourceType.Table
+        )
+
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.own
+        )
+        table_result = result['table']
+        self.assertEqual(len(table_result), 1)
+        table_result = table_result[0]
+        self.assertEqual(table_result.name, self.test_table.name)
+
+    def test_delete_resource_relation_by_user_own_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.own,
+            resource_type=ResourceType.Table
+        )
+        self.proxy.delete_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.own,
+            resource_type=ResourceType.Table
+        )
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.own
+        )
+        self.assertEqual(len(result['table']), 0)
+
+    def test_delete_resource_relation_by_user_read_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.read,
+            resource_type=ResourceType.Table
+        )
+        self.proxy.delete_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.read,
+            resource_type=ResourceType.Table
+        )
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.read
+        )
+        self.assertEqual(len(result['table']), 0)
+
+    def test_delete_resource_relation_by_user_follow_table(self):
+        self._create_test_user(self.test_user_1)
+        self._create_test_table(self.test_table)
+        self.proxy.add_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.follow,
+            resource_type=ResourceType.Table
+        )
+        self.proxy.delete_resource_relation_by_user(
+            id=self.table_id,
+            user_id=self.test_user_1.email,
+            relation_type=UserResourceRel.follow,
+            resource_type=ResourceType.Table
+        )
+        result = self.proxy.get_table_by_user_relation(
+            user_email=self.test_user_1.email,
+            relation_type=UserResourceRel.follow
+        )
+        self.assertEqual(len(result['table']), 0)
+
+    def test_get_latest_updated_ts(self):
+        now = datetime(year=2020, month=10, day=10, hour=1, minute=1)
+        self.proxy.upsert_node(
+            node_id='amundsen_updated_timestamp',
+            node_label='Updatedtimestamp',
+            node_properties={
+                'datetime': now
+            }
+        )
+        result = self.proxy.get_latest_updated_ts()
+        self.assertAlmostEqual(result, int(now.timestamp()))
+
+    def test_get_lastest_updated_ts_no_node(self):
+        result = self.proxy.get_latest_updated_ts()
+        self.assertIsNone(result)
 
 
 if __name__ == '__main__':

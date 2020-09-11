@@ -18,14 +18,18 @@ lint:
 .PHONY: setup_gremlin_server
 setup_gremlin_server:
 	docker pull tinkerpop/gremlin-server:3.4.7
-	docker run -d -p 8182:8182 tinkerpop/gremlin-server:3.4.7
+	docker run -d -p 8182:8182 --name test-gremlin-server tinkerpop/gremlin-server:3.4.7
+
+.PHONY: teardown_gremlin_server
+teardown_gremlin_server:
+	docker kill test-gremlin-server
 
 .PHONY: mypy
 mypy:
 	mypy --ignore-missing-imports --follow-imports=skip --strict-optional --warn-no-return .
 
 .PHONY: test
-test: test_unit lint mypy
+test: setup_gremlin_server test_unit lint mypy teardown_gremlin_server
 
 .PHONY: image
 image:

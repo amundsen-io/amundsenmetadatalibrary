@@ -1,10 +1,11 @@
 import json
 import logging
+from datetime import datetime
 from random import randint
 from typing import Any, Dict, List, Mapping, Optional, Union
 
-import gremlin_python
-from gremlin_python.process.traversal import T, Order, gt, Cardinality, within
+from gremlin_python.driver.protocol import GremlinServerError
+from gremlin_python.process.traversal import Order, gt, Cardinality, within
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table, Column, Reader, Tag, Watermark
@@ -20,11 +21,11 @@ from metadata_service.entity.tag_detail import TagDetail
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
-from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.proxy import BaseProxy
 from metadata_service.util import UserResourceRel
+from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
 
 from amundsen_common.models.table import Application
 
@@ -40,7 +41,7 @@ _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 
 
 def _parse_gremlin_server_error(exception: Exception) -> Dict[str, Any]:
-    if not isinstance(exception, gremlin_python.driver.protocol.GremlinServerError) or len(exception.args) != 1:
+    if not isinstance(exception, GremlinServerError) or len(exception.args) != 1:
         return {}
     # this is like '444: {...json object...}'
     return json.loads(exception.args[0][exception.args[0].index(': ') + 1:])
@@ -475,9 +476,19 @@ class AbstractGremlinProxy(BaseProxy):
             toList()
         return [result['table_key'] for result in results]
 
-    def get_latest_updated_ts(self) -> int:
-        # TODO
-        pass
+    def get_latest_updated_ts(self) -> Optional[int]:
+        """
+        API method to fetch last updated / index timestamp for neo4j, es
+
+        :return:
+        """
+        updated_traversal = self.g.V().has(self.key_property_name, 'amundsen_updated_timestamp')
+        updated_traversal = updated_traversal.hasLabel('Updatedtimestamp').values('datetime')
+        if updated_traversal.hasNext():
+            result = updated_traversal.next()
+            if isinstance(result, datetime):
+                return int(result.timestamp())
+        return None
 
     def get_tags(self) -> List:
         records = self.g.V().hasLabel('Tag').project('tag_name', 'tag_count').\
@@ -494,8 +505,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
-        # TODO
-        pass
+        raise NotImplementedError()
 
     def get_table_by_user_relation(self, *,
                                    user_email: str,
@@ -528,7 +538,60 @@ class AbstractGremlinProxy(BaseProxy):
         return {ResourceType.Table.name.lower(): results}
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
-        pass
+        """
+        MATCH (user:User {key: $query_key})-[r:READ]->(tbl:Table)
+        WHERE EXISTS(r.published_tag) AND r.published_tag IS NOT NULL
+        WITH user, r, tbl ORDER BY r.published_tag DESC, r.read_count DESC LIMIT 50
+        MATCH (tbl:Table)<-[:TABLE]-(schema:Schema)<-[:SCHEMA]-(clstr:Cluster)<-[:CLUSTER]-(db:Database)
+        OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(tbl_dscrpt:Description)
+        RETURN db, clstr, schema, tbl, tbl_dscrpt
+        :param user_email:
+        :return:
+        """
+
+        frequent_traversal = self.g.V().has(self.key_property_name, user_email).outE('READ')
+        frequent_traversal = frequent_traversal.project(
+            'db',
+            'cluster',
+            'schema',
+            'table_name',
+            'table_description',
+            'read_count'
+        )
+        frequent_traversal = frequent_traversal.by(
+            __.inV().out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')
+        )  # db
+        frequent_traversal = frequent_traversal.by(
+            __.inV().out('TABLE_OF').out('SCHEMA_OF').values('name')
+        )  # cluster
+        frequent_traversal = frequent_traversal.by(
+            __.inV().out('TABLE_OF').values('name')
+        )  # schema
+        frequent_traversal = frequent_traversal.by(
+            __.inV().values('name')
+        )  # table_name
+        frequent_traversal = frequent_traversal.by(
+            __.inV().coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))
+        )  # table_description
+        frequent_traversal = frequent_traversal.by(
+            'read_count'
+        )  # read_count
+        frequent_traversal = frequent_traversal.order().by(__.select('read_count'), Order.desc)
+        frequent_traversal = frequent_traversal.limit(50)
+        table_records = frequent_traversal.toList()
+        if not table_records:
+            raise NotFoundException('User {user_id} does not READ any resources'.format(user_id=user_email))
+
+        results = []
+        for record in table_records:
+            results.append(PopularTable(
+                database=record['db'],
+                cluster=record['cluster'],
+                schema=record['schema'],
+                name=record['table_name'],
+                description=record['table_description']
+            ))
+        return {'table': results}
 
     def add_resource_relation_by_user(self, *,
                                       id: str,
@@ -560,6 +623,9 @@ class AbstractGremlinProxy(BaseProxy):
         elif relation_type == UserResourceRel.own:
             relation_label = "OWNER"
             reverse_relation_label = "OWNER_OF"
+        elif relation_type == UserResourceRel.read:
+            relation_label = "READ"
+            reverse_relation_label = "READ_BY"
         else:
             raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
 
@@ -592,6 +658,9 @@ class AbstractGremlinProxy(BaseProxy):
         elif relation_type == UserResourceRel.own:
             relation_label = "OWNER"
             reverse_relation_label = "OWNER_OF"
+        elif relation_type == UserResourceRel.read:
+            relation_label = "READ"
+            reverse_relation_label = "READ_BY"
         else:
             raise NotFoundException("Relation type {} not found".format(repr(relation_type)))
         edge_ids = [
@@ -608,21 +677,21 @@ class AbstractGremlinProxy(BaseProxy):
                 label=reverse_relation_label
             ))
 
-        self.g.E(edge_ids).drop().iterate()
+        self.g.E().has(self.key_property_name, within(edge_ids)).drop().iterate()
 
     def get_dashboard(self,
                       dashboard_uri: str,
                       ) -> DashboardDetailEntity:
-        pass
+        raise NotImplementedError()
 
     def get_dashboard_description(self, *,
                                   id: str) -> Description:
-        pass
+        raise NotImplementedError()
 
     def put_dashboard_description(self, *,
                                   id: str,
                                   description: str) -> None:
-        pass
+        raise NotImplementedError()
 
     def get_resources_using_table(self, *,
                                   id: str,
@@ -696,7 +765,6 @@ class AbstractGremlinProxy(BaseProxy):
         return tx
 
 
-
 class GenericGremlinProxy(AbstractGremlinProxy):
     """
     A generic Gremlin proxy
@@ -725,6 +793,5 @@ class GenericGremlinProxy(AbstractGremlinProxy):
 
         super().__init__(key_property_name=key_property_name,
                          remote_connection=DriverRemoteConnection(**driver_remote_connection_options))
-
 
 
