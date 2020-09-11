@@ -62,7 +62,13 @@ class BadgeCommon:
                           'category': category,
                           'badge_type': badge_type}
         # need to check whether the badge combination is part of the whitelist:
-        if incomimg_badge not in whitelist_badges:
+
+        in_whitelist = False
+        for badge in whitelist_badges:
+            if incomimg_badge.badge_name == badge.badge_name and incomimg_badge.category == badge.category \
+               and incomimg_badge.badge_type == badge.badge_type:
+                in_whitelist = True
+        if not in_whitelist:
             return \
                 {'message': 'The badge {} for id {} with category {} badge_type {} and resource_type {} '
                             'is not added successfully because this combination of values '
