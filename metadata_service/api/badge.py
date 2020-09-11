@@ -65,7 +65,8 @@ class BadgeCommon:
 
         inWhitelist = False
         for badge in whitelist_badges:
-            if incomimg_badge.equals(badge):
+            if incomimg_badge.badge_name == badge.badge_name and incomimg_badge.category == badge.category \
+               and incomimg_badge.badge_type == badge.badge_type:
                 inWhitelist = True
         if not inWhitelist:
             return \
