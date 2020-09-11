@@ -147,6 +147,9 @@ class TestGremlinProxy(unittest.TestCase):
         for water_mark in table.watermarks:
             self._create_table_watermark(water_mark, table_id)
 
+        if table.table_writer is not None:
+            self._create_table_application(table.table_writer, table_id)
+
     def _create_test_table_database(self, database_name):
         database_id = 'database://{db}'.format(db=database_name)
         self.proxy.upsert_node(
@@ -420,6 +423,29 @@ class TestGremlinProxy(unittest.TestCase):
             edge_properties={}
         )
 
+    def _create_table_application(self, app: Application, table_id):
+        self.proxy.upsert_node(
+            node_id=app.id,
+            node_label="Application",
+            node_properties={
+                'application_url': app.application_url,
+                'name': app.name,
+                'description': app.description
+            }
+        )
+        self.proxy.upsert_edge(
+            start_node_id=table_id,
+            end_node_id=app.id,
+            edge_label="DERIVED_FROM",
+            edge_properties={}
+        )
+        self.proxy.upsert_edge(
+            start_node_id=table_id,
+            end_node_id=app.id,
+            edge_label="GENERATES",
+            edge_properties={}
+        )
+
     def test_get_user(self):
         self._create_test_users(users=[self.test_user_1])
         result = self.proxy.get_user(id=self.test_user_1.user_id)
@@ -530,6 +556,21 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertEqual(result_water_mark.watermark_type, test_water_mark.watermark_type)
         self.assertEqual(result_water_mark.partition_key, test_water_mark.partition_key)
         self.assertEqual(result_water_mark.partition_value, test_water_mark.partition_value)
+
+    def test_get_table_with_writer(self):
+        app = Application(
+            application_url='http://somewhere',
+            description='description',
+            id='application://test_cluster.my_app/job/table',
+            name='my_app'
+        )
+        self.test_table.table_writer = app
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        app = result.table_writer
+        self.assertIsNotNone(app)
+        self.assertEqual(app.id, 'application://test_cluster.my_app/job/table')
+        self.assertEqual(app.name, 'my_app')
 
     def test_delete_owner_from_table(self):
         self.test_table.owners = [

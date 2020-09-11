@@ -174,7 +174,11 @@ class AbstractGremlinProxy(BaseProxy):
                by('partition_value').\
                by('create_time').fold()).\
             by(__.out('DERIVED_FROM').\
-               project('name', 'description', 'application_id', 'application_url')).\
+               project('application_id', 'name', 'description', 'application_url')
+               .by(self.key_property_name)
+               .by("name")
+               .by("description")
+               .by("application_url").fold()).\
             next()
 
         column_nodes = result['columns']
@@ -226,14 +230,15 @@ class AbstractGremlinProxy(BaseProxy):
                     create_time=water_mark['create_time']
                 )
             )
-        app_node = result['application']
+        app_nodes = result['application']
         table_writer = None
-        if app_node is not None:
+        if app_nodes:
+            app_node = app_nodes[0]
             table_writer = Application(
                 application_url=app_node['application_url'],
                 description=app_node['description'],
                 name=app_node['name'],
-                id=app_node['id'],
+                id=app_node['application_id'],
             )
 
         table = Table(
