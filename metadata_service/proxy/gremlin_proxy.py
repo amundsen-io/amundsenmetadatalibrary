@@ -177,8 +177,8 @@ class AbstractGremlinProxy(BaseProxy):
             by(__.out('DERIVED_FROM').\
                project('application_id', 'name', 'description', 'application_url')
                .by(self.key_property_name)
-               .by("name")
-               .by("description")
+               .by(__.coalesce(__.values("name"), __.constant('')))
+               .by(__.coalesce(__.values("description"), __.constant('')))
                .by(__.coalesce(__.values("application_url"), __.constant(''))).fold()).\
             next()
 

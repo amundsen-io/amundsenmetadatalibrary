@@ -555,7 +555,6 @@ class TestGremlinProxy(unittest.TestCase):
 
     def test_get_table_with_writer_empty_url(self):
         app = Application(
-            description='description',
             id='application://test_cluster.my_app/job/table',
             name='my_app'
         )
