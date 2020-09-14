@@ -421,8 +421,8 @@ class TestGremlinProxy(unittest.TestCase):
             edge_properties={}
         )
         self.proxy.upsert_edge(
-            start_node_id=table_id,
-            end_node_id=app.id,
+            start_node_id=app.id,
+            end_node_id=table_id,
             edge_label="GENERATES",
             edge_properties={}
         )
