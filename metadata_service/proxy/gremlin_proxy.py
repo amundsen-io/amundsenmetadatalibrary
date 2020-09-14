@@ -27,6 +27,8 @@ from metadata_service.proxy import BaseProxy
 from metadata_service.util import UserResourceRel
 from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
 
+from amundsen_common.models.table import Application
+
 __all__ = ['AbstractGremlinProxy', 'GenericGremlinProxy']
 
 LOGGER = logging.getLogger(__name__)
@@ -147,7 +149,8 @@ class AbstractGremlinProxy(BaseProxy):
                 'columns',
                 'tags',
                 'owners',
-                'water_marks'
+                'water_marks',
+                'application'
             ). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
@@ -170,8 +173,14 @@ class AbstractGremlinProxy(BaseProxy):
                by(self.key_property_name).\
                by('partition_key').\
                by('partition_value').\
-               by('create_time').fold()
-            ).next()
+               by('create_time').fold()).\
+            by(__.coalesce(__.out('DERIVED_FROM').\
+               project('application_id', 'name', 'description', 'application_url')
+               .by(self.key_property_name)
+               .by(__.coalesce(__.values("name"), __.constant('')))
+               .by(__.coalesce(__.values("description"), __.constant('')))
+               .by(__.coalesce(__.values("application_url"), __.constant(''))), __.constant({}))).\
+            next()
 
         column_nodes = result['columns']
         tag_nodes = result['tags']
@@ -222,6 +231,15 @@ class AbstractGremlinProxy(BaseProxy):
                     create_time=water_mark['create_time']
                 )
             )
+        app_node = result['application']
+        table_writer = None
+        if app_node:
+            table_writer = Application(
+                application_url=app_node['application_url'],
+                description=app_node['description'],
+                name=app_node['name'],
+                id=app_node['application_id'],
+            )
 
         table = Table(
             schema=result.get('schema'),
@@ -234,7 +252,8 @@ class AbstractGremlinProxy(BaseProxy):
             is_view=result.get('is_view'),
             tags=tags,
             owners=owners,
-            watermarks=water_marks
+            watermarks=water_marks,
+            table_writer=table_writer
         )
         return table
 
