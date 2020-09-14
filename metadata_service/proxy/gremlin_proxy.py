@@ -502,9 +502,8 @@ class AbstractGremlinProxy(BaseProxy):
             ))
         return results
 
-    def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
-            -> Dict[str, List[DashboardSummary]]:
-        raise NotImplementedError()
+    def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, List[DashboardSummary]]:
+        return []
 
     def get_table_by_user_relation(self, *,
                                    user_email: str,
