@@ -728,46 +728,20 @@ class AtlasProxy(BaseProxy):
         # Not implemented
         return []
 
-    def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
-            -> Dict[str, List[DashboardSummary]]:
-        pass
+    def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \	
+            -> Dict[str, List[DashboardSummary]]:	
+        pass	
 
-    def get_table_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, Any]:
-        params = {
-            'typeName': self.BOOKMARK_TYPE,
-            'offset': '0',
-            'limit': '1000',
-            'excludeDeletedEntities': True,
-            'entityFilters': {
-                'condition': 'AND',
-                'criterion': [
-                    {
-                        'attributeName': self.QN_KEY,
-                        'operator': 'contains',
-                        'attributeValue': f'.{user_id}.bookmark'
-                    },
-                    {
-                        'attributeName': self.BOOKMARK_ACTIVE_KEY,
-                        'operator': 'eq',
-                        'attributeValue': 'true'
-                    }
-                ]
-            },
-            'attributes': ['count', self.QN_KEY, self.ENTITY_URI_KEY]
-        }
-        # Fetches the bookmark entities based on filters
-        search_results = self._driver.search_basic.create(data=params)
+    def get_table_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, Any]:	
+        tables = list()	
+        if relation_type == UserResourceRel.follow:	
+            tables = self._get_resources_followed_by_user(user_id=user_email,	
+                                                          resource_type=ResourceType.Table.name)	
+        elif relation_type == UserResourceRel.own:	
+            tables = self._get_resources_owned_by_user(user_id=user_email,	
+                                                       resource_type=ResourceType.Table.name)	
 
-        resources = []
-        for record in search_results.entities:
-            table_info = self._extract_info_from_uri(table_uri=record.attributes[self.ENTITY_URI_KEY])
-            res = self._parse_bookmark_qn(record.attributes[self.QN_KEY])
-            resources.append(PopularTable(
-                database=table_info['entity'],
-                cluster=res['cluster'],
-                schema=res['db'],
-                name=res['table']))
-        return resources
+        return {'table': tables}
 
     def _get_resources_owned_by_user(self, user_id: str, resource_type: str) \
             -> List[Union[PopularTable, DashboardSummary, Any]]:
