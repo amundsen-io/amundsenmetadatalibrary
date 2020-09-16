@@ -715,15 +715,6 @@ class AtlasProxy(BaseProxy):
                 )
         return tags
 
-    def _get_resources_followed_by_user(self, user_id: str, resource_type: str) \
-            -> List[Union[PopularTable, DashboardSummary]]:
-        """
-        ToDo (Verdan): Dashboard still needs to be implemented.
-        Helper function to get the resource, table, dashboard etc followed by a user.
-        :param user_id: User ID of a user
-        :param resource_type: Type of a resource that returns, could be table, dashboard etc.
-        :return: A list of PopularTable, DashboardSummary or any other resource.
-        """
     def get_badges(self) -> List:
         # Not implemented
         return []

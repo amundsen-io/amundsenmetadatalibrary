@@ -215,42 +215,6 @@ class TableBadgeAPI(Resource):
                                          badge_type=badge_type)
 
 
-class TableBadgeAPI(Resource):
-    def __init__(self) -> None:
-        self.client = get_proxy_client()
-        self.parser = reqparse.RequestParser()
-        self.parser.add_argument('category', type=str, required=True)
-        self.parser.add_argument('badge_type', type=str, required=True)
-        super(TableBadgeAPI, self).__init__()
-
-        self._badge_common = BadgeCommon(client=self.client)
-
-    @swag_from('swagger_doc/badge/badge_put.yml')
-    def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
-        args = self.parser.parse_args()
-        # TODO should I have default here?
-        category = args.get('category', '')
-        badge_type = args.get('badge_type', '')
-
-        return self._badge_common.put(id=id,
-                                      resource_type=ResourceType.Table,
-                                      badge_name=badge,
-                                      category=category,
-                                      badge_type=badge_type)
-
-    @swag_from('swagger_doc/badge/badge_delete.yml')
-    def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
-        args = self.parser.parse_args()
-        category = args.get('category', '')
-        badge_type = args.get('badge_type', '')
-
-        return self._badge_common.delete(id=id,
-                                         resource_type=ResourceType.Table,
-                                         badge_name=badge,
-                                         category=category,
-                                         badge_type=badge_type)
-
-
 class TableDashboardAPI(BaseAPI):
     """
     TableDashboard API that supports GET operation providing list of Dashboards using a table.
