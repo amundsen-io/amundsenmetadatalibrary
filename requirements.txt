@@ -35,7 +35,6 @@ pytest-mock==1.1
 # accross different amundsen repositories.
 amundsen-common==0.3.6
 
-
 flasgger==0.9.3
 Flask-RESTful==0.3.6
 Flask==1.0.2
