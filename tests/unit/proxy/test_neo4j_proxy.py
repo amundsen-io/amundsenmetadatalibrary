@@ -428,7 +428,7 @@ class TestNeo4jProxy(unittest.TestCase):
             # we call neo4j twice in add_tag call
             self.assertEquals(mock_run.call_count, 3)
             self.assertEquals(mock_commit.call_count, 1)
-    
+
     def test_add_tag(self) -> None:
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
