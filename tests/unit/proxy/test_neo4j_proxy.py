@@ -874,6 +874,7 @@ class TestNeo4jProxy(unittest.TestCase):
                                                      badge_type='neutral')],
                                        recent_view_count=100)
 
+            print(dashboard)
             self.assertEqual(expected, dashboard)
 
             dashboard2 = neo4j_proxy.get_dashboard(id='dashboard_id')

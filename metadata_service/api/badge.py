@@ -63,12 +63,12 @@ class BadgeCommon:
                                badge_type=badge_type)
         # need to check whether the badge combination is part of the whitelist:
 
-        in_whitelist = False
+        inWhitelist = False
         for badge in whitelist_badges:
             if incomimg_badge.badge_name == badge.badge_name and incomimg_badge.category == badge.category \
                and incomimg_badge.badge_type == badge.badge_type:
-                in_whitelist = True
-        if not in_whitelist:
+                inWhitelist = True
+        if not inWhitelist:
             return \
                 {'message': f'The badge {badge_name} with category {category} badge_type {badge_type} for resource '
                             f'id {id} and resource_type {resource_type.name} is not added successfully because '
