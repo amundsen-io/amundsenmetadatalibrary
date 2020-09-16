@@ -410,7 +410,6 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEquals(mock_commit.call_count, 1)
 
     def test_add_badge(self) -> None:
-        # TODO finish
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
