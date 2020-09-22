@@ -627,7 +627,7 @@ class Neo4jProxy(BaseProxy):
 
         # TODO for some reason when deleting it will say it was successful
         # even when the badge never existed to begin with
-        LOGGER.info('Delete badge {} for id {} with category {} badge type {}'.format(badge_name, id, category))
+        LOGGER.info('Delete badge {} for id {} with category {}'.format(badge_name, id, category))
 
         # only deletes relationshop between badge and resource
         delete_query = textwrap.dedent("""
