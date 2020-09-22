@@ -173,7 +173,6 @@ class TableBadgeAPI(Resource):
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
-        # TODO should I have default here?
         category = args.get('category', '')
 
         return self._badge_common.put(id=id,
