@@ -12,7 +12,7 @@ WHITELIST_BADGES: List[Badge] = [Badge(badge_name='beta',
 
 Once this is done users will be able to add badge the badges in the whitelist by running:
 
-```curl -X PUT https://amundsenmetadata.lyft.net/table/"{table key}"/badge/{badge_name}?category={category}```
+```curl -X PUT https://{amundsen metadata url}/table/"{table key}"/badge/{badge_name}?category={category}```
 
 #### USER_DETAIL_METHOD `OPTIONAL`
 This is a method that can be used to get the user details from any third-party or custom system.
