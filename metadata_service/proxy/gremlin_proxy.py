@@ -150,7 +150,8 @@ class AbstractGremlinProxy(BaseProxy):
                 'tags',
                 'owners',
                 'water_marks',
-                'application'
+                'application',
+                'table_last_updated'
             ). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').out('CLUSTER_OF').values('name')). \
             by(__.out('TABLE_OF').out('SCHEMA_OF').values('name')). \
@@ -180,6 +181,7 @@ class AbstractGremlinProxy(BaseProxy):
                .by(__.coalesce(__.values("name"), __.constant('')))
                .by(__.coalesce(__.values("description"), __.constant('')))
                .by(__.coalesce(__.values("application_url"), __.constant(''))), __.constant({}))).\
+            by(__.coalesce(__.out('LAST_UPDATED_AT').values('last_updated_timestamp'), __.constant(''))).\
             next()
 
         column_nodes = result['columns']
@@ -241,6 +243,10 @@ class AbstractGremlinProxy(BaseProxy):
                 id=app_node['application_id'],
             )
 
+        last_updated_timestamp = None
+        if result['table_last_updated']:
+            last_updated_timestamp = int(result['table_last_updated'])
+
         table = Table(
             schema=result.get('schema'),
             database=result.get('database'),
@@ -253,7 +259,8 @@ class AbstractGremlinProxy(BaseProxy):
             tags=tags,
             owners=owners,
             watermarks=water_marks,
-            table_writer=table_writer
+            table_writer=table_writer,
+            last_updated_timestamp=last_updated_timestamp
         )
         return table
 
