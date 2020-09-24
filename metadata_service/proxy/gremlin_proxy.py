@@ -8,7 +8,7 @@ from gremlin_python.driver.protocol import GremlinServerError
 from gremlin_python.process.traversal import Order, gt, Cardinality, within
 from gremlin_python.process.graph_traversal import __
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Table, Column, Reader, Tag, Watermark
+from amundsen_common.models.table import Table, Column, Reader, Tag, Watermark, ProgrammaticDescription
 from amundsen_common.models.user import User as UserEntity
 from amundsen_common.models.dashboard import DashboardSummary
 from gremlin_python.driver.driver_remote_connection import \
@@ -145,7 +145,7 @@ class AbstractGremlinProxy(BaseProxy):
                 'name',
                 'is_view',
                 'key',
-                'description',
+                'table_descriptions',
                 'columns',
                 'tags',
                 'owners',
@@ -160,7 +160,11 @@ class AbstractGremlinProxy(BaseProxy):
             by('name'). \
             by('is_view'). \
             by(self.key_property_name). \
-            by(__.coalesce(__.out('DESCRIPTION').values('description'), __.constant(''))). \
+            by(__.out('DESCRIPTION').project('text', 'description_type', 'source').
+               by('description').
+               by(__.label()).
+               by(__.coalesce(__.values('description_source'), __.constant(''))).
+               fold()). \
             by(__.out('COLUMN').project('column_name', 'column_descriptions', 'column_type', 'sort_order').\
                by('name').\
                by(__.out('DESCRIPTION').project('text', 'description_type').\
@@ -189,10 +193,25 @@ class AbstractGremlinProxy(BaseProxy):
         owner_nodes = result['owners']
         water_mark_nodes = result['water_marks']
         readers = self._get_table_users(table_uri=table_uri)
+
+        table_descriptions = [
+            d.get('text') for d in result['table_descriptions']
+            if d.get('description_type') == "Description"
+        ]
+        table_description = table_descriptions[0] if len(table_descriptions) > 0 else ''
+
+        table_programmatic_descriptions = [
+            ProgrammaticDescription(source=d.get('source', ''), text=d.get('text', ''))
+            for d in result['table_descriptions']
+            if d.get('description_type') == "Programmatic_Description"
+        ]
+
         columns = []
         for column_node in column_nodes:
-            programmatic_descriptions = [description.get('text') for description in column_node.get('column_descriptions') if description.get('description_type') == "Programmatic_Description"]
-            default_descriptions = [description.get('text') for description in column_node.get('column_descriptions') if description.get('description_type') == "Description"]
+            programmatic_descriptions = [d.get('text') for d in column_node.get('column_descriptions')
+                                         if d.get('description_type') == "Programmatic_Description"]
+            default_descriptions = [d.get('text') for d in column_node.get('column_descriptions')
+                                    if d.get('description_type') == "Description"]
             column_description = ''
             if len(default_descriptions) > 0:
                 column_description = default_descriptions[0]
@@ -251,7 +270,7 @@ class AbstractGremlinProxy(BaseProxy):
             schema=result.get('schema'),
             database=result.get('database'),
             cluster=result.get('cluster'),
-            description=result.get('description'),
+            description=table_description,
             table_readers=readers,
             name=result.get('name'),
             columns=columns,
@@ -260,7 +279,8 @@ class AbstractGremlinProxy(BaseProxy):
             owners=owners,
             watermarks=water_marks,
             table_writer=table_writer,
-            last_updated_timestamp=last_updated_timestamp
+            last_updated_timestamp=last_updated_timestamp,
+            programmatic_descriptions=table_programmatic_descriptions
         )
         return table
 

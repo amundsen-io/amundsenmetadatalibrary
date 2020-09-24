@@ -134,6 +134,9 @@ class TestGremlinProxy(unittest.TestCase):
         if table.last_updated_timestamp:
             self._create_table_last_updated_at(table.last_updated_timestamp, table_id)
 
+        for d in table.programmatic_descriptions:
+            self._create_test_description(d.text, table_id, d.source, is_programmatic=True)
+
     def _create_test_table_database(self, database_name):
         database_id = 'database://{db}'.format(db=database_name)
         self.proxy.upsert_node(
@@ -289,13 +292,13 @@ class TestGremlinProxy(unittest.TestCase):
             }
         )
 
-    def _create_test_description(self, description: str, entity_id: str):
-        description_id = entity_id + "/_description"
+    def _create_test_description(self, description: str, entity_id: str, source='description', is_programmatic=False):
+        description_id = entity_id + ("/_description" if not is_programmatic else "/_programmatic_description")
         self.proxy.upsert_node(
             node_id=description_id,
-            node_label="Description",
+            node_label="Description" if not is_programmatic else 'Programmatic_Description',
             node_properties={
-                'description_source': 'description',
+                'description_source': source,
                 'description': description
             }
         )
@@ -535,6 +538,21 @@ class TestGremlinProxy(unittest.TestCase):
         self._create_test_table(self.test_table)
         result = self.proxy.get_table(table_uri=self.table_id)
         self.assertEqual("This is a test description", result.description)
+
+    def test_get_table_with_programmatic_description(self):
+
+        desc_text = "This is a programmatic description"
+        self.test_table.description = desc_text
+        self.test_table.programmatic_descriptions = [
+            ProgrammaticDescription(text="text", source="source")
+        ]
+        self._create_test_table(self.test_table)
+
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertEqual(desc_text, result.description)
+        self.assertEqual(len(result.programmatic_descriptions), 1)
+        self.assertEqual(result.programmatic_descriptions[0].source, "source")
+        self.assertEqual(result.programmatic_descriptions[0].text, "text")
 
     def test_get_table_with_owners(self):
         self.test_table.owners = [
