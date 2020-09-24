@@ -131,6 +131,9 @@ class TestGremlinProxy(unittest.TestCase):
         if table.table_writer is not None:
             self._create_table_application(table.table_writer, table_id)
 
+        if table.last_updated_timestamp:
+            self._create_table_last_updated_at(table.last_updated_timestamp, table_id)
+
     def _create_test_table_database(self, database_name):
         database_id = 'database://{db}'.format(db=database_name)
         self.proxy.upsert_node(
@@ -427,6 +430,30 @@ class TestGremlinProxy(unittest.TestCase):
             edge_properties={}
         )
 
+    def _create_table_last_updated_at(self, timestamp: int, table_id: str):
+        table_last_updated_at_id = table_id + "/timestamp"
+        self.proxy.upsert_node(
+            node_id=table_last_updated_at_id,
+            node_label="Timestamp",
+            node_properties={
+                'last_updated_timestamp': timestamp,
+                'name': 'last_updated_timestamp',
+                'timestamp': timestamp
+            }
+        )
+        self.proxy.upsert_edge(
+            start_node_id=table_id,
+            end_node_id=table_last_updated_at_id,
+            edge_label="LAST_UPDATED_AT",
+            edge_properties={}
+        )
+        self.proxy.upsert_edge(
+            start_node_id=table_last_updated_at_id,
+            end_node_id=table_id,
+            edge_label="LAST_UPDATED_TIME_OF",
+            edge_properties={}
+        )
+
     def test_get_user(self):
         self._create_test_users(users=[self.test_user_1])
         result = self.proxy.get_user(id=self.test_user_1.user_id)
@@ -552,6 +579,13 @@ class TestGremlinProxy(unittest.TestCase):
         self.assertIsNotNone(app)
         self.assertEqual(app.id, 'application://test_cluster.my_app/job/table')
         self.assertEqual(app.name, 'my_app')
+
+    def test_table_with_last_updated_at(self):
+        self.test_table.last_updated_timestamp = 1234
+        self._create_test_table(self.test_table)
+        result = self.proxy.get_table(table_uri=self.table_id)
+        self.assertIsNotNone(result.last_updated_timestamp)
+        self.assertEqual(result.last_updated_timestamp, 1234)
 
     def test_get_table_with_writer_empty_url(self):
         app = Application(
