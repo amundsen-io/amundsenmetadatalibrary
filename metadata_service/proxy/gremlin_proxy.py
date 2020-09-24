@@ -198,7 +198,7 @@ class AbstractGremlinProxy(BaseProxy):
             d.get('text') for d in result['table_descriptions']
             if d.get('description_type') == "Description"
         ]
-        table_description = table_descriptions[0] if len(table_descriptions) > 0 else None
+        table_description = table_descriptions[0] if len(table_descriptions) > 0 else ''
 
         table_programmatic_descriptions = [
             ProgrammaticDescription(source=d.get('source', ''), text=d.get('text', ''))
