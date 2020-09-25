@@ -5,8 +5,8 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, List, Union
 
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Table
-from amundsen_common.models.user import User as UserEntity
+from amundsen_common.models.table import Table, Application, Column, ProgrammaticDescription
+from amundsen_common.models.user import User
 from amundsen_common.models.dashboard import DashboardSummary
 
 from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
@@ -22,11 +22,11 @@ class BaseProxy(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_user(self, *, id: str) -> Union[UserEntity, None]:
+    def get_user(self, *, id: str) -> Union[User, None]:
         pass
 
     @abstractmethod
-    def get_users(self) -> List[UserEntity]:
+    def get_users(self) -> List[User]:
         pass
 
     @abstractmethod
@@ -150,4 +150,43 @@ class BaseProxy(metaclass=ABCMeta):
     def get_resources_using_table(self, *,
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
+        pass
+
+    # NB: the following methods exist solely for testing in the roundtrip tests.
+    # These may not be suitably performant for handling large batches
+
+    @abstractmethod
+    def put_user(self, *, data: User) -> None:
+        pass
+
+    @abstractmethod
+    def post_users(self, *, data: List[User]) -> None:
+        pass
+
+    @abstractmethod
+    def put_app(self, *, data: Application) -> None:
+        pass
+
+    @abstractmethod
+    def post_apps(self, *, data: List[Application]) -> None:
+        pass
+
+    @abstractmethod
+    def put_table(self, *, table: Table) -> None:
+        pass
+
+    @abstractmethod
+    def post_tables(self, *, tables: List[Table]) -> None:
+        pass
+
+    @abstractmethod
+    def put_column(self, *, table_uri: str, column: Column) -> None:
+        pass
+
+    @abstractmethod
+    def put_programmatic_table_description(self, *, table_uri: str, description: ProgrammaticDescription) -> None:
+        pass
+
+    @abstractmethod
+    def add_read_count(self, *, table_uri: str, user_id: str, read_count: int) -> None:
         pass

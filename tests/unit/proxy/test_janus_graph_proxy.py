@@ -14,8 +14,3 @@ class JanusGraphGremlinProxyTest(
     def _create_gremlin_proxy(self, config: Mapping[str, Any]) -> JanusGraphGremlinProxy:
         # Don't use PROXY_HOST, PROXY_PORT, PROXY_PASSWORD.  They might not be JanusGraph
         return JanusGraphGremlinProxy(host=config['JANUS_GRAPH_URL'])
-
-
-# this may not work locally, depending on setup. Remove the line below
-# to run the abstract gremlin tests with neptune
-del JanusGraphGremlinProxyTest

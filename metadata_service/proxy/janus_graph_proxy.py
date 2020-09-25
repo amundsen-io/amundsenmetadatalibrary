@@ -3,8 +3,9 @@
 
 from metadata_service.proxy.aws4authwebsocket.transport import WebsocketClientTransport
 from .gremlin_proxy import AbstractGremlinProxy
-from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Type
+from amundsen_gremlin.script_translator import ScriptTranslatorTargetJanusgraph
+from overrides import overrides
 
 
 class JanusGraphGremlinProxy(AbstractGremlinProxy):
@@ -19,8 +20,9 @@ class JanusGraphGremlinProxy(AbstractGremlinProxy):
                  websocket_options: Mapping[str, Any] = {}) -> None:
         driver_remote_connection_options = dict(driver_remote_connection_options)
 
-        # as others, we repurpose host a url
-        driver_remote_connection_options.update(url=host)
+        # as others, we repurpose host a url, and url can be an HTTPRequest
+        self.url = host
+
         # port should be part of that url
         if port is not None:
             raise NotImplementedError(f'port is not allowed! port={port}')
@@ -39,4 +41,13 @@ class JanusGraphGremlinProxy(AbstractGremlinProxy):
 
         # use _key
         super().__init__(key_property_name='_key',
-                         remote_connection=DriverRemoteConnection(**driver_remote_connection_options))
+                         driver_remote_connection_options=driver_remote_connection_options)
+
+    @classmethod
+    @overrides
+    def script_translator(cls) -> Type[ScriptTranslatorTargetJanusgraph]:
+        return ScriptTranslatorTargetJanusgraph
+
+    @overrides
+    def possibly_signed_ws_client_request_or_url(self) -> str:
+        return self.url
