@@ -120,7 +120,9 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(tbl_dscrpt:Description)
         OPTIONAL MATCH (col:Column)-[:DESCRIPTION]->(col_dscrpt:Description)
         OPTIONAL MATCH (col:Column)-[:STAT]->(stat:Stat)
-        RETURN db, clstr, schema, tbl, tbl_dscrpt, col, col_dscrpt, collect(distinct stat) as col_stats
+        OPTIONAL MATCH (col:Column)-[:HAS_BADGE]->(badge:Badge)-[:BADGE_FOR]->(col)
+        RETURN db, clstr, schema, tbl, tbl_dscrpt, col, col_dscrpt, collect(distinct stat) as col_stats,
+        collect(distinct badge) as col_badges
         ORDER BY col.sort_order;""")
 
         tbl_col_neo4j_records = self._execute_cypher_query(
@@ -144,7 +146,8 @@ class Neo4jProxy(BaseProxy):
                          description=self._safe_get(tbl_col_neo4j_record, 'col_dscrpt', 'description'),
                          col_type=tbl_col_neo4j_record['col']['type'],
                          sort_order=int(tbl_col_neo4j_record['col']['sort_order']),
-                         stats=col_stats)
+                         stats=col_stats,
+                         badges=tbl_col_neo4j_record['col_badges'])
 
             cols.append(col)
 
