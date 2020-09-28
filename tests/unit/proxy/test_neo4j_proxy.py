@@ -184,10 +184,7 @@ class TestNeo4jProxy(unittest.TestCase):
                                  ProgrammaticDescription(source='s3_crawler',
                                                          text='Test Test Test')
                              ])
-            print('EXPECTED')
-            print(str(expected))
-            print('ACTUAL')
-            print(str(table))
+
             self.assertEqual(str(expected), str(table))
 
     def test_get_table_view_only(self) -> None:
