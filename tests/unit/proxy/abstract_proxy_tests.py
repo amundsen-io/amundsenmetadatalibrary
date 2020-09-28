@@ -9,7 +9,6 @@ from typing import (
     Any, Callable, Dict, Generic, List, Type, TypeVar,
     no_type_check
 )
-import pytest
 
 from amundsen_common.tests.fixtures import Fixtures
 from amundsen_common.models.table import (
@@ -30,7 +29,6 @@ T = TypeVar('T', bound=BaseProxy)
 LOGGER = logging.getLogger(__name__)
 
 
-@pytest.mark.roundtrip
 class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
     """
     Proxy integration testing
@@ -153,21 +151,6 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         # confirm that this runs without failing
         self.get_proxy().put_programmatic_table_description(table_uri=checkNotNone(Fixtures.next_table().key),
                                                             description=Fixtures.next_description())
-
-    def test_put_description_with_double_encoding(self) -> None:
-        table: Table = Fixtures.next_table()
-        column = Fixtures.next_column(table_key=checkNotNone(table.key), sort_order=0)
-        table.columns = [column]
-        self.get_proxy().put_table(table=table)
-        self.get_proxy().put_column_description(table_uri=checkNotNone(table.key),
-                                                column_name=column.name,
-                                                description='a%2520column%2520description!')
-        self.get_proxy().put_table_description(table_uri=checkNotNone(table.key),
-                                               description='a%2520description!')
-
-        actual_table = self.get_proxy().get_table(table_uri=checkNotNone(table.key))
-        self.assertEqual('a column description!', actual_table.columns[0].description)
-        self.assertEqual('a description!', actual_table.description)
 
     def test_add_delete_user_relation(self) -> None:
         table = Fixtures.next_table()

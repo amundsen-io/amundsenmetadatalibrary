@@ -12,8 +12,12 @@ from typing import List
 
 def pytest_addoption(parser: Parser) -> None:
     parser.addoption(
-        "--roundtrip", action="store_true", default=False, help="Run roundtrip tests. These tests are slow and require \
+        "--roundtrip-neptune", action="store_true", default=False, help="Run roundtrip tests. These tests are slow and require \
         a configured neptune instance."
+    )
+    parser.addoption(
+        "--roundtrip-janusgraph", action="store_true", default=False, help="Run roundtrip tests. These tests are slow and require \
+        a configured janusgraph instance."
     )
 
 
@@ -22,10 +26,11 @@ def pytest_configure(config: Config) -> None:
 
 
 def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
-    if config.getoption("--roundtrip"):
-        # --roundtrip given in cli: do not skip roundtrip tests
-        return
-    skip_roundtrip = pytest.mark.skip(reason="need --roundtrip option to run")
+    roundtrip_neptune: bool = config.getoption("--roundtrip-neptune")
+    roundtrip_janusgraph: bool = config.getoption("--roundtrip-janusgraph")
+    skip_roundtrip = pytest.mark.skip(reason="need the approprirate --roundtrip-[neptune|janus] option to run")
     for item in items:
-        if "roundtrip" in item.keywords:
+        if "NeptuneGremlinProxyTest" in item.keywords and not roundtrip_neptune:
+            item.add_marker(skip_roundtrip)
+        if "JanusGraphGremlinProxyTest" in item.keywords and not roundtrip_janusgraph:
             item.add_marker(skip_roundtrip)
