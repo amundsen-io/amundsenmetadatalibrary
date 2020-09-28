@@ -13,9 +13,8 @@ from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (Application, Column, Reader, Source,
                                           Statistics, Table, User,
-                                          Watermark, ProgrammaticDescription)
-from amundsen_common.models.table import Tag
-from amundsen_common.models.table import Badge as TableBadge
+                                          Watermark, ProgrammaticDescription, Tag,
+                                          Badge as TableBadge)
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -141,13 +140,17 @@ class Neo4jProxy(BaseProxy):
                 )
                 col_stats.append(col_stat)
 
+            column_badges = []
+            for badge in tbl_col_neo4j_record['col_badges']:
+                column_badges.append(TableBadge(badge_name=badge['key'], category=badge['category']))
+
             last_neo4j_record = tbl_col_neo4j_record
             col = Column(name=tbl_col_neo4j_record['col']['name'],
                          description=self._safe_get(tbl_col_neo4j_record, 'col_dscrpt', 'description'),
                          col_type=tbl_col_neo4j_record['col']['type'],
                          sort_order=int(tbl_col_neo4j_record['col']['sort_order']),
                          stats=col_stats,
-                         badges=tbl_col_neo4j_record['col_badges'])
+                         badges=column_badges)
 
             cols.append(col)
 

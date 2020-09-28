@@ -49,6 +49,7 @@ class TestNeo4jProxy(unittest.TestCase):
                        'sort_order': 0}
         col1['col_dscrpt'] = {'description': 'bar col description'}
         col1['col_stats'] = [{'stat_name': 'avg', 'start_epoch': 1, 'end_epoch': 1, 'stat_val': '1'}]
+        col1['col_badges'] = []
 
         col2 = copy.deepcopy(table_entry)  # type: Dict[Any, Any]
         col2['col'] = {'name': 'bar_id_2',
@@ -56,6 +57,7 @@ class TestNeo4jProxy(unittest.TestCase):
                        'sort_order': 1}
         col2['col_dscrpt'] = {'description': 'bar col2 description'}
         col2['col_stats'] = [{'stat_name': 'avg', 'start_epoch': 2, 'end_epoch': 2, 'stat_val': '2'}]
+        col2['col_badges'] = [{'key': 'primary key', 'category': 'column'}]
 
         table_level_results = MagicMock()
         table_level_results.single.return_value = {
@@ -160,12 +162,13 @@ class TestNeo4jProxy(unittest.TestCase):
                                              sort_order=0, stats=[Statistics(start_epoch=1,
                                                                              end_epoch=1,
                                                                              stat_type='avg',
-                                                                             stat_val='1')]),
+                                                                             stat_val='1')], badges=[]),
                                       Column(name='bar_id_2', description='bar col2 description', col_type='bigint',
                                              sort_order=1, stats=[Statistics(start_epoch=2,
                                                                              end_epoch=2,
                                                                              stat_type='avg',
-                                                                             stat_val='2')])],
+                                                                             stat_val='2')],
+                                             badges=[Badge(badge_name='primary key', category='column')])],
                              owners=[User(email='tester@example.com')],
                              table_writer=Application(application_url=self.table_writer['application_url'],
                                                       description=self.table_writer['description'],
@@ -181,7 +184,10 @@ class TestNeo4jProxy(unittest.TestCase):
                                  ProgrammaticDescription(source='s3_crawler',
                                                          text='Test Test Test')
                              ])
-
+            print('EXPECTED')
+            print(str(expected))
+            print('ACTUAL')
+            print(str(table))
             self.assertEqual(str(expected), str(table))
 
     def test_get_table_view_only(self) -> None:
@@ -211,12 +217,13 @@ class TestNeo4jProxy(unittest.TestCase):
                                              sort_order=0, stats=[Statistics(start_epoch=1,
                                                                              end_epoch=1,
                                                                              stat_type='avg',
-                                                                             stat_val='1')]),
+                                                                             stat_val='1')], badges=[]),
                                       Column(name='bar_id_2', description='bar col2 description', col_type='bigint',
                                              sort_order=1, stats=[Statistics(start_epoch=2,
                                                                              end_epoch=2,
                                                                              stat_type='avg',
-                                                                             stat_val='2')])],
+                                                                             stat_val='2')],
+                                             badges=[Badge(badge_name='primary key', category='column')])],
                              owners=[User(email='tester@example.com')],
                              table_writer=Application(application_url=self.table_writer['application_url'],
                                                       description=self.table_writer['description'],
