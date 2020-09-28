@@ -119,7 +119,7 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (tbl)-[:DESCRIPTION]->(tbl_dscrpt:Description)
         OPTIONAL MATCH (col:Column)-[:DESCRIPTION]->(col_dscrpt:Description)
         OPTIONAL MATCH (col:Column)-[:STAT]->(stat:Stat)
-        OPTIONAL MATCH (col:Column)-[:HAS_BADGE]->(badge:Badge)-[:BADGE_FOR]->(col)
+        OPTIONAL MATCH (col:Column)-[:HAS_BADGE]->(badge:Badge)
         RETURN db, clstr, schema, tbl, tbl_dscrpt, col, col_dscrpt, collect(distinct stat) as col_stats,
         collect(distinct badge) as col_badges
         ORDER BY col.sort_order;""")
