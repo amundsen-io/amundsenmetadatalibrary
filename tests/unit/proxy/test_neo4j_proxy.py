@@ -977,7 +977,7 @@ class TestNeo4jProxy(unittest.TestCase):
                                                                         id='foo',
                                                                         user_key='bar',
                                                                         resource_type=ResourceType.Table)
-            expected = '(resource:Table {key: $resource_key})-[r1:OWNER]->(usr:USER {key: $user_key})-[r2:OWNER_OF]->(resource:Table {key: $resource_key})'
+            expected = '(resource:Table {key: $resource_key})-[r1:OWNER]->(usr:User {key: $user_key})-[r2:OWNER_OF]->(resource:Table {key: $resource_key})'
             self.assertEqual(expected, actual)
 
             actual = neo4j_proxy._get_user_resource_relationship_clause(UserResourceRel.follow,
