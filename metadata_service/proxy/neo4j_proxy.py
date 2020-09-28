@@ -518,7 +518,7 @@ class Neo4jProxy(BaseProxy):
 
         upsert_owner_relation_query = textwrap.dedent("""
         MATCH (n1:User {key: $user_email}), (n2:Table {key: $tbl_key})
-        MERGE (n2)-[r2:OWNER]->(n1)
+        MERGE (n1)-[r1:OWNER_OF]->(n2)-[r2:OWNER]->(n1)
         RETURN n1.key, n2.key
         """)
 
@@ -552,7 +552,7 @@ class Neo4jProxy(BaseProxy):
         :return:
         """
         delete_query = textwrap.dedent("""
-        MATCH (n1:User{key: $user_email})<-[r1:OWNER]-(n2:Table {key: $tbl_key}) DELETE r1
+        MATCH (n1:User{key: $user_email})-[r1:OWNER_OF]->(n2:Table {key: $tbl_key})-[r2:OWNER]->(n1) DELETE r1,r2
         """)
 
         try:
@@ -960,7 +960,7 @@ class Neo4jProxy(BaseProxy):
         if relation_type == UserResourceRel.follow:
             relation = f'(usr{user_matcher})-[rel:FOLLOW]->(resource{resource_matcher})'
         elif relation_type == UserResourceRel.own:
-            relation = f'(usr{user_matcher})<-[rel:OWNER]-(resource{resource_matcher})'
+            relation = f'(resource{resource_matcher})-[r1:OWNER]->(usr{user_matcher})-[r2:OWNER_OF]->(resource{resource_matcher})'
         elif relation_type == UserResourceRel.read:
             relation = f'(usr{user_matcher})-[rel:READ]->(resource{resource_matcher})'
         else:
@@ -1158,11 +1158,16 @@ class Neo4jProxy(BaseProxy):
                                                                       user_key=user_id,
                                                                       id=id
                                                                       )
-
-        delete_query = textwrap.dedent("""
-        MATCH {rel_clause}
-        DELETE rel
-        """.format(rel_clause=rel_clause))
+        if relation_type == UserResourceRel.own:
+            delete_query = textwrap.dedent("""
+                    MATCH {rel_clause}
+                    DELETE r1, r2
+                    """.format(rel_clause=rel_clause))
+        else:
+            delete_query = textwrap.dedent("""
+            MATCH {rel_clause}
+            DELETE rel
+            """.format(rel_clause=rel_clause))
 
         try:
             tx = self._driver.session().begin_transaction()
