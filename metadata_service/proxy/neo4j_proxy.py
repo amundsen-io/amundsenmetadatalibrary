@@ -960,7 +960,8 @@ class Neo4jProxy(BaseProxy):
         if relation_type == UserResourceRel.follow:
             relation = f'(usr{user_matcher})-[rel:FOLLOW]->(resource{resource_matcher})'
         elif relation_type == UserResourceRel.own:
-            relation = f'(resource{resource_matcher})-[r1:OWNER]->(usr{user_matcher})-[r2:OWNER_OF]->(resource{resource_matcher})'
+            relation = f'(resource{resource_matcher})-[r1:OWNER]->(usr{user_matcher})-[r2:OWNER_OF]->' \
+                       f'(resource{resource_matcher})'
         elif relation_type == UserResourceRel.read:
             relation = f'(usr{user_matcher})-[rel:READ]->(resource{resource_matcher})'
         else:
