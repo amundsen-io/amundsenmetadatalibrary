@@ -963,8 +963,8 @@ class TestNeo4jProxy(unittest.TestCase):
                                                                         id='foo',
                                                                         user_key='bar',
                                                                         resource_type=ResourceType.Table)
-            expected = '(resource:Table {key: $resource_key})-[r1:FOLLOWED_BY]->(usr:User {key: $user_key})-[r2:FOLLOW]->' \
-                       '(resource:Table {key: $resource_key})'
+            expected = '(resource:Table {key: $resource_key})-[r1:FOLLOWED_BY]->(usr:User {key: $user_key})-' \
+                       '[r2:FOLLOW]->(resource:Table {key: $resource_key})'
             self.assertEqual(expected, actual)
 
             actual = neo4j_proxy._get_user_resource_relationship_clause(UserResourceRel.read,
@@ -987,8 +987,8 @@ class TestNeo4jProxy(unittest.TestCase):
                                                                         id='foo',
                                                                         user_key='bar',
                                                                         resource_type=ResourceType.Dashboard)
-            expected = '(resource:Dashboard {key: $resource_key})-[r1:FOLLOWED_BY]->(usr:User {key: $user_key})-[r2:FOLLOW]->' \
-                       '(resource:Dashboard {key: $resource_key})'
+            expected = '(resource:Dashboard {key: $resource_key})-[r1:FOLLOWED_BY]->(usr:User {key: $user_key})-' \
+                       '[r2:FOLLOW]->(resource:Dashboard {key: $resource_key})'
             self.assertEqual(expected, actual)
 
 
