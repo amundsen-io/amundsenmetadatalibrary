@@ -329,8 +329,12 @@ class AbstractGremlinProxy(BaseProxy):
 
     def get_table_description(self, *,
                               table_uri: str) -> Union[str, None]:
-        result = self.g.V().has(self.key_property_name, table_uri).out('DESCRIPTION').values('description').next()
-        return result
+        result = self.g.V().has(self.key_property_name, table_uri).coalesce(
+            __.out('DESCRIPTION').hasLabel('Description').values('description'),
+            __.constant('')
+        ).next()
+
+        return result if result else None
 
     def put_table_description(self, *,
                               table_uri: str,
