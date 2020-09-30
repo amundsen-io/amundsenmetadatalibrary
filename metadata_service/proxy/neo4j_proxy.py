@@ -958,12 +958,14 @@ class Neo4jProxy(BaseProxy):
                 user_matcher += ' {key: $user_key}'
 
         if relation_type == UserResourceRel.follow:
-            relation = f'(usr{user_matcher})-[rel:FOLLOW]->(resource{resource_matcher})'
+            relation = f'(resource{resource_matcher})-[r1:FOLLOWED_BY]->(usr{user_matcher})-[r2:FOLLOW]->' \
+                       f'(resource{resource_matcher})'
         elif relation_type == UserResourceRel.own:
             relation = f'(resource{resource_matcher})-[r1:OWNER]->(usr{user_matcher})-[r2:OWNER_OF]->' \
                        f'(resource{resource_matcher})'
         elif relation_type == UserResourceRel.read:
-            relation = f'(usr{user_matcher})-[rel:READ]->(resource{resource_matcher})'
+            relation = f'(resource{resource_matcher})-[r1:READ_BY]->(usr{user_matcher})-[r2:READ]->' \
+                       f'(resource{resource_matcher})'
         else:
             raise NotImplementedError(f'The relation type {relation_type} is not defined!')
         return relation
@@ -1159,16 +1161,11 @@ class Neo4jProxy(BaseProxy):
                                                                       user_key=user_id,
                                                                       id=id
                                                                       )
-        if relation_type == UserResourceRel.own:
-            delete_query = textwrap.dedent("""
-                    MATCH {rel_clause}
-                    DELETE r1, r2
-                    """.format(rel_clause=rel_clause))
-        else:
-            delete_query = textwrap.dedent("""
-            MATCH {rel_clause}
-            DELETE rel
-            """.format(rel_clause=rel_clause))
+
+        delete_query = textwrap.dedent("""
+                MATCH {rel_clause}
+                DELETE r1, r2
+                """.format(rel_clause=rel_clause))
 
         try:
             tx = self._driver.session().begin_transaction()
