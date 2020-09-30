@@ -546,7 +546,6 @@ class Neo4jProxy(BaseProxy):
                      owner: str) -> None:
         """
         Delete the owner / owned_by relationship.
-
         :param table_uri:
         :param owner:
         :return:
@@ -557,7 +556,6 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (n2)-[r2:OWNER]->(n1) 
         DELETE r1,r2
         """)
-        
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'user_email': owner,
