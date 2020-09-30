@@ -552,12 +552,12 @@ class Neo4jProxy(BaseProxy):
         :return:
         """
         delete_query = textwrap.dedent("""
-                MATCH (n1:User{key: $user_email}), (n2:Table {key: $tbl_key})
-                OPTIONAL MATCH (n1)-[r1:OWNER_OF]->(n2)
-                OPTIONAL MATCH (n2)-[r2:OWNER]->(n1) 
-                DELETE r1,r2
-                """)
-
+        MATCH (n1:User{key: $user_email}), (n2:Table {key: $tbl_key})
+        OPTIONAL MATCH (n1)-[r1:OWNER_OF]->(n2)
+        OPTIONAL MATCH (n2)-[r2:OWNER]->(n1) 
+        DELETE r1,r2
+        """)
+        
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'user_email': owner,
