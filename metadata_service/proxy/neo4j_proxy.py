@@ -1357,30 +1357,3 @@ class Neo4jProxy(BaseProxy):
         for record in records:
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
-
-    def put_user(self, *, data: User) -> None:
-        pass
-
-    def post_users(self, *, data: List[User]) -> None:
-        pass
-
-    def put_app(self, *, data: Application) -> None:
-        pass
-
-    def post_apps(self, *, data: List[Application]) -> None:
-        pass
-
-    def put_table(self, *, table: Table) -> None:
-        pass
-
-    def post_tables(self, *, tables: List[Table]) -> None:
-        pass
-
-    def put_column(self, *, table_uri: str, column: Column) -> None:
-        pass
-
-    def put_programmatic_table_description(self, *, table_uri: str, description: ProgrammaticDescription) -> None:
-        pass
-
-    def add_read_count(self, *, table_uri: str, user_id: str, read_count: int) -> None:
-        pass

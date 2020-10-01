@@ -17,14 +17,14 @@ from amundsen_common.models.table import (
 
 from amundsen_common.models.popular_table import PopularTable
 from metadata_service.entity.tag_detail import TagDetail
-from metadata_service.proxy.base_proxy import BaseProxy
 from metadata_service.proxy.shared import checkNotNone
 from metadata_service.util import UserResourceRel
 from metadata_service.entity.resource_type import ResourceType
+from .roundtrip_base_proxy import RoundtripBaseProxy
 
 __all__ = ['abstract_proxy_test_class']
 
-T = TypeVar('T', bound=BaseProxy)
+T = TypeVar('T', bound=RoundtripBaseProxy)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,7 +68,6 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         """
         it'd be nice to check that the result could be deserialized as a client of the metadata_service would
         """
-        # TODO: check fixtures
         expected = Fixtures.next_table()
         expected.description = '"hello!" said no one'
         expected.tags.sort()
@@ -80,7 +79,7 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_rt_table_with_owner_user_not_application(self) -> None:
+    def test_rt_table_with_owner(self) -> None:
         user = Fixtures.next_user(is_active=True)
         self.get_proxy().put_user(data=user)
         application = Fixtures.next_application(application_id=user.user_id)

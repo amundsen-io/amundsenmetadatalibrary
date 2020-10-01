@@ -38,8 +38,8 @@ class JanusGraphGremlinProxy(AbstractGremlinProxy):
         driver_remote_connection_options.update(traversal_source=traversal_source)
 
         # use _key
-        super().__init__(key_property_name='_key',
-                         driver_remote_connection_options=driver_remote_connection_options)
+        AbstractGremlinProxy.__init__(self, key_property_name='_key',
+                                      driver_remote_connection_options=driver_remote_connection_options)
 
     @classmethod
     @overrides

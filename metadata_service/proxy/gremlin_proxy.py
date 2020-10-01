@@ -25,9 +25,7 @@ from amundsen_gremlin.gremlin_model import (
 from amundsen_gremlin.gremlin_shared import \
     append_traversal as _append_traversal  # TODO: rename the references
 from amundsen_gremlin.gremlin_shared import (
-    make_cluster_uri, make_column_uri,
-    make_database_uri, make_description_uri,
-    make_schema_uri, make_table_uri
+    make_column_uri, make_description_uri
 )
 from amundsen_gremlin.neptune_bulk_loader.gremlin_model_converter import (
     ensure_vertex_type
@@ -119,7 +117,9 @@ def get_cardinality_for(_entity_type_or_enum: Union[VertexTypes, EdgeTypes, Vert
     properties = _entity_type.properties_as_map()
 
     # TODO: this will expose missing properties
-    assert name in properties, f'missing {name} property in {_entity_type_or_enum} {properties}'
+    if name not in properties:
+        raise AssertionError(f'missing {name} property in {_entity_type_or_enum} {properties}')
+
     maybe = properties[name].cardinality
     if isinstance(_entity_type, VertexType):
         return maybe.value if maybe is not None else Cardinality.single
@@ -200,12 +200,14 @@ class ClientQueryExecutor(ExecuteQuery):
     def __call__(self, query: Union[str, Traversal], get: Callable[[ResultSet], V], *,  # noqa: F811
                  bindings: Optional[Mapping[str, Any]] = None) -> V:
         if isinstance(query, Traversal):
-            assert bindings is None, f'expected bindings to be none'
+            if bindings is not None:
+                raise AssertionError(f'expected bindings to be none')
             query_text = self.traversal_translator(query)
         else:
             query_text = query
 
-        assert isinstance(query_text, str), f'expected str'
+        if not isinstance(query_text, str):
+            raise AssertionError(f'expected str')
         result_set = self.client.submit(query_text, bindings)
         return get(result_set)
 
@@ -413,7 +415,9 @@ def _is_select_traversal(g: GraphTraversal) -> Optional[str]:
 
 def _vertex_property(*, g: GraphTraversal, name: str, value: Any, cardinality: Optional[Cardinality] = None,
                      label: Optional[VertexTypes] = None) -> GraphTraversal:
-    assert (cardinality is not None) != (label is not None), 'must pass one of label or cardinality'
+
+    if (cardinality is None) and (label is None):
+        raise AssertionError('must pass one of label or cardinality')
     if cardinality is not None:
         _cardinality = cardinality
     elif label is not None:
@@ -456,7 +460,9 @@ def _V(label: Union[str, VertexTypes, VertexType], key: Optional[Union[str, Text
         g = g.V(id)
     elif key is not None:
         # let's support predicates on the key, but need to limit it to either the test_shard (or unsharded perhaps)
-        assert key_property_name, f'expected key_property_name'
+
+        if key_property_name is None:
+            raise AssertionError('expected key_property_name')
         g = g.V().has(get_label_from(label), key_property_name, key)
         properties.setdefault(WellKnownProperties.TestShard.value.name, get_shard())
     else:
@@ -482,17 +488,21 @@ def _has(*, g: Traversal, label: Union[None, str, VertexTypes, EdgeTypes, Vertex
     """
     Matches a vertex or edge with the given label and key
     """
-    assert label is not None or key is not None or properties, 'at least label or key or properties must be present'
+
+    if (label is None) and (key is None) and (properties is None):
+        raise AssertionError('at least label or key or properties must be present')
     if label is not None:
         _label = get_label_from(label)
         if key is None:
             g = g.hasLabel(_label)
         else:
-            assert key_property_name is not None, 'must supply key_property_name if supplying key'
+            if key_property_name is None:
+                raise AssertionError('must supply key_property_name if supplying key')
             # you can have key be a predicate, like within('foo','bar') or such
             g = g.has(_label, key_property_name, key)
     elif key is not None:
-        assert key_property_name is not None, 'must supply key_property_name if supplying key'
+        if key_property_name is None:
+            raise AssertionError('must supply key_property_name if supplying key')
         g = g.has(key_property_name, key)
 
     # don't usually need to blend in the shard for test isolation (since _has almost always is used at the end of a
@@ -514,7 +524,8 @@ def _upsert(*, executor: ExecuteQuery, execute: Callable[[ResultSet], TYPE] = Fr
             traversal_if_exists: Optional[Traversal] = None, traversal_if_add: Optional[Traversal] = None,
             traversal: Optional[Traversal] = __.id(), **properties: Any) -> TYPE:
 
-    assert isinstance(label, (VertexTypes, VertexType)), f'expected label to be a VertexType or VertexTypes: {label}'
+    if not isinstance(label, (VertexTypes, VertexType)):
+        raise AssertionError(f'expected label to be a VertexType or VertexTypes: {label}')
     if isinstance(label, VertexTypes):
         id = label.value.id(key=key, **properties)
     elif isinstance(label, VertexType):
@@ -541,7 +552,7 @@ def _upsert(*, executor: ExecuteQuery, execute: Callable[[ResultSet], TYPE] = Fr
     return executor(query=g, get=execute)
 
 
-def _link(*, executor: ExecuteQuery, execute: Optional[Callable[[ResultSet], TYPE]] = None,
+def _link(*, executor: ExecuteQuery, execute: Optional[Callable[[ResultSet], TYPE]] = None,  # noqa: C901
           g: GraphTraversalSource, edge_label: Union[EdgeTypes, EdgeType], key_property_name: Optional[str] = None,
           vertex1_label: Optional[Union[str, VertexTypes]] = None, vertex1_key: Optional[str] = None,
           vertex2_label: Optional[Union[str, VertexTypes]] = None, vertex2_key: Optional[str] = None,
@@ -560,26 +571,30 @@ def _link(*, executor: ExecuteQuery, execute: Optional[Callable[[ResultSet], TYP
 
     """
 
-    assert (vertex1_label is not None and vertex1_key is not None) != (vertex1_id is not None), \
-        f'pass either vertex1_label and vertex1_key or vertex1_id, but not both'
-    assert (vertex2_label is not None and vertex2_key is not None) != (vertex2_id is not None), \
-        f'pass either vertex2_label and vertex2_key or vertex2_id, but not both'
+    if (vertex1_label is not None and vertex1_key is not None) == (vertex1_id is not None):
+        raise AssertionError(f'pass either vertex1_label and vertex1_key or vertex1_id, but not both')
+    if (vertex2_label is not None and vertex2_key is not None) == (vertex2_id is not None):
+        raise AssertionError(f'pass either vertex2_label and vertex2_key or vertex2_id, but not both')
 
     # Return the raw id of a vertex
     if vertex1_id is None:
-        assert key_property_name is not None and vertex1_label is not None  # mypy
+        if (key_property_name is None) or (vertex1_label is None):
+            raise AssertionError(f'expected both key_property_name and vertex1_label')
         # we used to query to find this, but now that we're deterministically generating them we can do:
         vertex1_id = ensure_vertex_type(vertex1_label).id(**{key_property_name: vertex1_key})
         # but let's query to ensure it exists (which the previous pattern also ensured
         executor(query=g.V(vertex1_id), get=FromResultSet.getOnly)
 
     if vertex2_id is None:
-        assert key_property_name is not None and vertex2_label is not None  # mypy
+        if (key_property_name is None) or (vertex2_label is None):
+            raise AssertionError(f'expected both key_property_name and vertex2_label')
         vertex2_id = ensure_vertex_type(vertex2_label).id(**{key_property_name: vertex2_key})
         executor(query=g.V(vertex2_id), get=FromResultSet.getOnly)
 
-    assert vertex1_id is not None and vertex2_id is not None, \
-        f'vertex1_label={vertex1_label}, vertex1_key={vertex1_key} or vertex2_label={vertex2_label}, vertex2_key={vertex2_key} either does not exist! vertex1_id={vertex1_id}, vertex2_id={vertex2_id}'  # noqa: E501
+    if (vertex1_id is None) or (vertex2_id is None):
+        raise AssertionError(f'vertex1_label={vertex1_label}, vertex1_key={vertex1_key} \
+                               or vertex2_label={vertex2_label}, vertex2_key={vertex2_key} either does not exist! \
+                               vertex1_id={vertex1_id}, vertex2_id={vertex2_id}')
 
     _label = get_label_from(edge_label)
 
@@ -607,7 +622,7 @@ def _link(*, executor: ExecuteQuery, execute: Optional[Callable[[ResultSet], TYP
     return executor(query=g, get=execute if execute is not None else FromResultSet.getOnly)
 
 
-def _expire_other_links(
+def _expire_other_links(  # noqa: C901
         *, executor: ExecuteQuery, g: GraphTraversalSource,
         edge_label: EdgeTypes, key_property_name: Optional[str] = None,
         vertex1_label: Optional[Union[str, VertexTypes]] = None, vertex1_key: Optional[str] = None,
@@ -621,14 +636,15 @@ def _expire_other_links(
     vertex types
     """
 
-    assert (vertex1_label is not None) != (vertex1_id is not None), \
-        f'pass either vertex1_label and vertex1_key or vertex1_id, but not both'
-    assert (vertex2_label is not None) != (vertex2_id is not None), \
-        f'pass either vertex2_label and vertex2_key or vertex2_id, but not both'
+    if (vertex1_label is not None) == (vertex1_id is not None):
+        raise AssertionError('pass either vertex1_label and vertex1_key or vertex1_id, but not both')
+    if (vertex2_label is not None) == (vertex2_id is not None):
+        raise AssertionError('pass either vertex2_label and vertex2_key or vertex2_id, but not both')
 
     # Return the raw id of a vertex
     if vertex1_id is None:
-        assert key_property_name is not None and vertex1_label is not None  # mypy
+        if (key_property_name is None) or (vertex1_label is None):
+            raise AssertionError(f'expected both key_property_name and vertex1_label')
         # we used to query to find this, but now that we're deterministically generating them we can do:
         vertex1_id = ensure_vertex_type(vertex1_label).id(**{key_property_name: vertex1_key})
         # but let's query to ensure it exists (which the previous pattern also ensured
@@ -636,14 +652,16 @@ def _expire_other_links(
 
     if vertex2_id is None and vertex2_key is not None:
         # TODO support getting more than one here
-        assert key_property_name is not None and vertex2_label is not None  # mypy
+        if (key_property_name is None) or (vertex2_label is None):
+            raise AssertionError(f'expected both key_property_name and vertex2_label')
         vertex2_id = ensure_vertex_type(vertex2_label).id(**{key_property_name: vertex2_key})
         executor(query=g.V(vertex2_id), get=FromResultSet.getOnly)
 
     if vertex1_id is not None:
         g = g.V(vertex1_id)
     else:
-        assert vertex1_label is not None  # appease mypy
+        if vertex1_label is None:
+            raise AssertionError(f'expected vertex1_label')
         g = g.V().hasLabel(get_label_from(vertex1_label))
 
     # Traverse the edges from vertex 1
@@ -656,7 +674,8 @@ def _expire_other_links(
     # Find edges to vertexes with the label but an id that isn't vertex 2
     _filter = __.inV() if edge_direction == Direction.OUT else __.outV()
     if vertex2_id is None:
-        assert vertex2_label is not None  # appease mypy
+        if vertex2_label is None:
+            raise AssertionError(f'expected vertex2_label')
         g = g.filter(_filter)
     elif isinstance(vertex2_id, (int, str)):
         g = g.filter(_append_traversal(_filter, __.id().is_(P.neq(vertex2_id))))
@@ -678,27 +697,30 @@ def _expire_link(*, executor: ExecuteQuery, g: GraphTraversalSource,
     Expires link between two vertices. Refer to vertices either by supplying
     label + key, or by providing the gremlin vertex ids directly
     """
-    assert (vertex1_label is not None and vertex1_key is not None) != (vertex1_id is not None), \
-        f'pass either vertex1_label and vertex1_key or vertex1_id, but not both'
-    assert (vertex2_label is not None and vertex2_key is not None) != (vertex2_id is not None), \
-        f'pass either vertex2_label and vertex2_key or vertex2_id, but not both'
+    if (vertex1_label is not None and vertex1_key is not None) == (vertex1_id is not None):
+        raise AssertionError(f'pass either vertex1_label and vertex1_key or vertex1_id, but not both')
+    if (vertex2_label is not None and vertex2_key is not None) == (vertex2_id is not None):
+        raise AssertionError(f'pass either vertex2_label and vertex2_key or vertex2_id, but not both')
 
     # Return the raw ids of the vertices
     if vertex1_id is None:
-        assert key_property_name is not None and vertex1_label is not None  # mypy
+        if (key_property_name is None) or (vertex1_label is None):
+            raise AssertionError(f'expected both key_property_name and vertex1_label')
         # we used to query to find this, but now that we're deterministically generating them we can do:
         vertex1_id = ensure_vertex_type(vertex1_label).id(**{key_property_name: vertex1_key})
         # but let's query to ensure it exists (which the previous pattern also ensured
         executor(query=g.V(vertex1_id), get=FromResultSet.getOnly)
 
     if vertex2_id is None:
-        assert key_property_name is not None and vertex2_label is not None  # mypy
+        if (key_property_name is None) or (vertex2_label is None):
+            raise AssertionError(f'expected both key_property_name and vertex2_label')
         # we used to query to find this, but now that we're deterministically generating them we can do:
         vertex2_id = ensure_vertex_type(vertex2_label).id(**{key_property_name: vertex2_key})
         # but let's query to ensure it exists (which the previous pattern also ensured
         executor(query=g.V(vertex2_id), get=FromResultSet.getOnly)
 
-    assert vertex1_id is not None and vertex2_id is not None and vertex1_id != vertex2_id
+    if (vertex1_id is None) or (vertex2_id is None) or (vertex1_id == vertex2_id):
+        raise AssertionError(f'pass either vertex1_label and vertex1_key or vertex1_id, but not both')
 
     g = g.V(vertex1_id)
     g = g.bothE(get_label_from(edge_label)).where(bothV().hasId(vertex2_id))
@@ -719,8 +741,8 @@ def _edges_between(*, g: Traversal, label: Union[None, str, EdgeTypes, EdgeType]
     vertex2_alias = _is_select_traversal(vertex1)
     g = _append_traversal(g, vertex2)
 
-    assert vertex1_alias is not None and vertex2_alias != vertex1_alias, \
-        f'vertex1_alias={vertex1_alias}, vertex2_alias={vertex2_alias}'
+    if (vertex1_alias is None) or (vertex1_alias == vertex2_alias):
+        raise AssertionError(f'vertex1_alias={vertex1_alias}, vertex2_alias={vertex2_alias}')
 
     if label is not None:
         g = g.bothE(get_label_from(label))
@@ -944,7 +966,7 @@ class AbstractGremlinProxy(BaseProxy):
     def get_relationship(self, *, node_type1: str, node_key1: str, node_type2: str, node_key2: str) -> List[Any]:
         """
         This method is largely meant for testing. It returns any relationships between
-        two nodes, with no regard for whether a relationship is expired
+        two nodes
 
         See AbstractProxyTest
         """
@@ -1008,64 +1030,6 @@ class AbstractGremlinProxy(BaseProxy):
             user.manager_fullname = _safe_get(managers[0], 'full_name', default=None) if managers else None
             users.append(user)
         return users
-
-    @timer_with_counter
-    @overrides
-    def put_user(self, *, data: User) -> None:
-        with self.query_executor() as executor:
-            return self._put_user(data=data, executor=executor)
-
-    def _put_user(self, *, data: User, executor: ExecuteQuery) -> None:
-        if data.user_id is None:
-            raise NotImplementedError(f'Must pass some user_id to derive vertex key')
-        _upsert(executor=executor, g=self.g, label=VertexTypes.User, key=data.user_id,
-                key_property_name=self.key_property_name, **_properties_except(data))
-
-    @timer_with_counter
-    @overrides
-    def post_users(self, *, data: List[User]) -> None:
-        with self.query_executor() as executor:
-            for each in data:
-                self._put_user(data=each, executor=executor)
-
-    @timer_with_counter
-    @overrides
-    def put_app(self, *, data: Application) -> None:
-        with self.query_executor() as executor:
-            return self._put_app(data=data, executor=executor)
-
-    def _put_app(self, *, data: Application, executor: ExecuteQuery) -> None:
-        _upsert(executor=executor, g=self.g, label=VertexTypes.Application, key=data.id,
-                key_property_name=self.key_property_name, **_properties_except(data))
-
-    @timer_with_counter
-    @overrides
-    def post_apps(self, *, data: List[Application]) -> None:
-        with self.query_executor() as executor:
-            for each in data:
-                self._put_app(data=each, executor=executor)
-
-    def _put_database(self, *, database: str, executor: ExecuteQuery) -> None:
-        database_uri = make_database_uri(database_name=database)
-        _upsert(executor=executor, g=self.g, label=VertexTypes.Database, key=database_uri,
-                key_property_name=self.key_property_name, name=database)
-
-    def _put_cluster(self, *, database_uri: str, cluster: str, executor: ExecuteQuery) -> None:
-        cluster_uri: str = make_cluster_uri(database_uri=database_uri, cluster_name=cluster)
-        node_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Cluster, key=cluster_uri,
-                               key_property_name=self.key_property_name, name=cluster)
-
-        _link(executor=executor, g=self.g, edge_label=EdgeTypes.Cluster, key_property_name=self.key_property_name,
-              vertex1_label=VertexTypes.Database, vertex1_key=database_uri, vertex2_id=node_id)
-
-    def _put_schema(self, *, cluster_uri: str, schema: str, executor: ExecuteQuery) -> None:
-        schema_uri: str = make_schema_uri(cluster_uri=cluster_uri, schema_name=schema)
-
-        node_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Schema, key=schema_uri,
-                               key_property_name=self.key_property_name, name=schema)
-
-        _link(executor=executor, g=self.g, edge_label=EdgeTypes.Schema, key_property_name=self.key_property_name,
-              vertex1_label=VertexTypes.Cluster, vertex1_key=cluster_uri, vertex2_id=node_id)
 
     @timer_with_counter
     @overrides
@@ -1224,128 +1188,6 @@ class AbstractGremlinProxy(BaseProxy):
 
     @timer_with_counter
     @overrides
-    def put_table(self, *, table: Table) -> None:
-        with self.query_executor() as executor:
-            return self._put_table(table=table, executor=executor)
-
-    def _put_table(self, *, table: Table, executor: ExecuteQuery) -> None:
-        # note: I hate this API where we pass a name, get back nothing and then recapitulate the key logic.  -
-        self._put_database(database=table.database, executor=executor)
-        database_uri: str = make_database_uri(database_name=table.database)
-
-        self._put_cluster(cluster=table.cluster, database_uri=database_uri, executor=executor)
-        cluster_uri: str = make_cluster_uri(database_uri=database_uri, cluster_name=table.cluster)
-
-        self._put_schema(schema=table.schema, cluster_uri=cluster_uri, executor=executor)
-        schema_uri: str = make_schema_uri(cluster_uri=cluster_uri, schema_name=table.schema)
-
-        table_uri: str = make_table_uri(schema_uri=schema_uri, table_name=table.name)
-        table_vertex_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Table, key=table_uri,
-                                       key_property_name=self.key_property_name, is_view=table.is_view, name=table.name)
-
-        _link(executor=executor, g=self.g, edge_label=EdgeTypes.Table, key_property_name=self.key_property_name,
-              vertex1_label=VertexTypes.Schema, vertex1_key=schema_uri, vertex2_id=table_vertex_id)
-
-        if table.table_writer:
-            self._put_app_table_relation(executor=executor, app_key=table.table_writer.id, table_uri=table_uri)
-
-        # Attach table description
-        if table.description is not None:
-            self._put_table_description(executor=executor, table_uri=table_uri, description=table.description)
-
-        for description in table.programmatic_descriptions:
-            self._put_programmatic_table_description(executor=executor, table_uri=table_uri, description=description)
-
-        # create tags
-        for tag in table.tags:
-            self._add_tag(executor=executor, id=table_uri, tag=tag.tag_name)
-
-        self._put_updated_timestamp(executor=executor)
-
-        # create columns
-        for column in table.columns:
-            self._put_column(executor=executor, table_uri=table_uri, column=column)
-
-    def _put_app_table_relation(self, *, app_key: str, table_uri: str, executor: ExecuteQuery) -> None:
-        # try the usual app, but also fallback to a non-standard name (prefixed by app_)
-        for key in (app_key, f'app-{app_key}'):
-            count = executor(query=_V(g=self.g, label=VertexTypes.Application, key=key).count(),
-                             get=FromResultSet.getOnly)
-            if count > 0:
-                _link(executor=executor, g=self.g, edge_label=EdgeTypes.Generates,
-                      key_property_name=self.key_property_name,
-                      vertex1_label=VertexTypes.Application, vertex1_key=key,
-                      vertex2_label=VertexTypes.Table, vertex2_key=table_uri)
-
-                _expire_other_links(executor=executor, g=self.g, edge_label=EdgeTypes.Generates,
-                                    key_property_name=self.key_property_name,
-                                    vertex1_label=VertexTypes.Table, vertex1_key=table_uri,
-                                    vertex2_label=VertexTypes.Application, vertex2_key=key,
-                                    edge_direction=Direction.IN)
-                return
-
-        # if app isn't found, the owner may be a user
-        if self._get_user(executor=executor, id=app_key):
-            LOGGER.debug(f'{app_key} is not a real app but it was marked as owner: {table_uri}')
-            self._add_owner(executor=executor, table_uri=table_uri, owner=app_key)
-            return
-
-        LOGGER.debug(f'{app_key} is not a real app nor an owner: {table_uri}')
-
-    def _put_updated_timestamp(self, executor: ExecuteQuery) -> datetime:
-        t = timestamp()
-        _upsert(executor=executor, g=self.g, label=VertexTypes.Updatedtimestamp,
-                key=AMUNDSEN_TIMESTAMP_KEY, key_property_name=self.key_property_name, latest_timestamp=t)
-        return t
-
-    @timer_with_counter
-    @overrides
-    def post_tables(self, *, tables: List[Table]) -> None:
-        """
-        Update table with user-supplied data.
-
-        Add indexes for all node types
-        :param table: new table to be added
-        """
-        with self.query_executor() as executor:
-            for each in tables:
-                self._put_table(table=each, executor=executor)
-
-    @timer_with_counter
-    @overrides
-    def put_column(self, *, table_uri: str, column: Column) -> None:
-        """
-        Update column with user-supplied data
-        :param table_uri: Table uri (key in Neo4j)
-        :param column: new column to be added
-        """
-        with self.query_executor() as executor:
-            return self._put_column(table_uri=table_uri, column=column, executor=executor)
-
-    def _put_column(self, *, table_uri: str, column: Column, executor: ExecuteQuery) -> None:
-        # TODO: could do these async
-        column_uri: str = make_column_uri(table_uri=table_uri, column_name=column.name)
-
-        vertex_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Column, key=column_uri,
-                                 key_property_name=self.key_property_name,
-                                 **_properties_of(column, 'name', 'col_type', 'sort_order'))
-
-        _link(
-            executor=executor, g=self.g, edge_label=EdgeTypes.Column, key_property_name=self.key_property_name,
-            vertex1_label=VertexTypes.Table, vertex1_key=table_uri, vertex2_id=vertex_id)
-
-        # Add the description if present
-        if column.description is not None:
-            self._put_column_description(
-                executor=executor, table_uri=table_uri, column_name=column.name, description=column.description)
-
-        # stats are handled elsewhere but it would be weird to get
-        # them here
-        if column.stats:
-            raise RuntimeError(f'stats, data_subject_type, data_storage_security are handled elsewhere!')
-
-    @timer_with_counter
-    @overrides
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
         with self.query_executor() as executor:
             return self._delete_owner(table_uri=table_uri, owner=owner, executor=executor)
@@ -1420,34 +1262,6 @@ class AbstractGremlinProxy(BaseProxy):
         _link(executor=executor, g=self.g, edge_label=EdgeTypes.Description, key_property_name=self.key_property_name,
               vertex1_label=VertexTypes.Table, vertex1_key=table_uri,
               vertex2_label=VertexTypes.Description, vertex2_key=desc_key)
-
-    @timer_with_counter
-    @overrides
-    def put_programmatic_table_description(self, *, table_uri: str, description: ProgrammaticDescription) -> None:
-        """
-        Update table description with one from user
-        :param table_uri: Table uri (key in Neo4j)
-        :param Description: description object with source and string description
-        """
-        with self.query_executor() as executor:
-            return self._put_programmatic_table_description(
-                table_uri=table_uri, description=description, executor=executor)
-
-    def _put_programmatic_table_description(self, *, table_uri: str, description: ProgrammaticDescription,
-                                            executor: ExecuteQuery) -> None:
-        g = _V(g=self.g, label=VertexTypes.Table, key=table_uri).id()
-        table_vertex_id = executor(query=g, get=FromResultSet.getOptional)
-        if not table_vertex_id:
-            # if the table doesn't exist, don't try to import a description
-            return None
-
-        desc_key = make_description_uri(subject_uri=table_uri, source=description.source)
-        vertex_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Description, key=desc_key,
-                                 key_property_name=self.key_property_name, description=description.text,
-                                 source=description.source)
-
-        _link(executor=executor, g=self.g, edge_label=EdgeTypes.Description, key_property_name=self.key_property_name,
-              vertex1_id=table_vertex_id, vertex2_id=vertex_id)
 
     @timer_with_counter
     @overrides
@@ -1606,14 +1420,10 @@ class AbstractGremlinProxy(BaseProxy):
             ))
         return popular_tables
 
-    # @timer_with_counter
-    # @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
     def _get_popular_tables_uris(self, num_entries: int) -> List[str]:
         """
         Retrieve popular table uris. Will provide tables with top x popularity score.
         Popularity score = number of distinct readers * log(total number of reads)
-        The result of this method will be cached based on the key (num_entries), and the cache will be expired based on
-        _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC
 
         For score computation, it uses logarithm on total number of reads so that score won't be affected by small
         number of users reading a lot of times.
@@ -1769,16 +1579,6 @@ class AbstractGremlinProxy(BaseProxy):
             _expire_link(executor=executor, g=self.g, edge_label=edge_type, key_property_name=self.key_property_name,
                          vertex1_label=VertexTypes.User, vertex1_key=user_id,
                          vertex2_label=vertex_type, vertex2_key=id)
-
-    @timer_with_counter
-    @overrides
-    def add_read_count(self, *, table_uri: str, user_id: str, read_count: int) -> None:
-        # TODO: use READ_BY instead of READ edges
-        with self.query_executor() as executor:
-            _link(executor=executor, g=self.g, edge_label=EdgeTypes.Read, key_property_name=self.key_property_name,
-                  vertex1_label=VertexTypes.User, vertex1_key=user_id,
-                  vertex2_label=VertexTypes.Table, vertex2_key=table_uri,
-                  read_count=read_count)
 
     @timer_with_counter
     @overrides
@@ -1945,7 +1745,8 @@ class GenericGremlinProxy(AbstractGremlinProxy):
         driver_remote_connection_options = dict(driver_remote_connection_options)
 
         # as others, we repurpose host a url
-        assert isinstance(host, str), f'expected a URL'
+        if not isinstance(host, str):
+            raise AssertionError('expected a URL')
         self.url = host
 
         # port should be part of that url

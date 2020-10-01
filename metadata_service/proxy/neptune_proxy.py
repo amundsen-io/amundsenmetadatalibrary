@@ -3,20 +3,15 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Mapping, Optional, Type, Union
+from typing import Any, Dict, Mapping, Optional, Type, Union
 from urllib.parse import urlsplit, urlunsplit
 
 import boto3
 import gremlin_python.driver.protocol
 import requests
-from amundsen_common.models.table import Table, Application
-from amundsen_common.models.user import User
 from amundsen_gremlin.gremlin_model import WellKnownProperties
 from amundsen_gremlin.neptune_bulk_loader.api import (
     NeptuneBulkLoaderApi, get_neptune_graph_traversal_source_factory
-)
-from amundsen_gremlin.neptune_bulk_loader.gremlin_model_converter import (
-    GetGraph
 )
 from amundsen_gremlin.script_translator import ScriptTranslatorTargetNeptune
 from amundsen_gremlin.test_and_development_shard import get_shard
@@ -122,8 +117,8 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
         self.neptune_graph_traversal_source_factory = get_neptune_graph_traversal_source_factory(session=password,
                                                                                                  neptune_url=host)
 
-        super().__init__(key_property_name='key',
-                         driver_remote_connection_options=driver_remote_connection_options)
+        AbstractGremlinProxy.__init__(self, key_property_name='key',
+                                      driver_remote_connection_options=driver_remote_connection_options)
 
     @classmethod
     @overrides
@@ -278,30 +273,3 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
                               get=FromResultSet.iterate)
         assert not leftover, f'we have some leftover: {leftover}'
         LOGGER.warning('COMPLETED DROP OF ALL NODES')
-
-    @overrides
-    def post_users(self, *, data: List[User]) -> None:
-        entities = GetGraph.user_entities(user_data=data, g=self.neptune_graph_traversal_source_factory())
-        self.neptune_bulk_loader_api.bulk_load_entities(entities=entities)
-
-    @overrides
-    def put_user(self, *, data: User) -> None:
-        self.post_users(data=[data])
-
-    @overrides
-    def put_app(self, *, data: Application) -> None:
-        self.post_apps(data=[data])
-
-    @overrides
-    def post_apps(self, *, data: List[Application]) -> None:
-        entities = GetGraph.app_entities(app_data=data, g=self.neptune_graph_traversal_source_factory())
-        self.neptune_bulk_loader_api.bulk_load_entities(entities=entities)
-
-    @overrides
-    def put_table(self, *, table: Table) -> None:
-        self.post_tables(tables=[table])
-
-    @overrides
-    def post_tables(self, *, tables: List[Table]) -> None:
-        entities = GetGraph.table_entities(table_data=tables, g=self.neptune_graph_traversal_source_factory())
-        self.neptune_bulk_loader_api.bulk_load_entities(entities=entities)
