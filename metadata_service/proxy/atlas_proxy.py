@@ -169,7 +169,7 @@ class AtlasProxy(BaseProxy):
         \.
         (?P<entity_type>[^.]*)
         \.
-        (?P<user_id>[^.]*)\.bookmark
+        (?P<user_id>.*)\.bookmark
         \@
         (?P<cluster>.*)
         $
