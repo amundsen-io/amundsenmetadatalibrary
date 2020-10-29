@@ -169,32 +169,9 @@ class Data:
                     "displayText": "deleted_owned_by"
                 }
             ],
-            'partitions': [
-                {
-                    "entityStatus": "INACTIVE",
-                    "relationshipStatus": "ACTIVE",
-                    "guid": "000",
-                    "displayText": "active_partition"
-                },
-                {
-                    "entityStatus": "ACTIVE",
-                    "relationshipStatus": "ACTIVE",
-                    "guid": "111",
-                    "displayText": "active_partition"
-                },
-                {
-                    "entityStatus": "ACTIVE",
-                    "relationshipStatus": "ACTIVE",
-                    "guid": "222",
-                    "displayText": "active_partition"
-                },
-                {
-                    "entityStatus": "ACTIVE",
-                    "relationshipStatus": "ACTIVE",
-                    "guid": "333",
-                    "displayText": "active_partition"
-                }
-            ]
+            'partitions': [dict(displayText=p.get('attributes').get('name'),
+                                entityStatus=p.get('status'),
+                                relationshipStatus='ACTIVE') for p in partitions]
         },
     }
     entity1.update(classification_entity)
