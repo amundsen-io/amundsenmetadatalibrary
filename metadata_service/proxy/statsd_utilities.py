@@ -33,6 +33,11 @@ def timer_with_counter(f: Callable) -> Any:
     :return:
     """
     def wrapper(*args: Any, **kwargs: Any) -> Any:
+        """
+        Decorator for a function.
+
+        Args:
+        """
         statsd_client = _get_statsd_client(prefix=f.__module__)
         if not statsd_client:
             return f(*args, **kwargs)

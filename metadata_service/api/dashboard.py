@@ -25,11 +25,24 @@ class DashboardDetailAPI(BaseAPI):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super().__init__(DashboardSchema, 'dashboard', self.client)
 
     @swag_from('swagger_doc/dashboard/detail_get.yml')
     def get(self, *, id: Optional[str] = None) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Get a single record by id.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+        """
         try:
             return super().get(id=id)
         except NotFoundException:
@@ -42,6 +55,12 @@ class DashboardDescriptionAPI(BaseAPI):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super().__init__(DescriptionSchema, 'dashboard_description', self.client)
 
@@ -81,6 +100,12 @@ class DashboardBadgeAPI(Resource):
     on Dashboard
     """
     def __init__(self) -> None:
+        """
+        Initialize the client.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('category', type=str, required=True)
@@ -90,6 +115,14 @@ class DashboardBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Updates a badge
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            badge: (str): write your description
+        """
         args = self.parser.parse_args()
 
         category = args.get('category', '')
@@ -101,6 +134,14 @@ class DashboardBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_delete.yml')
     def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Delete a badge
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            badge: (str): write your description
+        """
         args = self.parser.parse_args()
         category = args.get('category', '')
 
@@ -117,6 +158,12 @@ class DashboardTagAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('tag_type', type=str, required=False, default='default')

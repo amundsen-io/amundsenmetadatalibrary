@@ -15,23 +15,47 @@ BADGE_NAME = 'alpha'
 
 class TestDashboardBadgeAPI(BasicTestCase):
     def setUp(self) -> None:
+        """
+        Sets the mock.
+
+        Args:
+            self: (todo): write your description
+        """
         super().setUp()
 
         self.mock_client = patch('metadata_service.api.dashboard.get_proxy_client')
         self.mock_proxy = self.mock_client.start().return_value = Mock()
 
     def tearDown(self) -> None:
+        """
+        Stops the client.
+
+        Args:
+            self: (todo): write your description
+        """
         super().tearDown()
 
         self.mock_client.stop()
 
     def test_block_bad_badge_name(self) -> None:
+        """
+        Test if bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad
+
+        Args:
+            self: (todo): write your description
+        """
         self.app.config['WHITELIST_BADGES'] = []
         response = self.app.test_client().put(f'/dashboard/{DASHBOARD_NAME}/badge/{BADGE_NAME}?category=table_status')
 
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_block_badge_missing_category(self) -> None:
+        """
+        Test for bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad bad
+
+        Args:
+            self: (todo): write your description
+        """
         self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
                                                      category='table_status')]
         response = self.app.test_client().put(f'/dashboard/{DASHBOARD_NAME}/badge/{BADGE_NAME}')
@@ -39,6 +63,12 @@ class TestDashboardBadgeAPI(BasicTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_badge_with_category(self) -> None:
+        """
+        Respond to see if bad bad bad bad bad.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
                                                      category='table_status')]
         response = self.app.test_client().put(f'/dashboard/{DASHBOARD_NAME}/badge/{BADGE_NAME}?category=table_status')

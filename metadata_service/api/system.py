@@ -16,10 +16,22 @@ class Neo4jDetailAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/neo4j/detail_get.yml')
     def get(self) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Get the last timestamp.
+
+        Args:
+            self: (todo): write your description
+        """
         last_updated_ts = self.client.get_latest_updated_ts()
         if last_updated_ts is not None:
             return {'neo4j_latest_timestamp': int(last_updated_ts)}, HTTPStatus.OK

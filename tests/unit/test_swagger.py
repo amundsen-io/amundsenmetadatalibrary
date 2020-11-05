@@ -11,24 +11,54 @@ from metadata_service import create_app
 class TestSwagger(unittest.TestCase):
 
     def setUp(self) -> None:
+        """
+        Sets the application configuration.
+
+        Args:
+            self: (todo): write your description
+        """
         config_module_class = 'metadata_service.config.LocalConfig'
         self.app = create_app(config_module_class=config_module_class)
         self.app_context = self.app.app_context()
         self.app_context.push()
 
     def tearDown(self) -> None:
+        """
+        Starts the application.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app_context.pop()
 
     def test_should_get_swagger_docs(self) -> None:
+        """
+        Determine the swagger document is swagger.
+
+        Args:
+            self: (todo): write your description
+        """
         response = self.app.test_client().get('/apidocs/')
         self.assertEqual(response.status_code, 200)
 
     def test_should_get_swagger_json(self) -> None:
+        """
+        Check if swagger swagger swagger is valid.
+
+        Args:
+            self: (todo): write your description
+        """
         response = self.app.test_client().get('/apispec_1.json')
 
         self.assertEqual(response.status_code, 200)
 
     def test_should_have_a_component_from_each_reference(self) -> None:
+        """
+        Determine if we have a reference a component.
+
+        Args:
+            self: (todo): write your description
+        """
         response = self.app.test_client().get('/apispec_1.json')
 
         for reference in list(TestSwagger.find('$ref', response.json)):
@@ -43,6 +73,12 @@ class TestSwagger(unittest.TestCase):
 
     # This is a requirement from Flasgger not Swagger
     def test_should_have_type_for_each_query_parameter(self) -> None:
+        """
+        Returns the response type of the test for the test type.
+
+        Args:
+            self: (todo): write your description
+        """
         response = self.app.test_client().get('/apispec_1.json')
 
         for request_params in list(TestSwagger.find('parameters', response.json)):
@@ -51,6 +87,12 @@ class TestSwagger(unittest.TestCase):
                     self.fail(f'The following query parameter is missing a type: {param}')
 
     def test_should_have_all_endpoints_in_swagger(self) -> None:
+        """
+        Check for swagger endpoints.
+
+        Args:
+            self: (todo): write your description
+        """
         paths_excluded_from_swagger = ['/apidocs/index.html', '/apispec_1.json', '/apidocs/',
                                        '/static/{filename}', '/flasgger_static/{filename}']
 
@@ -64,6 +106,13 @@ class TestSwagger(unittest.TestCase):
 
     @staticmethod
     def find(key: str, json_response: Dict[str, Any]) -> Any:
+        """
+        Find a dict of the key / b.
+
+        Args:
+            key: (tuple): write your description
+            json_response: (dict): write your description
+        """
         for json_key, json_value in json_response.items():
             if json_key == key:
                 yield json_value

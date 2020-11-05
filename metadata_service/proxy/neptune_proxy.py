@@ -36,6 +36,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _is_neptune_retryable_exception(exception: Exception) -> bool:
+    """
+    Return true if the retryable exception.
+
+    Args:
+        exception: (todo): write your description
+    """
     if not isinstance(exception, gremlin_python.driver.protocol.GremlinServerError):
         return False
     # TODO: maybe revert InternalFailureException retries later?
@@ -62,6 +68,22 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
                  password: Optional[Union[str, boto3.session.Session]] = None,
                  driver_remote_connection_options: Mapping[str, Any] = {},
                  neptune_bulk_loader_s3_bucket_name: Optional[str] = None) -> None:
+        """
+        Initialize connection.
+
+        Args:
+            self: (todo): write your description
+            host: (str): write your description
+            port: (int): write your description
+            user: (str): write your description
+            password: (str): write your description
+            Union: (todo): write your description
+            boto3: (todo): write your description
+            session: (todo): write your description
+            Session: (todo): write your description
+            driver_remote_connection_options: (todo): write your description
+            neptune_bulk_loader_s3_bucket_name: (todo): write your description
+        """
 
         driver_remote_connection_options = dict(driver_remote_connection_options)
         # port should be part of that url
@@ -123,11 +145,26 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
     @classmethod
     @overrides
     def script_translator(cls) -> Type[ScriptTranslatorTargetNeptune]:
+        """
+        Translator script script that script.
+
+        Args:
+            cls: (todo): write your description
+        """
         return ScriptTranslatorTargetNeptune
 
     def override_prepared_request_parameters(
             self, request_parameters: RequestParameters, *, method: Optional[str] = None,
             data: Optional[str] = None) -> httpclient.HTTPRequest:
+        """
+        Overrides the http request parameters.
+
+        Args:
+            self: (todo): write your description
+            request_parameters: (todo): write your description
+            method: (str): write your description
+            data: (todo): write your description
+        """
         http_request_param: Dict[str, Any] = dict(url=request_parameters.uri, headers=request_parameters.headers)
         if method is not None:
             http_request_param['method'] = method
@@ -145,15 +182,35 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
 
     @overrides
     def possibly_signed_ws_client_request_or_url(self) -> Union[httpclient.HTTPRequest, str]:
+        """
+        Return the http request url.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.override_prepared_request_parameters(self.endpoints.gremlin_endpoint().prepare_request())
 
     @classmethod
     @overrides
     def _is_retryable_exception(cls, *, method_name: str, exception: Exception) -> bool:
+        """
+        Return true if the given exception is raised.
+
+        Args:
+            cls: (callable): write your description
+            method_name: (str): write your description
+            exception: (todo): write your description
+        """
         # any method
         return _is_neptune_retryable_exception(exception) or isinstance(exception, ConnectionError)
 
     def is_healthy(self) -> None:
+        """
+        Determine if the request is signed.
+
+        Args:
+            self: (todo): write your description
+        """
         signed_request = self.override_prepared_request_parameters(self.endpoints.status_endpoint().prepare_request())
         http_client = httpclient.HTTPClient()
         # this will throw if the instance is really borked or we can't connect or we're not allowed (see
@@ -168,6 +225,14 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
             raise RuntimeError(f'status is unhealthy: {status}')
 
     def _non_standard_endpoint(self, scheme: str, path: str) -> Endpoint:
+        """
+        Return the endpoint endpoint for the given scheme.
+
+        Args:
+            self: (todo): write your description
+            scheme: (todo): write your description
+            path: (str): write your description
+        """
         return self.endpoints._Endpoints__endpoint(
             scheme, self.endpoints.neptune_endpoint, self.endpoints.neptune_port, path)
 
@@ -259,6 +324,12 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
 
     @overrides
     def drop(self) -> None:
+        """
+        Removes the shard from the db.
+
+        Args:
+            self: (todo): write your description
+        """
         test_shard = get_shard()
         g = self.g.V()
         if test_shard:

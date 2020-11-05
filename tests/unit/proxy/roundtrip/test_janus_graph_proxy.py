@@ -11,5 +11,12 @@ from .roundtrip_janusgraph_proxy import RoundtripJanusGraphProxy
 class JanusGraphGremlinProxyTest(
         abstract_gremlin_proxy_test_class(), unittest.TestCase):  # type: ignore
     def _create_gremlin_proxy(self, config: Mapping[str, Any]) -> RoundtripJanusGraphProxy:
+        """
+        Create a gremlin proxy proxy.
+
+        Args:
+            self: (todo): write your description
+            config: (todo): write your description
+        """
         # Don't use PROXY_HOST, PROXY_PORT, PROXY_PASSWORD.  They might not be JanusGraph
         return RoundtripJanusGraphProxy(host=config['JANUS_GRAPH_URL'])

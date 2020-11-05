@@ -16,16 +16,34 @@ from metadata_service.proxy.neo4j_proxy import Neo4jProxy
 
 class TestStatsdUtilities(unittest.TestCase):
     def setUp(self) -> None:
+        """
+        Initialize the application.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app = create_app(config_module_class='metadata_service.config.LocalConfig')
         self.app_context = self.app.app_context()
         self.app_context.push()
 
     def test_no_statsd_client(self) -> None:
+        """
+        Returns the statsd client.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(StatsClient, '__init__'):
             statsd_client = _get_statsd_client(prefix='foo')
             self.assertIsNone(statsd_client)
 
     def test_get_statsd_client(self) -> None:
+        """
+        Get statsd client.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(current_app, 'config') as mock_config, \
                 patch.object(StatsClient, '__init__', return_value=None) as mock_statsd_init:
             mock_config.return_value.single.return_value = True
@@ -48,6 +66,12 @@ class TestStatsdUtilities(unittest.TestCase):
             self.assertEqual(mock_statsd_init.call_count, 2)
 
     def test_with_neo4j_proxy(self) -> None:
+        """
+        Runs the test manager.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), \
                 patch.object(Neo4jProxy, '_execute_cypher_query'), \
                 patch.object(statsd_utilities, '_get_statsd_client') as mock_statsd_client:

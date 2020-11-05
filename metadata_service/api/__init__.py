@@ -14,6 +14,15 @@ LOGGER = logging.getLogger(__name__)
 
 class BaseAPI(Resource):
     def __init__(self, schema: Any, str_type: str, client: BaseProxy) -> None:
+        """
+        Initialize the schema.
+
+        Args:
+            self: (todo): write your description
+            schema: (todo): write your description
+            str_type: (str): write your description
+            client: (todo): write your description
+        """
         self.schema = schema
         self.client = client
         self.str_type = str_type
@@ -27,6 +36,13 @@ class BaseAPI(Resource):
 
     def get_with_kwargs(self, *, id: Optional[str] = None, **kwargs: Optional[Any]) \
             -> Iterable[Union[Mapping, int, None]]:
+        """
+        Get keyword arguments.
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+        """
         if id is not None:
             get_object = getattr(self.client, f'get_{self.str_type}')
             try:

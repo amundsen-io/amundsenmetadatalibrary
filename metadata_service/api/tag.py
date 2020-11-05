@@ -28,6 +28,12 @@ BADGE_TYPE = 'badge'
 
 class TagAPI(Resource):
     def __init__(self) -> None:
+        """
+        Initialize a proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super(TagAPI, self).__init__()
 
@@ -42,6 +48,13 @@ class TagAPI(Resource):
 
 class TagCommon:
     def __init__(self, client: BaseProxy) -> None:
+        """
+        Initialize the client.
+
+        Args:
+            self: (todo): write your description
+            client: (todo): write your description
+        """
         self.client = client
 
     def put(self, id: str, resource_type: ResourceType,

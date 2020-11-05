@@ -15,17 +15,35 @@ TABLE_NAME = 'magic'
 
 class TestColumnDescriptionAPI(BasicTestCase):
     def setUp(self) -> None:
+        """
+        Sets the mock.
+
+        Args:
+            self: (todo): write your description
+        """
         super().setUp()
 
         self.mock_client = patch('metadata_service.api.column.get_proxy_client')
         self.mock_proxy = self.mock_client.start().return_value = Mock()
 
     def tearDown(self) -> None:
+        """
+        Stops the client.
+
+        Args:
+            self: (todo): write your description
+        """
         super().tearDown()
 
         self.mock_client.stop()
 
     def test_should_update_column_description(self) -> None:
+        """
+        Test if the test description of a test.
+
+        Args:
+            self: (todo): write your description
+        """
 
         response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}/description',
                                               json={"description": DESCRIPTION})
@@ -36,6 +54,12 @@ class TestColumnDescriptionAPI(BasicTestCase):
                                                                   description=DESCRIPTION)
 
     def test_should_fail_to_update_column_description_when_table_does_not_exist(self) -> None:
+        """
+        Test to see if a test to update.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.put_column_description.side_effect = NotFoundException(message="table does not exist")
 
         response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}/description',
@@ -44,6 +68,12 @@ class TestColumnDescriptionAPI(BasicTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_should_get_column_description(self) -> None:
+        """
+        Returns the test description of the response.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_column_description.return_value = DESCRIPTION
 
         response = self.app.test_client().get(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}/description')
@@ -53,6 +83,12 @@ class TestColumnDescriptionAPI(BasicTestCase):
         self.mock_proxy.get_column_description.assert_called_with(table_uri=TABLE_NAME, column_name=COLUMN_NAME)
 
     def test_should_fail_to_get_column_description_when_table_is_not_found(self) -> None:
+        """
+        Test if the test for a test to be raised.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_column_description.side_effect = NotFoundException(message="table does not exist")
 
         response = self.app.test_client().get(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}/description')
@@ -60,6 +96,12 @@ class TestColumnDescriptionAPI(BasicTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_should_fail_to_get_column_description(self) -> None:
+        """
+        This method will be sent to be sent.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_column_description.side_effect = RuntimeError
 
         response = self.app.test_client().get(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}/description')

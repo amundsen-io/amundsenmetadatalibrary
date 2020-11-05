@@ -28,6 +28,12 @@ from metadata_service.util import UserResourceRel
 class TestNeo4jProxy(unittest.TestCase):
 
     def setUp(self) -> None:
+        """
+        : return a new app_app.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app = create_app(config_module_class='metadata_service.config.LocalConfig')
         self.app_context = self.app.app_context()
         self.app_context.push()
@@ -137,9 +143,21 @@ class TestNeo4jProxy(unittest.TestCase):
         self.last_updated_timestamp = last_updated_timestamp
 
     def tearDown(self) -> None:
+        """
+        Tear down the stream.
+
+        Args:
+            self: (todo): write your description
+        """
         pass
 
     def test_get_table(self) -> None:
+        """
+        Return the test table.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.side_effect = [self.col_usage_return_value, [], self.table_level_return_value]
 
@@ -188,6 +206,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(str(expected), str(table))
 
     def test_get_table_view_only(self) -> None:
+        """
+        Return a table table of all the table table.
+
+        Args:
+            self: (todo): write your description
+        """
         col_usage_return_value = copy.deepcopy(self.col_usage_return_value)
         for col in col_usage_return_value:
             col['tbl']['is_view'] = True
@@ -373,6 +397,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_add_owner(self) -> None:
+        """
+        Adds the owner of the repository.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
@@ -393,6 +423,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_delete_owner(self) -> None:
+        """
+        Deletes the owner of the database.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
@@ -413,6 +449,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_add_badge(self) -> None:
+        """
+        Add an association to the mock.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
@@ -433,6 +475,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_add_tag(self) -> None:
+        """
+        Add a tag to the database.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
@@ -453,6 +501,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_delete_tag(self) -> None:
+        """
+        Delete a tag on the issue.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
@@ -473,6 +527,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_get_tags(self) -> None:
+        """
+        Get the tags. tags of the graph tags.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value = [
                 {'tag_name': {'key': 'tag1'}, 'tag_count': 2},
@@ -490,6 +550,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(actual.__repr__(), expected.__repr__())
 
     def test_get_neo4j_latest_updated_ts(self) -> None:
+        """
+        Get the update time for a nearest neighbor.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.return_value = {
                 'ts': {
@@ -515,6 +581,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertIsNone(neo4j_last_updated_ts)
 
     def test_get_popular_tables(self) -> None:
+        """
+        Returns a dictionary of the current tables.
+
+        Args:
+            self: (todo): write your description
+        """
         # Test cache hit
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value = [{'table_key': 'foo'}, {'table_key': 'bar'}]
@@ -544,6 +616,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(actual.__repr__(), expected.__repr__())
 
     def test_get_user(self) -> None:
+        """
+        Returns the user information
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.return_value = {
                 'user_record': {
@@ -566,6 +644,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(neo4j_user.email, 'test_email')
 
     def test_get_user_other_key_values(self) -> None:
+        """
+        Gets the user - specific test values.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.return_value = {
                 'user_record': {
@@ -590,6 +674,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(neo4j_user.other_key_values, {'mode_user_id': 'mode_foo_bar'})
 
     def test_get_users(self) -> None:
+        """
+        Get the users details
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             test_user = {
                 'employee_type': 'teamMember',
@@ -621,6 +711,12 @@ class TestNeo4jProxy(unittest.TestCase):
                                  getattr(actual_data[0], attr))
 
     def test_get_table_by_user_relation(self) -> None:
+        """
+        Get the relation table
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value = [
                 {
@@ -649,6 +745,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(result['table'][0].schema, 'schema')
 
     def test_get_dashboard_by_user_relation(self) -> None:
+        """
+        Get the dashboard for the current user.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value = [
                 {
@@ -682,6 +784,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(expected, result['dashboard'][0])
 
     def test_add_resource_relation_by_user(self) -> None:
+        """
+        Add relation relation to the relation.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
@@ -703,6 +811,12 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_delete_resource_relation_by_user(self) -> None:
+        """
+        Deletes the relation.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver') as mock_driver:
             mock_session = MagicMock()
             mock_driver.return_value.session.return_value = mock_session
@@ -724,12 +838,24 @@ class TestNeo4jProxy(unittest.TestCase):
             self.assertEqual(mock_commit.call_count, 1)
 
     def test_get_invalid_user(self) -> None:
+        """
+        Get the test user details.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.return_value = None
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             self.assertRaises(NotFoundException, neo4j_proxy.get_user, id='invalid_email')
 
     def test_get_dashboard(self) -> None:
+        """
+        Get dashboard.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.side_effect = [
                 {
@@ -961,6 +1087,12 @@ class TestNeo4jProxy(unittest.TestCase):
                                                         'key': 'test_dashboard'})
 
     def test_user_resource_relation_clause(self) -> None:
+        """
+        Get the relation relation relation relation.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(GraphDatabase, 'driver'):
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             actual = neo4j_proxy._get_user_resource_relationship_clause(UserResourceRel.follow,

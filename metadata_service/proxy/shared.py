@@ -40,7 +40,20 @@ K = TypeVar('K')
 
 
 def make_wait_exponential_with_jitter(base: int, jitter: int) -> Callable[[int], int]:
+    """
+    Make a jitter for the given a base jitter.
+
+    Args:
+        base: (str): write your description
+        jitter: (todo): write your description
+    """
     def wait(retry: int) -> int:
+        """
+        Wait for the next bit until the result.
+
+        Args:
+            retry: (bool): write your description
+        """
         assert retry > 0
         return 10**retry + randint(0, jitter)
     return wait
@@ -53,6 +66,22 @@ def retrying(callable: Callable[[], CallableV], *,
              is_retryable: Callable[[Exception], bool],
              maximum_number_of_retries: int = 4,
              wait_millis: Callable[[int], int] = make_wait_exponential_with_jitter(10, 20)) -> CallableV:
+    """
+    Retries to retry. retryable.
+
+    Args:
+        callable: (str): write your description
+        Callable: (str): write your description
+        CallableV: (str): write your description
+        is_retryable: (bool): write your description
+        Callable: (str): write your description
+        Exception: (todo): write your description
+        bool: (todo): write your description
+        maximum_number_of_retries: (int): write your description
+        wait_millis: (list): write your description
+        Callable: (str): write your description
+        make_wait_exponential_with_jitter: (bool): write your description
+    """
     assert maximum_number_of_retries >= 0, f'maximum_number_of_retries ({maximum_number_of_retries}) must be >= 0!'
     retry = 0
     while True:
