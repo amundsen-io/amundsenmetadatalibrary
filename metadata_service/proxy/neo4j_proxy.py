@@ -76,6 +76,12 @@ class Neo4jProxy(BaseProxy):
                                             trust=trust)  # type: Driver
 
     def is_healthy(self) -> None:
+        """
+        Check if the current transaction.
+
+        Args:
+            self: (todo): write your description
+        """
         # throws if cluster unhealthy or can't connect.  An alternative would be to use one of
         # the HTTP status endpoints, which might be more specific, but don't implicitly test
         # our configuration.
@@ -119,6 +125,13 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def _exec_col_query(self, table_uri: str) -> Tuple:
+        """
+        Execute the query.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+        """
         # Return Value: (Columns, Last Processed Record)
 
         column_level_query = textwrap.dedent("""
@@ -169,6 +182,13 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def _exec_usage_query(self, table_uri: str) -> List[Reader]:
+        """
+        Execute usage query.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+        """
         # Return Value: List[Reader]
 
         usage_query = textwrap.dedent("""\
@@ -282,6 +302,13 @@ class Neo4jProxy(BaseProxy):
         return wmk_results, table_writer, timestamp_value, owner_record, tags, src, badges, prog_descriptions
 
     def _extract_programmatic_descriptions_from_query(self, raw_prog_descriptions: dict) -> list:
+        """
+        Extract descriptions from a program.
+
+        Args:
+            self: (todo): write your description
+            raw_prog_descriptions: (list): write your description
+        """
         prog_descriptions = []
         for prog_description in raw_prog_descriptions:
             source = prog_description['description_source']
@@ -310,6 +337,14 @@ class Neo4jProxy(BaseProxy):
     def _execute_cypher_query(self, *,
                               statement: str,
                               param_dict: Dict[str, Any]) -> BoltStatementResult:
+        """
+        Execute a sql query.
+
+        Args:
+            self: (todo): write your description
+            statement: (todo): write your description
+            param_dict: (dict): write your description
+        """
         if LOGGER.isEnabledFor(logging.DEBUG):
             LOGGER.debug('Executing Cypher query: {statement} with params {params}: '.format(statement=statement,
                                                                                              params=param_dict))
@@ -588,6 +623,17 @@ class Neo4jProxy(BaseProxy):
                   badge_name: str,
                   category: str = '',
                   resource_type: ResourceType = ResourceType.Table) -> None:
+        """
+        Add badge.
+
+        Args:
+            self: (todo): write your description
+            id: (todo): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+            resource_type: (str): write your description
+            Table: (todo): write your description
+        """
 
         LOGGER.info('New badge {} for id {} with category {} '
                     'and resource type {}'.format(badge_name, id, category, resource_type.name))
@@ -639,6 +685,17 @@ class Neo4jProxy(BaseProxy):
                      badge_name: str,
                      category: str,
                      resource_type: ResourceType = ResourceType.Table) -> None:
+        """
+        Delete badge
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+            resource_type: (str): write your description
+            Table: (str): write your description
+        """
 
         # TODO for some reason when deleting it will say it was successful
         # even when the badge never existed to begin with
@@ -664,6 +721,12 @@ class Neo4jProxy(BaseProxy):
 
     @timer_with_counter
     def get_badges(self) -> List:
+        """
+        Returns all badges.
+
+        Args:
+            self: (todo): write your description
+        """
         LOGGER.info('Get all badges')
         query = textwrap.dedent("""
         MATCH (b:Badge) RETURN b as badge
@@ -913,6 +976,12 @@ class Neo4jProxy(BaseProxy):
         return self._build_user_from_record(record=record, manager_name=manager_name)
 
     def get_users(self) -> List[UserEntity]:
+        """
+        Returns all users.
+
+        Args:
+            self: (todo): write your description
+        """
         statement = "MATCH (usr:User) WHERE usr.is_active = true RETURN collect(usr) as users"
 
         record = self._execute_cypher_query(statement=statement, param_dict={})
@@ -1196,6 +1265,13 @@ class Neo4jProxy(BaseProxy):
     def get_dashboard(self,
                       id: str,
                       ) -> DashboardDetailEntity:
+        """
+        Retrieve dashboard.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+        """
 
         get_dashboard_detail_query = textwrap.dedent(u"""
         MATCH (d:Dashboard {key: $query_key})-[:DASHBOARD_OF]->(dg:Dashboardgroup)-[:DASHBOARD_GROUP_OF]->(c:Cluster)

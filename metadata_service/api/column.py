@@ -19,6 +19,12 @@ class ColumnDescriptionAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super(ColumnDescriptionAPI, self).__init__()
 

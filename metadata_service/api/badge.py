@@ -27,6 +27,12 @@ badges_fields = {
 
 class BadgeAPI(Resource):
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super(BadgeAPI, self).__init__()
 
@@ -41,11 +47,28 @@ class BadgeAPI(Resource):
 
 class BadgeCommon:
     def __init__(self, client: BaseProxy) -> None:
+        """
+        Initialize the client.
+
+        Args:
+            self: (todo): write your description
+            client: (todo): write your description
+        """
         self.client = client
 
     def put(self, id: str, resource_type: ResourceType,
             badge_name: str,
             category: str = '') -> Tuple[Any, HTTPStatus]:
+        """
+        Updates an existing badge
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            resource_type: (str): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+        """
 
         if category == '':
             return \
@@ -88,6 +111,16 @@ class BadgeCommon:
     def delete(self, id: str, badge_name: str,
                category: str,
                resource_type: ResourceType) -> Tuple[Any, HTTPStatus]:
+        """
+        Deletes a badge
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+            resource_type: (str): write your description
+        """
         try:
             self.client.delete_badge(id=id,
                                      resource_type=resource_type,

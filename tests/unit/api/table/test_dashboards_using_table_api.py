@@ -58,6 +58,12 @@ API_RESPONSE = {
 class TestTableDashboardAPI(TableTestCase):
 
     def test_get_dashboards_using_table(self) -> None:
+        """
+        Returns the dashboards table.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_resources_using_table.return_value = QUERY_RESPONSE
 
         response = self.app.test_client().get(f'/table/{TABLE_URI}/dashboard/')

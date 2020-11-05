@@ -90,11 +90,23 @@ def timestamp() -> datetime:
 
 
 def is_reasonable_vertex_label(label: str) -> bool:
+    """
+    Returns true if label is a vertex label
+
+    Args:
+        label: (str): write your description
+    """
     vertex_labels = set([each.value.label for each in VertexTypes])
     return label in vertex_labels
 
 
 def get_label_from(_entity_type_or_enum_or_str: Union[str, VertexTypes, EdgeTypes, VertexType, EdgeType]) -> str:
+    """
+    Gets the label from a given type.
+
+    Args:
+        _entity_type_or_enum_or_str: (str): write your description
+    """
     if isinstance(_entity_type_or_enum_or_str, str):
         return _entity_type_or_enum_or_str
     elif isinstance(_entity_type_or_enum_or_str, (VertexTypes, EdgeTypes)):
@@ -107,6 +119,13 @@ def get_label_from(_entity_type_or_enum_or_str: Union[str, VertexTypes, EdgeType
 
 def get_cardinality_for(_entity_type_or_enum: Union[VertexTypes, EdgeTypes, VertexType, EdgeType],
                         name: str) -> Optional[Cardinality]:
+    """
+    Gets a cardinality for the given type name.
+
+    Args:
+        _entity_type_or_enum: (str): write your description
+        name: (str): write your description
+    """
     _entity_type: Union[VertexType, EdgeType]
     if isinstance(_entity_type_or_enum, (VertexTypes, EdgeTypes)):
         _entity_type = _entity_type_or_enum.value
@@ -132,12 +151,26 @@ def get_cardinality_for(_entity_type_or_enum: Union[VertexTypes, EdgeTypes, Vert
 class FromResultSet:
     @classmethod
     def generator(cls, result_set: ResultSet) -> Iterable[Any]:
+        """
+        Yields the result set.
+
+        Args:
+            cls: (todo): write your description
+            result_set: (todo): write your description
+        """
         for part in result_set:
             for item in part:
                 yield item
 
     @classmethod
     def iterate(cls, result_set: ResultSet) -> None:
+        """
+        Iterate over the result set.
+
+        Args:
+            cls: (todo): write your description
+            result_set: (todo): write your description
+        """
         # haiku for consuming an interator
         collections.deque(cls.generator(result_set), maxlen=0)
 
@@ -150,14 +183,35 @@ class FromResultSet:
 
     @classmethod
     def toList(cls, result_set: ResultSet) -> List:
+        """
+        Convert result set of the resultset.
+
+        Args:
+            cls: (callable): write your description
+            result_set: (todo): write your description
+        """
         return list(cls.generator(result_set))
 
     @classmethod
     def toSet(cls, result_set: ResultSet) -> Set:
+        """
+        Returns a set of the result set.
+
+        Args:
+            cls: (todo): write your description
+            result_set: (todo): write your description
+        """
         return set(cls.generator(result_set))
 
     @classmethod
     def getOptional(cls, result_set: ResultSet) -> Optional[Any]:
+        """
+        Return the result set.
+
+        Args:
+            cls: (todo): write your description
+            result_set: (str): write your description
+        """
         try:
             return cls.getOnly(result_set)
         except StopIteration:
@@ -165,6 +219,13 @@ class FromResultSet:
 
     @classmethod
     def getOnly(cls, result_set: ResultSet) -> Any:
+        """
+        Returns the result of the result_set.
+
+        Args:
+            cls: (callable): write your description
+            result_set: (todo): write your description
+        """
         i = iter(cls.generator(result_set))
         value = next(i)
         try:
@@ -180,25 +241,92 @@ TYPE = TypeVar('TYPE')
 class ExecuteQuery(Protocol):
     @overload  # noqa: F811
     def __call__(self, query: Traversal, get: Callable[[ResultSet], V]) -> V:
+        """
+        Calls a callable on the given query.
+
+        Args:
+            self: (todo): write your description
+            query: (str): write your description
+            get: (array): write your description
+            Callable: (todo): write your description
+            ResultSet: (dict): write your description
+            V: (array): write your description
+        """
         ...
 
     @overload  # noqa: F811
     def __call__(self, query: str, get: Callable[[ResultSet], V], *,  # noqa: F811
                  bindings: Optional[Mapping[str, Any]] = None) -> V:
+        """
+        Calls a query with the given parameters.
+
+        Args:
+            self: (todo): write your description
+            query: (str): write your description
+            get: (array): write your description
+            Callable: (todo): write your description
+            ResultSet: (dict): write your description
+            V: (array): write your description
+            bindings: (dict): write your description
+            Optional: (todo): write your description
+            Mapping: (dict): write your description
+            Any: (array): write your description
+        """
         ...
 
     def __call__(self, query: Union[str, Traversal], get: Callable[[ResultSet], V], *,  # noqa: F811
                  bindings: Optional[Mapping[str, Any]] = None) -> V:
+        """
+        Call a call on the given query
+
+        Args:
+            self: (todo): write your description
+            query: (str): write your description
+            get: (array): write your description
+            Callable: (todo): write your description
+            ResultSet: (dict): write your description
+            V: (array): write your description
+            bindings: (dict): write your description
+            Optional: (todo): write your description
+            Mapping: (dict): write your description
+            Any: (array): write your description
+        """
         ...
 
 
 class ClientQueryExecutor(ExecuteQuery):
     def __init__(self, *, client: Client, traversal_translator: Callable[[Traversal], str]) -> None:
+        """
+        Initialize the transport.
+
+        Args:
+            self: (todo): write your description
+            client: (todo): write your description
+            traversal_translator: (todo): write your description
+            Callable: (todo): write your description
+            Traversal: (todo): write your description
+            str: (todo): write your description
+        """
         self.client = client
         self.traversal_translator = traversal_translator
 
     def __call__(self, query: Union[str, Traversal], get: Callable[[ResultSet], V], *,  # noqa: F811
                  bindings: Optional[Mapping[str, Any]] = None) -> V:
+        """
+        Execute a query and return the result.
+
+        Args:
+            self: (todo): write your description
+            query: (str): write your description
+            get: (array): write your description
+            Callable: (todo): write your description
+            ResultSet: (dict): write your description
+            V: (array): write your description
+            bindings: (dict): write your description
+            Optional: (todo): write your description
+            Mapping: (dict): write your description
+            Any: (array): write your description
+        """
         if isinstance(query, Traversal):
             if bindings is not None:
                 raise AssertionError(f'expected bindings to be none')
@@ -215,20 +343,67 @@ class ClientQueryExecutor(ExecuteQuery):
 class RetryingClientQueryExecutor(ClientQueryExecutor):
     def __init__(self, client: Client, traversal_translator: Callable[[Traversal], str],
                  is_retryable: Callable[[Exception], bool]) -> None:
+        """
+        Initialize the client.
+
+        Args:
+            self: (todo): write your description
+            client: (todo): write your description
+            traversal_translator: (todo): write your description
+            Callable: (todo): write your description
+            Traversal: (todo): write your description
+            str: (todo): write your description
+            is_retryable: (bool): write your description
+            Callable: (todo): write your description
+            Exception: (todo): write your description
+            bool: (todo): write your description
+        """
         ClientQueryExecutor.__init__(self, client=client, traversal_translator=traversal_translator)
         self.is_retryable = is_retryable
 
     def __enter__(self) -> Any:
+        """
+        Returns the first call.
+
+        Args:
+            self: (todo): write your description
+        """
         return self
 
     def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Called when the client is closed.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.client.close()
 
     # TODO: ideally this would be __call__(*args: Any, **kwargs: Any) -> Any (and then this could be mixinable) but I
     # can't get mypy to not think that conflicts
     def __call__(self, query: Union[str, Traversal], get: Callable[[ResultSet], V], *,
                  bindings: Optional[Mapping[str, Any]] = None) -> V:
+        """
+        Execute a query and return the results.
+
+        Args:
+            self: (todo): write your description
+            query: (str): write your description
+            get: (array): write your description
+            Callable: (todo): write your description
+            ResultSet: (dict): write your description
+            V: (array): write your description
+            bindings: (dict): write your description
+            Optional: (todo): write your description
+            Mapping: (dict): write your description
+            Any: (array): write your description
+        """
         def callable() -> V:
+            """
+            Returns an iterable.
+
+            Args:
+            """
             return ClientQueryExecutor.__call__(self, query, get, bindings=bindings)
         try:
             return retrying(callable, is_retryable=self.is_retryable)
@@ -304,6 +479,15 @@ def _safe_get(root, *keys, transform: Optional[Callable] = None, default: Any = 
 def _properties_or_drop_if_changed_except(
         *excludes: str, label: Union[VertexTypes, EdgeTypes, VertexType, EdgeType],
         thing: Union[object, Dict[str, Any]], existing: Union[object, Dict[str, Any]]) -> GraphTraversal:
+    """
+    Given a dict of properties determine if any of properties ).
+
+    Args:
+        excludes: (list): write your description
+        label: (str): write your description
+        thing: (todo): write your description
+        existing: (dict): write your description
+    """
     if isinstance(thing, Mapping):
         _thing = thing
     elif hasattr(thing, '__dict__'):
@@ -319,6 +503,12 @@ def _properties_or_drop_if_changed_except(
         raise AssertionError(f'existing must be a dict or have __dict__: {type(existing)}')
 
     def p(name: str) -> Optional[GraphTraversal]:
+        """
+        A property that makes a variable.
+
+        Args:
+            name: (str): write your description
+        """
         return _property_or_drop_if_changed(name=name, value=_thing.get(name, None), existing=_existing.get(name, None),
                                             cardinality=get_cardinality_for(label, name))
 
@@ -328,6 +518,14 @@ def _properties_or_drop_if_changed_except(
 
 
 def _property_unchanged(*, value: Any, existing: Any, cardinality: Optional[Cardinality]) -> bool:
+    """
+    Determine if a given card exists.
+
+    Args:
+        value: (todo): write your description
+        existing: (dict): write your description
+        cardinality: (str): write your description
+    """
     # this is the usual case: either an Edge property (no cardinality) or Vertex property with Cardinality.single
     if existing is None:
         return value is None
@@ -358,6 +556,14 @@ def _property_or_drop_if_changed(*, name: str, value: Any, existing: Any, cardin
 
 def _properties_or_drop_except(label: Union[VertexTypes, EdgeTypes, VertexType, EdgeType],
                                thing: Union[object, Dict[str, Any]], *excludes: str) -> GraphTraversal:
+    """
+    Return a property from a property.
+
+    Args:
+        label: (str): write your description
+        thing: (todo): write your description
+        excludes: (list): write your description
+    """
     if isinstance(thing, Mapping):
         pass
     elif hasattr(thing, '__dict__'):
@@ -372,6 +578,14 @@ def _properties_or_drop_except(label: Union[VertexTypes, EdgeTypes, VertexType, 
 
 def _properties_or_drop_of(label: Union[VertexTypes, EdgeTypes, VertexType, EdgeType],
                            thing: Union[object, Dict[str, Any]], *includes: str) -> GraphTraversal:
+    """
+    Ens properties object from a property.
+
+    Args:
+        label: (str): write your description
+        thing: (dict): write your description
+        includes: (list): write your description
+    """
     if isinstance(thing, Mapping):
         pass
     elif hasattr(thing, '__dict__'):
@@ -385,6 +599,13 @@ def _properties_or_drop_of(label: Union[VertexTypes, EdgeTypes, VertexType, Edge
 
 
 def _properties_except(thing: Union[object, Dict[str, Any]], *excludes: str) -> Mapping[str, Any]:
+    """
+    Return an object todo.
+
+    Args:
+        thing: (dict): write your description
+        excludes: (list): write your description
+    """
     if isinstance(thing, Mapping):
         pass
     elif hasattr(thing, '__dict__'):
@@ -396,6 +617,13 @@ def _properties_except(thing: Union[object, Dict[str, Any]], *excludes: str) -> 
 
 
 def _properties_of(thing: Union[object, Dict[str, Any]], *includes: str) -> Mapping[str, Any]:
+    """
+    Return the properties dictionary of properties.
+
+    Args:
+        thing: (dict): write your description
+        includes: (list): write your description
+    """
     if isinstance(thing, Mapping):
         pass
     elif hasattr(thing, '__dict__'):
@@ -406,6 +634,12 @@ def _properties_of(thing: Union[object, Dict[str, Any]], *includes: str) -> Mapp
 
 
 def _is_select_traversal(g: GraphTraversal) -> Optional[str]:
+    """
+    Return whether the node is_selectcode is on the next step.
+
+    Args:
+        g: (todo): write your description
+    """
     if not g.bytecode.source_instructions and len(g.bytecode.step_instructions) == 1 and \
        len(g.bytecode.step_instructions[0]) == 2 and g.bytecode.step_instructions[0][0] == 'select':
         return g.bytecode.step_instructions[0][1]
@@ -415,6 +649,16 @@ def _is_select_traversal(g: GraphTraversal) -> Optional[str]:
 
 def _vertex_property(*, g: GraphTraversal, name: str, value: Any, cardinality: Optional[Cardinality] = None,
                      label: Optional[VertexTypes] = None) -> GraphTraversal:
+    """
+    Creates a vertex property.
+
+    Args:
+        g: (todo): write your description
+        name: (str): write your description
+        value: (str): write your description
+        cardinality: (todo): write your description
+        label: (todo): write your description
+    """
 
     if (cardinality is None) and (label is None):
         raise AssertionError('must pass one of label or cardinality')
@@ -429,6 +673,14 @@ def _vertex_property(*, g: GraphTraversal, name: str, value: Any, cardinality: O
 
 
 def _edge_property(*, g: GraphTraversal, name: str, value: Any) -> GraphTraversal:
+    """
+    Creates a new edge.
+
+    Args:
+        g: (todo): write your description
+        name: (str): write your description
+        value: (todo): write your description
+    """
     return _property_or_drop(g=g, name=name, value=value, cardinality=None)
 
 
@@ -523,6 +775,28 @@ def _upsert(*, executor: ExecuteQuery, execute: Callable[[ResultSet], TYPE] = Fr
             g: GraphTraversalSource, label: Union[VertexTypes, VertexType], key_property_name: str, key: str,
             traversal_if_exists: Optional[Traversal] = None, traversal_if_add: Optional[Traversal] = None,
             traversal: Optional[Traversal] = __.id(), **properties: Any) -> TYPE:
+    """
+    Upsert a vertex.
+
+    Args:
+        executor: (todo): write your description
+        execute: (todo): write your description
+        Callable: (todo): write your description
+        ResultSet: (todo): write your description
+        TYPE: (todo): write your description
+        FromResultSet: (todo): write your description
+        getOnly: (todo): write your description
+        g: (todo): write your description
+        label: (todo): write your description
+        key_property_name: (str): write your description
+        key: (str): write your description
+        traversal_if_exists: (todo): write your description
+        traversal_if_add: (todo): write your description
+        traversal: (todo): write your description
+        __: (todo): write your description
+        id: (todo): write your description
+        properties: (dict): write your description
+    """
 
     if not isinstance(label, (VertexTypes, VertexType)):
         raise AssertionError(f'expected label to be a VertexType or VertexTypes: {label}')
@@ -825,6 +1099,12 @@ def _edges_to(*, g: Union[GraphTraversalSource, GraphTraversal],
 
 
 def _parse_gremlin_server_error(exception: Exception) -> Dict[str, Any]:
+    """
+    Parse a gremlin error.
+
+    Args:
+        exception: (todo): write your description
+    """
     if not isinstance(exception, gremlin_python.driver.protocol.GremlinServerError) or len(exception.args) != 1:
         return {}
     # this is like '444: {...json object...}'
@@ -855,6 +1135,15 @@ class AbstractGremlinProxy(BaseProxy):
 
     def __init__(self, *, key_property_name: str, driver_remote_connection_options: Mapping[str, Any] = {},
                  gremlin_client_options: Mapping[str, Any] = {}) -> None:
+        """
+        Initialize gremlin gremlin connection.
+
+        Args:
+            self: (todo): write your description
+            key_property_name: (str): write your description
+            driver_remote_connection_options: (todo): write your description
+            gremlin_client_options: (todo): write your description
+        """
         # these might vary from datastore type to another, but if you change these while talking to the same instance
         # without migration, it will go poorly
         self.key_property_name: str = key_property_name
@@ -876,6 +1165,12 @@ class AbstractGremlinProxy(BaseProxy):
         self._g: GraphTraversalSource = traversal().withRemote(self.remote_connection)
 
     def drop(self) -> None:
+        """
+        Drops this query from the database.
+
+        Args:
+            self: (todo): write your description
+        """
         LOGGER.warning('DROPPING ALL NODES')
         with self.query_executor() as executor:
             executor(query=self.g.V().drop(), get=FromResultSet.iterate)
@@ -891,7 +1186,20 @@ class AbstractGremlinProxy(BaseProxy):
 
     @classmethod
     def get_is_retryable(cls, method_name: str) -> Callable[[Exception], bool]:
+        """
+        Return a method retryable exception.
+
+        Args:
+            cls: (todo): write your description
+            method_name: (str): write your description
+        """
         def is_retryable(exception: Exception) -> bool:
+            """
+            Decorator to retry if exception is raised.
+
+            Args:
+                exception: (todo): write your description
+            """
             nonlocal method_name
             return cls._is_retryable_exception(method_name=method_name, exception=exception)
         return is_retryable
@@ -899,19 +1207,44 @@ class AbstractGremlinProxy(BaseProxy):
     @classmethod
     @abstractmethod
     def script_translator(cls) -> Type[ScriptTranslator]:
+        """
+        Decorator to the script. script
+
+        Args:
+            cls: (todo): write your description
+        """
         pass
 
     @abstractmethod
     def possibly_signed_ws_client_request_or_url(self) -> Union[httpclient.HTTPRequest, str]:
+        """
+        Return the http request or none.
+
+        Args:
+            self: (todo): write your description
+        """
         pass
 
     def client(self) -> Client:
+        """
+        Create a gremlin client.
+
+        Args:
+            self: (todo): write your description
+        """
         gremlin_client_options = dict(self.gremlin_client_options)
         gremlin_client_options.setdefault('message_serializer', ExtendedGraphSONSerializersV3d0())
         gremlin_client_options['url'] = self.possibly_signed_ws_client_request_or_url()
         return Client(**gremlin_client_options)
 
     def query_executor(self, *, method_name: str = "nope") -> \
+        """
+        Execute a executor.
+
+        Args:
+            self: (todo): write your description
+            method_name: (str): write your description
+        """
             RetryingClientQueryExecutor:
         return RetryingClientQueryExecutor(
             client=self.client(), is_retryable=self.get_is_retryable(method_name),
@@ -960,6 +1293,12 @@ class AbstractGremlinProxy(BaseProxy):
         return self.remote_connection._client.submit(message=command, bindings=bindings).all().result()
 
     def is_healthy(self) -> None:
+        """
+        Determine if this query is currently running query.
+
+        Args:
+            self: (todo): write your description
+        """
         # throws if cluster unhealthy or can't connect.  Neptune proxy overrides and uses status endpoint
         self.query_executor()(query=self.g.V().limit(0).fold, get=FromResultSet.iterate)
 
@@ -983,6 +1322,13 @@ class AbstractGremlinProxy(BaseProxy):
     @timer_with_counter
     @overrides
     def get_user(self, *, id: str) -> Union[User, None]:
+        """
+        Get a specific user.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+        """
         g = _V(g=self.g, label=VertexTypes.User, key=id).as_('user')
         g = g.coalesce(outE(EdgeTypes.ManagedBy.value.label).inV().
                        hasLabel(VertexTypes.User.value.label).fold()).as_('managers')
@@ -999,6 +1345,14 @@ class AbstractGremlinProxy(BaseProxy):
         return user
 
     def _get_user(self, *, id: str, executor: ExecuteQuery) -> Union[User, None]:
+        """
+        Get a single user.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            executor: (todo): write your description
+        """
         g = _V(g=self.g, label=VertexTypes.User, key=id).as_('user')
         g = g.coalesce(outE(EdgeTypes.ManagedBy.value.label).inV().
                        hasLabel(VertexTypes.User.value.label).fold()).as_('managers')
@@ -1017,6 +1371,12 @@ class AbstractGremlinProxy(BaseProxy):
     @timer_with_counter
     @overrides
     def get_users(self) -> List[User]:
+        """
+        Get users.
+
+        Args:
+            self: (todo): write your description
+        """
         g = _V(g=self.g, label=VertexTypes.User, key=None).not_(has('is_active', False)).as_('user'). \
             coalesce(outE(EdgeTypes.ManagedBy.value.label).inV().
                      hasLabel(VertexTypes.User.value.label).fold()).as_('managers'). \
@@ -1056,6 +1416,12 @@ class AbstractGremlinProxy(BaseProxy):
 
         # add in the last 5 days (but only if present according to test)
         def transform(x: int) -> Optional[Stat]:
+            """
+            Convert stat values.
+
+            Args:
+                x: (array): write your description
+            """
             return None if x == 0 else Stat(stat_type='num_reads_last_5_days', stat_val=str(x))
         num_reads_last_5_days = _safe_get(result, 'num_reads_last_5_days', transform=transform)
         if num_reads_last_5_days:
@@ -1082,6 +1448,13 @@ class AbstractGremlinProxy(BaseProxy):
         return table
 
     def _get_table_itself(self, *, table_uri: str) -> Mapping[str, Any]:
+        """
+        Returns the table object.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+        """
         g = _V(g=self.g, label=VertexTypes.Table, key=table_uri).as_('table')
         g = g.coalesce(inE(EdgeTypes.Table.value.label).outV().
                        hasLabel(VertexTypes.Schema.value.label).fold()).as_('schema')
@@ -1141,6 +1514,13 @@ class AbstractGremlinProxy(BaseProxy):
         return _safe_get(results)
 
     def _get_table_columns(self, *, table_uri: str) -> List[Column]:
+        """
+        Returns a list of column definitions.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+        """
         g = _V(g=self.g, label=VertexTypes.Table.value.label, key=table_uri). \
             outE(EdgeTypes.Column.value.label). \
             inV().hasLabel(VertexTypes.Column.value.label).as_('column')
@@ -1167,6 +1547,13 @@ class AbstractGremlinProxy(BaseProxy):
         return cols
 
     def _get_table_readers(self, *, table_uri: str) -> List[Reader]:
+        """
+        Returns a list of table.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+        """
         g = _edges_to(g=self.g, vertex1_label=VertexTypes.Table, vertex1_key=table_uri,
                       vertex2_label=VertexTypes.User, vertex2_key=None,
                       edge_label=EdgeTypes.Read, date=gte(date.today() - timedelta(days=5)))
@@ -1189,6 +1576,14 @@ class AbstractGremlinProxy(BaseProxy):
     @timer_with_counter
     @overrides
     def delete_owner(self, *, table_uri: str, owner: str) -> None:
+        """
+        Deletes the specified by owner.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            owner: (todo): write your description
+        """
         with self.query_executor() as executor:
             return self._delete_owner(table_uri=table_uri, owner=owner, executor=executor)
 
@@ -1220,6 +1615,15 @@ class AbstractGremlinProxy(BaseProxy):
             return self._add_owner(table_uri=table_uri, owner=owner, executor=executor)
 
     def _add_owner(self, *, table_uri: str, owner: str, executor: ExecuteQuery) -> None:
+        """
+        Creates a new : class_owner.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            owner: (todo): write your description
+            executor: (todo): write your description
+        """
         _link(executor=executor, g=self.g, edge_label=EdgeTypes.Owner, key_property_name=self.key_property_name,
               vertex1_label=VertexTypes.Table, vertex1_key=table_uri,
               vertex2_label=VertexTypes.User, vertex2_key=owner)
@@ -1253,6 +1657,15 @@ class AbstractGremlinProxy(BaseProxy):
             return self._put_table_description(table_uri=table_uri, description=description, executor=executor)
 
     def _put_table_description(self, *, table_uri: str, description: str, executor: ExecuteQuery) -> None:
+        """
+        Creates a new description.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            description: (str): write your description
+            executor: (todo): write your description
+        """
         description = unquote(description)
 
         # default table description is user added
@@ -1291,6 +1704,18 @@ class AbstractGremlinProxy(BaseProxy):
                  tag_type: str = 'default',
                  resource_type: ResourceType = ResourceType.Table,
                  executor: ExecuteQuery) -> None:
+        """
+        Add a tag
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            tag: (str): write your description
+            tag_type: (str): write your description
+            resource_type: (str): write your description
+            Table: (str): write your description
+            executor: (todo): write your description
+        """
         vertex_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Tag, key=tag,
                                  key_property_name=self.key_property_name, tag_type=tag_type)
         vertex_type: VertexTypes = self._get_vertex_type_from_resource_type(resource_type=resource_type)
@@ -1299,10 +1724,30 @@ class AbstractGremlinProxy(BaseProxy):
 
     def add_badge(self, *, id: str, badge_name: str, category: str = '',
                   resource_type: ResourceType) -> None:
+        """
+        Add badge
+
+        Args:
+            self: (todo): write your description
+            id: (todo): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+            resource_type: (str): write your description
+        """
         pass
 
     def delete_badge(self, *, id: str, badge_name: str, category: str,
                      resource_type: ResourceType) -> None:
+        """
+        Delete a badge
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+            resource_type: (str): write your description
+        """
         pass
 
     @timer_with_counter
@@ -1332,6 +1777,18 @@ class AbstractGremlinProxy(BaseProxy):
                     tag_type: str = 'default',
                     resource_type: ResourceType = ResourceType.Table,
                     executor: ExecuteQuery) -> None:
+        """
+        Deletes a tag.
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            tag: (str): write your description
+            tag_type: (str): write your description
+            resource_type: (str): write your description
+            Table: (str): write your description
+            executor: (todo): write your description
+        """
         LOGGER.info(f'Expire {tag} for {id}')
         vertex_type: VertexTypes = self._get_vertex_type_from_resource_type(resource_type=resource_type)
         _expire_link(executor=executor, g=self.g, edge_label=EdgeTypes.Tag,
@@ -1354,6 +1811,16 @@ class AbstractGremlinProxy(BaseProxy):
 
     def _put_column_description(
             self, *, table_uri: str, column_name: str, description: str, executor: ExecuteQuery) -> None:
+        """
+        Create a description of a description.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            column_name: (str): write your description
+            description: (str): write your description
+            executor: (todo): write your description
+        """
         description = unquote(description)
 
         column_uri = make_column_uri(table_uri=table_uri, column_name=column_name)
@@ -1474,6 +1941,12 @@ class AbstractGremlinProxy(BaseProxy):
         return [TagDetail(tag_name=name, tag_count=value) for name, value in counts.items()]
 
     def get_badges(self) -> List:
+        """
+        Returns the list.
+
+        Args:
+            self: (todo): write your description
+        """
         pass
 
     # TODO: switch the base proxy to use user_id instead
@@ -1540,12 +2013,27 @@ class AbstractGremlinProxy(BaseProxy):
     @overrides
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
+        """
+        Get a user s dashboard for the given user.
+
+        Args:
+            self: (todo): write your description
+            user_email: (str): write your description
+            relation_type: (str): write your description
+        """
         pass
 
     # TODO: impl
     @timer_with_counter
     @overrides
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, Any]:
+        """
+        Return a list of the user sdk_email.
+
+        Args:
+            self: (todo): write your description
+            user_email: (todo): write your description
+        """
         pass
 
     @timer_with_counter
@@ -1555,6 +2043,16 @@ class AbstractGremlinProxy(BaseProxy):
                                       user_id: str,
                                       relation_type: UserResourceRel,
                                       resource_type: ResourceType) -> None:
+        """
+        Add a relationship between two relations.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            user_id: (int): write your description
+            relation_type: (str): write your description
+            resource_type: (todo): write your description
+        """
 
         vertex_type: VertexTypes = self._get_vertex_type_from_resource_type(resource_type=resource_type)
         edge_type: EdgeTypes = self._get_edge_type_from_user_resource_rel_type(relation=relation_type)
@@ -1571,6 +2069,16 @@ class AbstractGremlinProxy(BaseProxy):
                                          user_id: str,
                                          relation_type: UserResourceRel,
                                          resource_type: ResourceType) -> None:
+        """
+        Deletes a relationship between two relations.
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            user_id: (int): write your description
+            relation_type: (str): write your description
+            resource_type: (str): write your description
+        """
 
         vertex_type: VertexTypes = self._get_vertex_type_from_resource_type(resource_type=resource_type)
         edge_type: EdgeTypes = self._get_edge_type_from_user_resource_rel_type(relation=relation_type)
@@ -1585,12 +2093,26 @@ class AbstractGremlinProxy(BaseProxy):
     def get_dashboard(self,
                       dashboard_uri: str,
                       ) -> DashboardDetailEntity:
+        """
+        Get a dashboard with the given dashboard.
+
+        Args:
+            self: (todo): write your description
+            dashboard_uri: (str): write your description
+        """
         pass
 
     @timer_with_counter
     @overrides
     def get_dashboard_description(self, *,
                                   id: str) -> Description:
+        """
+        Get a dashboard description.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+        """
         pass
 
     @timer_with_counter
@@ -1598,6 +2120,14 @@ class AbstractGremlinProxy(BaseProxy):
     def put_dashboard_description(self, *,
                                   id: str,
                                   description: str) -> None:
+        """
+        Put a dashboard description.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            description: (str): write your description
+        """
         pass
 
     @timer_with_counter
@@ -1605,6 +2135,14 @@ class AbstractGremlinProxy(BaseProxy):
     def get_resources_using_table(self, *,
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
+        """
+        Return the resource_type for the given resource.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            resource_type: (str): write your description
+        """
         pass
 
     def _get_user_table_relationship_clause(self, *, g: Traversal, relation_type: UserResourceRel,
@@ -1616,12 +2154,30 @@ class AbstractGremlinProxy(BaseProxy):
         # these are as if g will start with a User vertex, and end with a Table
         if relation_type == UserResourceRel.follow:
             def relation_matcher(g: Traversal) -> Traversal:
+                """
+                Return the matcher matrix : class :.
+
+                Args:
+                    g: (todo): write your description
+                """
                 return g.outE(EdgeTypes.Follow.value.label).inV()
         elif relation_type == UserResourceRel.own:
             def relation_matcher(g: Traversal) -> Traversal:
+                """
+                Return the relation matrix of the relation.
+
+                Args:
+                    g: (todo): write your description
+                """
                 return g.inE(EdgeTypes.Owner.value.label).outV()
         elif relation_type == UserResourceRel.read:
             def relation_matcher(g: Traversal) -> Traversal:
+                """
+                Return the relation matrix.
+
+                Args:
+                    g: (todo): write your description
+                """
                 return g.outE(EdgeTypes.Read.value.label).inV()
         else:
             raise NotImplementedError(f'The relation type {relation_type} is not defined!')
@@ -1638,12 +2194,30 @@ class AbstractGremlinProxy(BaseProxy):
 
         if key is None:
             def matcher(_g: Traversal) -> Traversal:
+                """
+                Return a list of matcher.
+
+                Args:
+                    _g: (todo): write your description
+                """
                 return _g
         elif not key:
             def matcher(_g: Traversal) -> Traversal:
+                """
+                Return true if the given vertex has a matcher.
+
+                Args:
+                    _g: (todo): write your description
+                """
                 return _g.hasLabel(vertex_type.value.label)
         else:
             def matcher(_g: Traversal) -> Traversal:
+                """
+                Returns : class has a : class : gtk. propmatcher. prop. gdvers. : class : gtk. matcher.
+
+                Args:
+                    _g: (todo): write your description
+                """
                 return _g.has(vertex_type.value.label, self.key_property_name, key)
         return matcher
 
@@ -1664,6 +2238,13 @@ class AbstractGremlinProxy(BaseProxy):
             return self.query_executor()(query=g, get=FromResultSet.getOnly)
 
     def _convert_to_application(self, result: Mapping[str, Any]) -> Application:
+        """
+        Convert the application to application.
+
+        Args:
+            self: (todo): write your description
+            result: (todo): write your description
+        """
         return Application(
             application_url=_safe_get(result, 'application_url'),
             description=_safe_get(result, 'description'),
@@ -1671,10 +2252,24 @@ class AbstractGremlinProxy(BaseProxy):
             id=_safe_get(result, 'id', default=''))
 
     def _convert_to_description(self, result: Mapping[str, Any]) -> ProgrammaticDescription:
+        """
+        Convert the description to a description.
+
+        Args:
+            self: (todo): write your description
+            result: (todo): write your description
+        """
         return ProgrammaticDescription(text=_safe_get(result, 'description'),
                                        source=_safe_get(result, 'source'))
 
     def _convert_to_user(self, result: Mapping[str, Any]) -> User:
+        """
+        Convert user to user.
+
+        Args:
+            self: (todo): write your description
+            result: (todo): write your description
+        """
         return User(email=_safe_get(result, 'email'),
                     first_name=_safe_get(result, 'first_name'),
                     last_name=_safe_get(result, 'last_name'),
@@ -1691,9 +2286,23 @@ class AbstractGremlinProxy(BaseProxy):
                     manager_fullname=None)
 
     def _convert_to_source(self, result: Mapping[str, Any]) -> Source:
+        """
+        Converts the result.
+
+        Args:
+            self: (todo): write your description
+            result: (todo): write your description
+        """
         return Source(source_type=_safe_get(result, 'source_type'), source=_safe_get(result, 'source'))
 
     def _convert_to_statistics(self, result: Mapping[str, Any]) -> Stat:
+        """
+        Convert the results object to a list.
+
+        Args:
+            self: (todo): write your description
+            result: (todo): write your description
+        """
         return Stat(
             stat_type=_safe_get(result, 'stat_type'),
             stat_val=_safe_get(result, 'stat_val'),
@@ -1701,9 +2310,23 @@ class AbstractGremlinProxy(BaseProxy):
             end_epoch=_safe_get(result, 'end_epoch'))
 
     def _convert_to_tag(self, result: Mapping[str, Any]) -> Tag:
+        """
+        Converts a tag to a tag.
+
+        Args:
+            self: (todo): write your description
+            result: (todo): write your description
+        """
         return Tag(tag_name=_safe_get(result, self.key_property_name), tag_type=_safe_get(result, 'tag_type'))
 
     def _convert_to_watermark(self, result: Mapping[str, Any]) -> Watermark:
+        """
+        Convert watermark to watermark.
+
+        Args:
+            self: (todo): write your description
+            result: (todo): write your description
+        """
         return Watermark(
             watermark_type=_safe_get(result, self.key_property_name, transform=lambda x: x.split('/')[-2]),
             partition_key=_safe_get(result, 'partition_key'),
@@ -1711,6 +2334,13 @@ class AbstractGremlinProxy(BaseProxy):
             create_time=_safe_get(result, 'create_time'))
 
     def _get_vertex_type_from_resource_type(self, resource_type: ResourceType) -> VertexTypes:
+        """
+        Return the vertex type for the given resource type.
+
+        Args:
+            self: (todo): write your description
+            resource_type: (str): write your description
+        """
         if resource_type == ResourceType.Table:
             return VertexTypes.Table
         elif resource_type == ResourceType.User:
@@ -1719,6 +2349,13 @@ class AbstractGremlinProxy(BaseProxy):
         raise NotImplementedError(f"Don't know how to handle ResourceType={resource_type}")
 
     def _get_edge_type_from_user_resource_rel_type(self, relation: UserResourceRel) -> EdgeTypes:
+        """
+        Return the edge type for the given relation.
+
+        Args:
+            self: (todo): write your description
+            relation: (todo): write your description
+        """
         if relation == UserResourceRel.read:
             return EdgeTypes.Read
         elif relation == UserResourceRel.own:
@@ -1742,6 +2379,19 @@ class GenericGremlinProxy(AbstractGremlinProxy):
     def __init__(self, *, host: str, port: Optional[int] = None, user: Optional[str] = None,
                  password: Optional[str] = None, traversal_source: 'str' = 'g', key_property_name: str = 'key',
                  driver_remote_connection_options: Mapping[str, Any] = {}) -> None:
+        """
+        Establish a connection to the connection.
+
+        Args:
+            self: (todo): write your description
+            host: (str): write your description
+            port: (int): write your description
+            user: (str): write your description
+            password: (str): write your description
+            traversal_source: (str): write your description
+            key_property_name: (str): write your description
+            driver_remote_connection_options: (todo): write your description
+        """
         driver_remote_connection_options = dict(driver_remote_connection_options)
 
         # as others, we repurpose host a url
@@ -1766,9 +2416,21 @@ class GenericGremlinProxy(AbstractGremlinProxy):
     @classmethod
     @overrides
     def script_translator(cls) -> Type[ScriptTranslatorTargetJanusgraph]:
+        """
+        Translator script for the given script.
+
+        Args:
+            cls: (todo): write your description
+        """
         # TODO: is there such a thing?
         return ScriptTranslatorTargetJanusgraph
 
     @overrides
     def possibly_signed_ws_client_request_or_url(self) -> str:
+        """
+        Return the url or none if the request is signed.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.url

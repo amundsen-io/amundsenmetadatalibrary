@@ -12,6 +12,12 @@ DESCRIPTION = 'magical people'
 
 class TestTableDescriptionAPI(TableTestCase):
     def test_should_get_table_description(self) -> None:
+        """
+        Returns the description of the resource.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_table_description.return_value = DESCRIPTION
 
         response = self.app.test_client().get(f'/table/{TABLE_URI}/description')
@@ -21,6 +27,12 @@ class TestTableDescriptionAPI(TableTestCase):
         self.mock_proxy.get_table_description.assert_called_with(table_uri=TABLE_URI)
 
     def test_should_fail_when_cannot_get_description(self) -> None:
+        """
+        Check if we should sent to be sent in the response.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_table_description.side_effect = RuntimeError()
 
         response = self.app.test_client().get(f'/table/{TABLE_URI}/description')
@@ -28,6 +40,12 @@ class TestTableDescriptionAPI(TableTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def test_should_fail_when_cannot_find_table(self) -> None:
+        """
+        Checks if the test for the test for the test.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_table_description.side_effect = NotFoundException(message='cannot find table')
 
         response = self.app.test_client().get(f'/table/{TABLE_URI}/description')
@@ -35,6 +53,12 @@ class TestTableDescriptionAPI(TableTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_should_update_table_description(self) -> None:
+        """
+        Responsys. updatetable.
+
+        Args:
+            self: (todo): write your description
+        """
         response = self.app.test_client().put(f'/table/{TABLE_URI}/description',
                                               json={'description': DESCRIPTION})
 
@@ -42,6 +66,12 @@ class TestTableDescriptionAPI(TableTestCase):
         self.mock_proxy.put_table_description.assert_called_with(table_uri=TABLE_URI, description=DESCRIPTION)
 
     def test_should_fail_to_update_description_when_table_not_found(self) -> None:
+        """
+        Test to see if a test description of a test.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.put_table_description.side_effect = NotFoundException(message='cannot find table')
 
         response = self.app.test_client().put(f'/table/{TABLE_URI}/description', json={'description': DESCRIPTION})

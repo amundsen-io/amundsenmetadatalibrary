@@ -21,6 +21,18 @@ class JanusGraphGremlinProxy(AbstractGremlinProxy):
     def __init__(self, *, host: str, port: Optional[int] = None, user: Optional[str] = None,
                  password: Optional[str] = None, traversal_source: 'str' = 'g',
                  driver_remote_connection_options: Mapping[str, Any] = {}) -> None:
+        """
+        Establish a connection to a connection.
+
+        Args:
+            self: (todo): write your description
+            host: (str): write your description
+            port: (int): write your description
+            user: (str): write your description
+            password: (str): write your description
+            traversal_source: (str): write your description
+            driver_remote_connection_options: (todo): write your description
+        """
         driver_remote_connection_options = dict(driver_remote_connection_options)
 
         # as others, we repurpose host a url, and url can be an HTTPRequest
@@ -44,8 +56,20 @@ class JanusGraphGremlinProxy(AbstractGremlinProxy):
     @classmethod
     @overrides
     def script_translator(cls) -> Type[ScriptTranslatorTargetJanusgraph]:
+        """
+        Translator script for the given script.
+
+        Args:
+            cls: (todo): write your description
+        """
         return ScriptTranslatorTargetJanusgraph
 
     @overrides
     def possibly_signed_ws_client_request_or_url(self) -> str:
+        """
+        Return the url or none if the request is signed.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.url

@@ -18,10 +18,22 @@ class PopularTablesAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/popular_tables_get.yml')
     def get(self) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Returns a list of tables.
+
+        Args:
+            self: (todo): write your description
+        """
         limit = request.args.get('limit', 10, type=int)
         popular_tables: List[PopularTable] = self.client.get_popular_tables(num_entries=limit)
         popular_tables_json: str = PopularTableSchema(many=True).dump(popular_tables).data

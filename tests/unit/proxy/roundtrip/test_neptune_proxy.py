@@ -19,11 +19,24 @@ from .roundtrip_neptune_proxy import RoundtripNeptuneGremlinProxy
 class NeptuneGremlinProxyTest(
         abstract_gremlin_proxy_test_class(), unittest.TestCase):  # type: ignore
     def _create_gremlin_proxy(self, config: Mapping[str, Any]) -> RoundtripNeptuneGremlinProxy:
+        """
+        Create gremlin proxy proxy.
+
+        Args:
+            self: (todo): write your description
+            config: (todo): write your description
+        """
         # Don't use PROXY_HOST, PROXY_PORT, PROXY_PASSWORD.  They might not be neptune
         return RoundtripNeptuneGremlinProxy(host=config['NEPTUNE_URL'], password=config['NEPTUNE_SESSION'],
                                             neptune_bulk_loader_s3_bucket_name=config['NEPTUNE_BULK_LOADER_S3_BUCKET_NAME']) # noqa E501
 
     def test_is_retryable(self) -> None:
+        """
+        Decorator to retryable retry if it.
+
+        Args:
+            self: (todo): write your description
+        """
         exception = gremlin_python.driver.protocol.GremlinServerError(dict(
             code=408, attributes=(), message=json.dumps(dict(code='ConcurrentModificationException'))))
         self.assertTrue(NeptuneGremlinProxy._is_retryable_exception(method_name=None, exception=exception))
@@ -34,16 +47,34 @@ class NeptuneGremlinProxyTest(
         self.assertFalse(NeptuneGremlinProxy._is_retryable_exception(method_name=None, exception=exception))
 
     def test_gremlin_status(self) -> None:
+        """
+        Set the gremlin status.
+
+        Args:
+            self: (todo): write your description
+        """
         proxy = self.get_proxy()
         results = proxy._gremlin_status()
         self.assertIsNotNone(results)
 
     def test_sparql_status(self) -> None:
+        """
+        Check if the test.
+
+        Args:
+            self: (todo): write your description
+        """
         proxy = self.get_proxy()
         results = proxy._sparql_status()
         self.assertIsNotNone(results)
 
     def test_explain(self) -> None:
+        """
+        Test if this property.
+
+        Args:
+            self: (todo): write your description
+        """
         proxy = self.get_proxy()
         g = proxy.g.V().has(VertexTypes.User.value.label, proxy.key_property_name, 'jack').fold().coalesce(
             __.unfold(),
@@ -55,6 +86,12 @@ class NeptuneGremlinProxyTest(
         proxy._explain(query)
 
     def test_profile(self) -> None:
+        """
+        Get the current profile.
+
+        Args:
+            self: (todo): write your description
+        """
         count = self._get(label=VertexTypes.User, key='jack', extra_traversal=__.count())
         self.assertEqual(count, 0)
         # just enough to not explode

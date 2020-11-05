@@ -11,6 +11,12 @@ from tests.unit.test_basics import BasicTestCase
 class RedshiftCommentEditDisableTest(BasicTestCase):
 
     def test_table_comment_edit(self) -> None:
+        """
+        Updates an existing comment.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch('metadata_service.api.table.get_proxy_client'):
             table_uri = 'hive://gold.test_schema/test_table'
             url = '/table/' + table_uri + '/description'
@@ -18,6 +24,12 @@ class RedshiftCommentEditDisableTest(BasicTestCase):
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_column_comment_edit(self) -> None:
+        """
+        Edit the comment comment comment.
+
+        Args:
+            self: (todo): write your description
+        """
         with patch('metadata_service.api.column.get_proxy_client'):
             table_uri = 'hive://gold.test_schema/test_table'
             column_name = 'foo'

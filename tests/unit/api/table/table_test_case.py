@@ -8,10 +8,22 @@ from tests.unit.test_basics import BasicTestCase
 
 class TableTestCase(BasicTestCase):
     def setUp(self) -> None:
+        """
+        Sets the mock.
+
+        Args:
+            self: (todo): write your description
+        """
         super().setUp()
         self.mock_client = patch('metadata_service.api.table.get_proxy_client')
         self.mock_proxy = self.mock_client.start().return_value = Mock()
 
     def tearDown(self) -> None:
+        """
+        Stops the client.
+
+        Args:
+            self: (todo): write your description
+        """
         super().tearDown()
         self.mock_client.stop()

@@ -34,10 +34,25 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
     @timer_with_counter
     @overrides
     def put_user(self, *, data: User) -> None:
+        """
+        Create a new user.
+
+        Args:
+            self: (todo): write your description
+            data: (str): write your description
+        """
         with self.query_executor() as executor:
             return self._put_user(data=data, executor=executor)
 
     def _put_user(self, *, data: User, executor: ExecuteQuery) -> None:
+        """
+        Put a user.
+
+        Args:
+            self: (todo): write your description
+            data: (str): write your description
+            executor: (todo): write your description
+        """
         if data.user_id is None:
             raise NotImplementedError(f'Must pass some user_id to derive vertex key')
         _upsert(executor=executor, g=self.g, label=VertexTypes.User, key=data.user_id,
@@ -46,6 +61,13 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
     @timer_with_counter
     @overrides
     def post_users(self, *, data: List[User]) -> None:
+        """
+        Post / users / : user >.
+
+        Args:
+            self: (todo): write your description
+            data: (str): write your description
+        """
         with self.query_executor() as executor:
             for each in data:
                 self._put_user(data=each, executor=executor)
@@ -53,26 +75,65 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
     @timer_with_counter
     @overrides
     def put_app(self, *, data: Application) -> None:
+        """
+        Write a new application.
+
+        Args:
+            self: (todo): write your description
+            data: (todo): write your description
+        """
         with self.query_executor() as executor:
             return self._put_app(data=data, executor=executor)
 
     def _put_app(self, *, data: Application, executor: ExecuteQuery) -> None:
+        """
+        Stores application properties.
+
+        Args:
+            self: (todo): write your description
+            data: (array): write your description
+            executor: (todo): write your description
+        """
         _upsert(executor=executor, g=self.g, label=VertexTypes.Application, key=data.id,
                 key_property_name=self.key_property_name, **_properties_except(data))
 
     @timer_with_counter
     @overrides
     def post_apps(self, *, data: List[Application]) -> None:
+        """
+        Post apps to the app.
+
+        Args:
+            self: (todo): write your description
+            data: (array): write your description
+        """
         with self.query_executor() as executor:
             for each in data:
                 self._put_app(data=each, executor=executor)
 
     def _put_database(self, *, database: str, executor: ExecuteQuery) -> None:
+        """
+        Stores a database.
+
+        Args:
+            self: (todo): write your description
+            database: (todo): write your description
+            executor: (todo): write your description
+        """
         database_uri = make_database_uri(database_name=database)
         _upsert(executor=executor, g=self.g, label=VertexTypes.Database, key=database_uri,
                 key_property_name=self.key_property_name, name=database)
 
     def _put_cluster(self, *, database_uri: str, cluster: str, executor: ExecuteQuery) -> None:
+        """
+        Creates a cluster.
+
+        Args:
+            self: (todo): write your description
+            database_uri: (todo): write your description
+            cluster: (todo): write your description
+            executor: (todo): write your description
+        """
         cluster_uri: str = make_cluster_uri(database_uri=database_uri, cluster_name=cluster)
         node_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Cluster, key=cluster_uri,
                                key_property_name=self.key_property_name, name=cluster)
@@ -81,6 +142,15 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
               vertex1_label=VertexTypes.Database, vertex1_key=database_uri, vertex2_id=node_id)
 
     def _put_schema(self, *, cluster_uri: str, schema: str, executor: ExecuteQuery) -> None:
+        """
+        Creates a marshmallow schema object.
+
+        Args:
+            self: (todo): write your description
+            cluster_uri: (str): write your description
+            schema: (todo): write your description
+            executor: (todo): write your description
+        """
         schema_uri: str = make_schema_uri(cluster_uri=cluster_uri, schema_name=schema)
 
         node_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Schema, key=schema_uri,
@@ -92,10 +162,25 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
     @timer_with_counter
     @overrides
     def put_table(self, *, table: Table) -> None:
+        """
+        Executes a table.
+
+        Args:
+            self: (todo): write your description
+            table: (str): write your description
+        """
         with self.query_executor() as executor:
             return self._put_table(table=table, executor=executor)
 
     def _put_table(self, *, table: Table, executor: ExecuteQuery) -> None:
+        """
+        Stores a table.
+
+        Args:
+            self: (todo): write your description
+            table: (str): write your description
+            executor: (todo): write your description
+        """
         # note: I hate this API where we pass a name, get back nothing and then recapitulate the key logic.  -
         self._put_database(database=table.database, executor=executor)
         database_uri: str = make_database_uri(database_name=table.database)
@@ -134,6 +219,15 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
             self._put_column(executor=executor, table_uri=table_uri, column=column)
 
     def _put_app_table_relation(self, *, app_key: str, table_uri: str, executor: ExecuteQuery) -> None:
+        """
+        Stores the application - specific app. table.
+
+        Args:
+            self: (todo): write your description
+            app_key: (str): write your description
+            table_uri: (str): write your description
+            executor: (todo): write your description
+        """
         # try the usual app, but also fallback to a non-standard name (prefixed by app_)
         for key in (app_key, f'app-{app_key}'):
             count = executor(query=_V(g=self.g, label=VertexTypes.Application, key=key).count(),
@@ -160,6 +254,13 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
         LOGGER.debug(f'{app_key} is not a real app nor an owner: {table_uri}')
 
     def _put_updated_timestamp(self, executor: ExecuteQuery) -> datetime:
+        """
+        Returns updated updated updated update update timestamp.
+
+        Args:
+            self: (todo): write your description
+            executor: (todo): write your description
+        """
         t = timestamp()
         _upsert(executor=executor, g=self.g, label=VertexTypes.Updatedtimestamp,
                 key=AMUNDSEN_TIMESTAMP_KEY, key_property_name=self.key_property_name, latest_timestamp=t)
@@ -190,6 +291,15 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
             return self._put_column(table_uri=table_uri, column=column, executor=executor)
 
     def _put_column(self, *, table_uri: str, column: Column, executor: ExecuteQuery) -> None:
+        """
+        Responsys. table.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            column: (todo): write your description
+            executor: (todo): write your description
+        """
         # TODO: could do these async
         column_uri: str = make_column_uri(table_uri=table_uri, column_name=column.name)
 
@@ -225,6 +335,15 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
 
     def _put_programmatic_table_description(self, *, table_uri: str, description: ProgrammaticDescription,
                                             executor: ExecuteQuery) -> None:
+        """
+        Creates a new : paramikotable.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            description: (str): write your description
+            executor: (todo): write your description
+        """
         g = _V(g=self.g, label=VertexTypes.Table, key=table_uri).id()
         table_vertex_id = executor(query=g, get=FromResultSet.getOptional)
         if not table_vertex_id:
@@ -242,6 +361,15 @@ class RoundtripGremlinProxy(GenericGremlinProxy, RoundtripBaseProxy):
     @timer_with_counter
     @overrides
     def add_read_count(self, *, table_uri: str, user_id: str, read_count: int) -> None:
+        """
+        Creates a new read count to the database.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            user_id: (str): write your description
+            read_count: (int): write your description
+        """
         # TODO: use READ_BY instead of READ edges
         with self.query_executor() as executor:
             _link(executor=executor, g=self.g, edge_label=EdgeTypes.Read, key_property_name=self.key_property_name,

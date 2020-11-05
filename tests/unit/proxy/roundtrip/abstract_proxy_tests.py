@@ -57,11 +57,27 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
 
     @abstractmethod
     def get_proxy(self) -> T:
+        """
+        Return the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         pass
 
     @abstractmethod
     def get_relationship(self, *, node_type1: str, node_key1: str, node_type2: str,
                          node_key2: str) -> List[Any]:
+        """
+        Return the relationship of a node.
+
+        Args:
+            self: (todo): write your description
+            node_type1: (str): write your description
+            node_key1: (str): write your description
+            node_type2: (str): write your description
+            node_key2: (str): write your description
+        """
         pass
 
     def test_rt_table(self) -> None:
@@ -80,6 +96,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_rt_table_with_owner(self) -> None:
+        """
+        Updates the owner of the current user.
+
+        Args:
+            self: (todo): write your description
+        """
         user = Fixtures.next_user(is_active=True)
         self.get_proxy().put_user(data=user)
         application = Fixtures.next_application(application_id=user.user_id)
@@ -91,6 +113,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         self.assertEqual(user.user_id, actual.owners[0].user_id)
 
     def test_rt_table_with_non_existent_app(self) -> None:
+        """
+        Test for the application to see if it exists.
+
+        Args:
+            self: (todo): write your description
+        """
         application = Fixtures.next_application()
         # purposefully don't insert application
         expected_table = Fixtures.next_table(application=application)
@@ -102,6 +130,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         self.assertEqual(actual_table.owners, [])
 
     def test_get_popular_tables(self) -> None:
+        """
+        Initialize the database tables.
+
+        Args:
+            self: (todo): write your description
+        """
         application = Fixtures.next_application()
         self.get_proxy().put_app(data=application)
         # Add 10 tables
@@ -138,6 +172,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         self.assertEqual(sorted(actual_popular_tables), sorted(popular_tables))
 
     def test_put_programmatic_table_description(self) -> None:
+        """
+        Inspects a description of a description.
+
+        Args:
+            self: (todo): write your description
+        """
         table: Table = Fixtures.next_table()
         table.programmatic_descriptions = []
         self.get_proxy().put_table(table=table)
@@ -152,6 +192,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
                                                             description=Fixtures.next_description())
 
     def test_add_delete_user_relation(self) -> None:
+        """
+        Add the user to the user
+
+        Args:
+            self: (todo): write your description
+        """
         table = Fixtures.next_table()
         self.get_proxy().put_table(table=table)
         user = Fixtures.next_user()
@@ -179,6 +225,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         self.assertEqual(0, len(res2['table']))
 
     def test_owner_rt(self) -> None:
+        """
+        Update the owner of the current user.
+
+        Args:
+            self: (todo): write your description
+        """
         application = Fixtures.next_application()
         self.get_proxy().put_app(data=application)
         table = Fixtures.next_table(application=application)
@@ -199,6 +251,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         self.assertEqual(0, len(relations))
 
     def test_tag_rt(self) -> None:
+        """
+        Add a new tags to - many tags.
+
+        Args:
+            self: (todo): write your description
+        """
         table = Fixtures.next_table()
         self.get_proxy().put_table(table=table)
         test_tag_detail = TagDetail(tag_name='a', tag_count=1)
@@ -217,6 +275,12 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
         self.assertEqual(0, len(relations))
 
     def test_get_latest_updated_ts(self) -> None:
+        """
+        Test for a new updates.
+
+        Args:
+            self: (todo): write your description
+        """
         application = Fixtures.next_application()
         self.get_proxy().put_app(data=application)
         table = Fixtures.next_table(application=application)
@@ -238,9 +302,19 @@ class AbstractProxyTest(ABC, Generic[T], unittest.TestCase):
 
 @no_type_check
 def class_getter_closure() -> Callable[[], Type[AbstractProxyTest]]:  # noqa: F821
+    """
+    Class decorator class for the given class.
+
+    Args:
+    """
     the_class: Type[AbstractProxyTest[Any]] = AbstractProxyTest  # noqa: F821
 
     def abstract_proxy_test_class() -> Type[AbstractProxyTest]:  # noqa: F821
+        """
+        Return the proxy class for the given proxy.
+
+        Args:
+        """
         return the_class
     return abstract_proxy_test_class
 

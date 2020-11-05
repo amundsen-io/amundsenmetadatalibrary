@@ -40,9 +40,22 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
     @classmethod
     @abstractmethod
     def _create_gremlin_proxy(cls, config: Mapping[str, Any]) -> AbstractGremlinProxy:
+        """
+        Create gremlin proxy proxy.
+
+        Args:
+            cls: (callable): write your description
+            config: (todo): write your description
+        """
         pass
 
     def setUp(self) -> None:
+        """
+        Initialize gremlin application.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app: Flask = create_app(config_module_class='metadata_service.config.LocalConfig')
         self.app_context = self.app.app_context()
         self.app_context.push()
@@ -53,43 +66,113 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
         self.maxDiff = None
 
     def tearDown(self) -> None:
+        """
+        Tear down the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         # pass
         self.get_proxy().drop()
 
     def get_proxy(self) -> AbstractGremlinProxy:
+        """
+        Return proxy object.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.gremlin_proxy
 
     def get_relationship(self, *, node_type1: str, node_key1: str, node_type2: str,
                          node_key2: str) -> List[Any]:
+        """
+        Return a relationship object from a relationship.
+
+        Args:
+            self: (todo): write your description
+            node_type1: (str): write your description
+            node_key1: (str): write your description
+            node_type2: (str): write your description
+            node_key2: (str): write your description
+        """
         return self.gremlin_proxy.get_relationship(
             node_type1=node_type1, node_key1=node_key1, node_type2=node_type2, node_key2=node_key2)
 
     def _upsert(self, **kwargs: Any) -> None:
+        """
+        Perform an upsert query.
+
+        Args:
+            self: (todo): write your description
+        """
         with self.get_proxy().query_executor() as executor:
             return _upsert(executor=executor, execute=FromResultSet.iterate, g=self.get_proxy().g,
                            key_property_name=self.get_proxy().key_property_name, **kwargs)
 
     def _link(self, **kwargs: Any) -> None:
+        """
+        Execute a link.
+
+        Args:
+            self: (todo): write your description
+        """
         with self.get_proxy().query_executor() as executor:
             return _link(executor=executor, execute=FromResultSet.iterate, g=self.get_proxy().g,
                          key_property_name=self.get_proxy().key_property_name, **kwargs)
 
     @overload  # noqa: F811
     def _get(self, extra_traversal: Traversal, **kwargs: Any) -> Any:
+        """
+        Deprecated.
+
+        Args:
+            self: (todo): write your description
+            extra_traversal: (str): write your description
+        """
         ...
 
     @overload  # noqa: F811
     def _get(self, extra_traversal: Traversal, get: Callable[[ResultSet], TYPE], **kwargs: Any) -> TYPE:  # noqa: F811
+        """
+        Gets the extra arguments.
+
+        Args:
+            self: (todo): write your description
+            extra_traversal: (str): write your description
+            get: (str): write your description
+            Callable: (todo): write your description
+            ResultSet: (todo): write your description
+            TYPE: (todo): write your description
+        """
         ...
 
     def _get(self, extra_traversal: Traversal, get: Optional[Callable[[ResultSet], TYPE]] = None,  # noqa: F811
              **kwargs: Any) -> Union[TYPE, Any]:
+        """
+        Gets a get query.
+
+        Args:
+            self: (todo): write your description
+            extra_traversal: (str): write your description
+            get: (str): write your description
+            Optional: (todo): write your description
+            Callable: (todo): write your description
+            ResultSet: (todo): write your description
+            TYPE: (todo): write your description
+        """
         traversal = _append_traversal(_V(g=self.get_proxy().g, **kwargs), extra_traversal)
         return self.get_proxy().query_executor()(query=traversal, get=get or FromResultSet.getOnly)
 
     # everything below is a gremlin specific test
 
     def test_safe_get(self) -> None:
+        """
+        Method to see if the equal is valid
+
+        Args:
+            self: (todo): write your description
+        """
         self.assertEqual(_safe_get([]), None)
         self.assertEqual(_safe_get(['1']), '1')
         self.assertRaisesRegex(RuntimeError, r'is not a singleton!', _safe_get, ['1', '2'])
@@ -103,6 +186,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
         self.assertEqual(_safe_get_list([{'one': ['1', '2']}], 'one', transform=int), [1, 2])
 
     def test_safe_get_with_objects(self) -> None:
+        """
+        This method will be used by the app.
+
+        Args:
+            self: (todo): write your description
+        """
         app = Fixtures.next_application()
         app2 = Fixtures.next_application()
         fake_result = {key: [value] for key, value in app.__dict__.items()}
@@ -114,6 +203,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
             [app, app2])
 
     def test_upsert_rt(self) -> None:
+        """
+        Gets the database to the database.
+
+        Args:
+            self: (todo): write your description
+        """
         # test that we will insert
         db_name = Fixtures.next_database()
         database_uri = f'database://{db_name}'
@@ -130,6 +225,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
         self.assertIsNotNone(vertexValueMap)
 
     def test_upsert_thrice(self) -> None:
+        """
+        Test if the mock database.
+
+        Args:
+            self: (todo): write your description
+        """
         executor = mock.Mock(wraps=self.get_proxy().query_executor())
 
         # test that we will insert
@@ -173,6 +274,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
             bytecode)
 
     def test_link_rt(self) -> None:
+        """
+        Test if the link link between two nodes.
+
+        Args:
+            self: (todo): write your description
+        """
         db_name = Fixtures.next_database()
         database_uri = f'database://{db_name}'
         cluster_uri = f'{db_name}://acluster'
@@ -209,6 +316,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
         self.assertEqual(rel[0].get('aproperty'), None)
 
     def test_link_dangling_from_rt(self) -> None:
+        """
+        Test link link between two links.
+
+        Args:
+            self: (todo): write your description
+        """
         db_name = Fixtures.next_database()
         database_uri = f'database://{db_name}'
         cluster_uri = f'{db_name}://acluster'
@@ -223,6 +336,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
                        edge_label=EdgeTypes.Cluster, aproperty='hi')
 
     def test_link_dangling_to_rt(self) -> None:
+        """
+        Test for link between two nodes.
+
+        Args:
+            self: (todo): write your description
+        """
         db_name = Fixtures.next_database()
         database_uri = f'database://{db_name}'
         cluster_uri = f'{db_name}://acluster'
@@ -237,6 +356,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
                        edge_label=EdgeTypes.Cluster, aproperty='hi')
 
     def test_edges(self) -> None:
+        """
+        Test for all edges between the current node objects.
+
+        Args:
+            self: (todo): write your description
+        """
         db_name = Fixtures.next_database()
         database_uri = f'database://{db_name}'
         cluster1_uri = f'{db_name}://acluster'
@@ -329,6 +454,12 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
         self.assertEqual(len(e), 0)
 
     def test_expire_link(self) -> None:
+        """
+        Test if there ising link to the two nodes.
+
+        Args:
+            self: (todo): write your description
+        """
         db_name = Fixtures.next_database()
         database_uri = f'database://{db_name}'
         database2_uri = f'database://{db_name}2'
@@ -379,9 +510,19 @@ class AbstractGremlinProxyTest(abstract_proxy_test_class(), unittest.TestCase): 
 
 @no_type_check
 def class_getter_closure() -> Callable[[], Type[AbstractGremlinProxyTest]]:  # noqa: F821
+    """
+    Return the gremlin class. gremlin class. gremlin.
+
+    Args:
+    """
     the_class: Type[AbstractGremlinProxyTest[Any]] = AbstractGremlinProxyTest  # noqa: F821
 
     def abstract_gremlin_proxy_test_class() -> Type[AbstractGremlinProxyTest]:  # noqa: F821
+        """
+        Abstract class factory class.
+
+        Args:
+        """
         return the_class
     return abstract_gremlin_proxy_test_class
 

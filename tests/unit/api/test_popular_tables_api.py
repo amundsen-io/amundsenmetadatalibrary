@@ -22,17 +22,35 @@ CLIENT_RESPONSE = [{'database': 'ministry',
 
 class TestPopularTablesAPI(BasicTestCase):
     def setUp(self) -> None:
+        """
+        Sets the mock.
+
+        Args:
+            self: (todo): write your description
+        """
         super().setUp()
 
         self.mock_client = patch('metadata_service.api.popular_tables.get_proxy_client')
         self.mock_proxy = self.mock_client.start().return_value = Mock()
 
     def tearDown(self) -> None:
+        """
+        Stops the client.
+
+        Args:
+            self: (todo): write your description
+        """
         super().tearDown()
 
         self.mock_client.stop()
 
     def test_should_get_popular_tables_with_default_limits(self) -> None:
+        """
+        Returns true if the current state of the slot.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_popular_tables.return_value = CLIENT_RESPONSE
 
         response = self.app.test_client().get('popular_tables/')
@@ -42,6 +60,12 @@ class TestPopularTablesAPI(BasicTestCase):
         self.mock_proxy.get_popular_tables.assert_called_with(num_entries=10)
 
     def test_should_get_popular_tables_with_requested_limits(self) -> None:
+        """
+        Returns true if the request should be sent.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_popular_tables.return_value = CLIENT_RESPONSE
 
         self.app.test_client().get('popular_tables/?limit=90')

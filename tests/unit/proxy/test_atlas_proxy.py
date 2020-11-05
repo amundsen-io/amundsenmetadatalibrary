@@ -21,6 +21,12 @@ from metadata_service.entity.resource_type import ResourceType
 
 class TestAtlasProxy(unittest.TestCase, Data):
     def setUp(self) -> None:
+        """
+        Sets the app.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app = create_app(config_module_class='metadata_service.config.LocalConfig')
         self.app.config['PROGRAMMATIC_DESCRIPTIONS_EXCLUDE_FILTERS'] = ['spark.*']
         self.app.config['WATERMARK_DATE_FORMATS'] = ''
@@ -36,13 +42,34 @@ class TestAtlasProxy(unittest.TestCase, Data):
             self.proxy._driver = MagicMock()
 
     def to_class(self, entity: Dict) -> Any:
+        """
+        Convert an object to a dictionary.
+
+        Args:
+            self: (todo): write your description
+            entity: (todo): write your description
+        """
         class ObjectView(object):
             def __init__(self, dictionary: Dict):
+                """
+                Initialize a dictionary.
+
+                Args:
+                    self: (todo): write your description
+                    dictionary: (dict): write your description
+                """
                 self.__dict__ = dictionary
 
         return ObjectView(entity)
 
     def _mock_get_table_entity(self, entity: Optional[Any] = None) -> Any:
+        """
+        Gets a mock entity.
+
+        Args:
+            self: (todo): write your description
+            entity: (str): write your description
+        """
         entity = cast(dict, entity or self.entity1)
         mocked_entity = MagicMock()
         mocked_entity.entity = entity
@@ -56,6 +83,13 @@ class TestAtlasProxy(unittest.TestCase, Data):
         return mocked_entity
 
     def _mock_get_bookmark_entity(self, entity: Optional[Any] = None) -> Any:
+        """
+        Returns the entity entity.
+
+        Args:
+            self: (todo): write your description
+            entity: (todo): write your description
+        """
         entity = entity or self.entity1
         mocked_entity = MagicMock()
         mocked_entity.entity = entity
@@ -63,6 +97,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         return mocked_entity
 
     def test_extract_table_uri_info(self) -> None:
+        """
+        Extract database info about the database.
+
+        Args:
+            self: (todo): write your description
+        """
         table_info = self.proxy._extract_info_from_uri(table_uri=self.table_uri)
         self.assertDictEqual(table_info, {
             'entity': self.entity_type,
@@ -72,6 +112,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         })
 
     def test_get_ids_from_basic_search(self) -> None:
+        """
+        Get a list of the entity ids.
+
+        Args:
+            self: (todo): write your description
+        """
         entity1 = MagicMock()
         entity1.guid = self.entity1['guid']
 
@@ -87,6 +133,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertListEqual(response, expected)
 
     def test_get_table_entity(self) -> None:
+        """
+        Gets the entity entity for this will return an entity.
+
+        Args:
+            self: (todo): write your description
+        """
         unique_attr_response = MagicMock()
 
         self.proxy._driver.entity_unique_attribute = MagicMock(
@@ -96,6 +148,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(ent.__repr__(), unique_attr_response.__repr__())
 
     def _create_mocked_report_entities_collection(self) -> None:
+        """
+        Create entity entities for entity entities.
+
+        Args:
+            self: (todo): write your description
+        """
         mocked_report_entities_collection = MagicMock()
         mocked_report_entities_collection.entities = []
         for entity in self.report_entities:
@@ -107,6 +165,13 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.report_entity_collection = [mocked_report_entities_collection]
 
     def _get_table(self, custom_stats_format: bool = False) -> None:
+        """
+        Gets the stats table.
+
+        Args:
+            self: (todo): write your description
+            custom_stats_format: (todo): write your description
+        """
         if custom_stats_format:
             test_exp_col = self.test_exp_col_stats_formatted
         else:
@@ -159,9 +224,21 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(str(expected), str(response))
 
     def test_get_table_without_custom_stats_format(self) -> None:
+        """
+        Gets the stats format.
+
+        Args:
+            self: (todo): write your description
+        """
         self._get_table()
 
     def test_get_table_with_custom_stats_format(self) -> None:
+        """
+        Implements stats table.
+
+        Args:
+            self: (todo): write your description
+        """
         statistics_format_spec = {'min': {'new_name': 'minimum', 'format': '{:,.2f}'},
                                   'max': {'drop': True}}
 
@@ -169,11 +246,23 @@ class TestAtlasProxy(unittest.TestCase, Data):
             self._get_table(custom_stats_format=True)
 
     def test_get_table_not_found(self) -> None:
+        """
+        Test if the entity that was not fetched
+
+        Args:
+            self: (todo): write your description
+        """
         with self.assertRaises(NotFoundException):
             self.proxy._driver.entity_unique_attribute = MagicMock(side_effect=Exception('Boom!'))
             self.proxy.get_table(table_uri=self.table_uri)
 
     def test_get_table_missing_info(self) -> None:
+        """
+        Get a dictionary of the current entity attributes.
+
+        Args:
+            self: (todo): write your description
+        """
         with self.assertRaises(BadRequest):
             local_entity = copy.deepcopy(self.entity1)
             local_entity.pop('attributes')
@@ -184,6 +273,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             self.proxy.get_table(table_uri=self.table_uri)
 
     def test_get_popular_tables(self) -> None:
+        """
+        Gets the entity object representing the entities.
+
+        Args:
+            self: (todo): write your description
+        """
         ent1 = self.to_class(self.entity1)
         ent2 = self.to_class(self.entity2)
 
@@ -209,17 +304,35 @@ class TestAtlasProxy(unittest.TestCase, Data):
             self.assertEqual(expected.__repr__(), response.__repr__())
 
     def test_get_table_description(self) -> None:
+        """
+        Gets the description of the entity.
+
+        Args:
+            self: (todo): write your description
+        """
         self._mock_get_table_entity()
         response = self.proxy.get_table_description(table_uri=self.table_uri)
         attributes = cast(dict, self.entity1['attributes'])
         self.assertEqual(response, attributes['description'])
 
     def test_put_table_description(self) -> None:
+        """
+        Adds or updates the entity description.
+
+        Args:
+            self: (todo): write your description
+        """
         self._mock_get_table_entity()
         self.proxy.put_table_description(table_uri=self.table_uri,
                                          description="DOESNT_MATTER")
 
     def test_get_tags(self) -> None:
+        """
+        Get metrics about the metrics
+
+        Args:
+            self: (todo): write your description
+        """
         tag_response = {
             'tagEntities': {
                 'PII': 3,
@@ -238,6 +351,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(expected.__repr__(), response.__repr__())
 
     def test_add_tag(self) -> None:
+        """
+        Adds the entity tags to the entity.
+
+        Args:
+            self: (todo): write your description
+        """
         tag = "TAG"
         self._mock_get_table_entity()
 
@@ -248,6 +367,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             )
 
     def test_delete_tag(self) -> None:
+        """
+        Delete the test tag.
+
+        Args:
+            self: (todo): write your description
+        """
         tag = "TAG"
         self._mock_get_table_entity()
         mocked_entity = MagicMock()
@@ -258,6 +383,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             mock_execute.assert_called_with()
 
     def test_add_owner(self) -> None:
+        """
+        Adds owner to the user.
+
+        Args:
+            self: (todo): write your description
+        """
         owner = "OWNER"
         user_guid = 123
         self._mock_get_table_entity()
@@ -273,6 +404,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             )
 
     def test_get_column(self) -> None:
+        """
+        Gets the test column for the test.
+
+        Args:
+            self: (todo): write your description
+        """
         self._mock_get_table_entity()
         response = self.proxy._get_column(
             table_uri=self.table_uri,
@@ -280,11 +417,23 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertDictEqual(response, self.test_column)
 
     def test_get_column_wrong_name(self) -> None:
+        """
+        Gets the entity name.
+
+        Args:
+            self: (todo): write your description
+        """
         with self.assertRaises(NotFoundException):
             self._mock_get_table_entity()
             self.proxy._get_column(table_uri=self.table_uri, column_name='FAKE')
 
     def test_get_column_no_referred_entities(self) -> None:
+        """
+        Gets the entity entities for the given entity.
+
+        Args:
+            self: (todo): write your description
+        """
         with self.assertRaises(NotFoundException):
             local_entity: Dict = self.entity2
             local_entity['attributes']['columns'] = [{'guid': 'ent_2_col'}]
@@ -292,6 +441,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             self.proxy._get_column(table_uri=self.table_uri, column_name='FAKE')
 
     def test_get_column_description(self) -> None:
+        """
+        Gets the entity description.
+
+        Args:
+            self: (todo): write your description
+        """
         self._mock_get_table_entity()
         attributes = cast(dict, self.test_column['attributes'])
         response = self.proxy.get_column_description(
@@ -300,6 +455,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(response, attributes.get('description'))
 
     def test_put_column_description(self) -> None:
+        """
+        Adds a test description to the database.
+
+        Args:
+            self: (todo): write your description
+        """
         self._mock_get_table_entity()
         attributes = cast(dict, self.test_column['attributes'])
         self.proxy.put_column_description(table_uri=self.table_uri,
@@ -307,6 +468,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
                                           description='DOESNT_MATTER')
 
     def test_get_table_by_user_relation_follow(self) -> None:
+        """
+        Returns a dictionary of - like dbmark1.
+
+        Args:
+            self: (todo): write your description
+        """
         bookmark1 = copy.deepcopy(self.bookmark_entity1)
         bookmark1 = self.to_class(bookmark1)
         bookmark_collection = MagicMock()
@@ -322,6 +489,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(res, {'table': expected})
 
     def test_get_table_by_user_relation_own(self) -> None:
+        """
+        Get a user - defined mock by user.
+
+        Args:
+            self: (todo): write your description
+        """
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
         self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
@@ -343,6 +516,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual({'table': expected}, res)
 
     def test_get_resources_owned_by_user_success(self) -> None:
+        """
+        Get a list of resources by user.
+
+        Args:
+            self: (todo): write your description
+        """
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
         self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
@@ -364,6 +543,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(expected, res)
 
     def test_get_resources_owned_by_user_no_user(self) -> None:
+        """
+        Get resource_no by resource type
+
+        Args:
+            self: (todo): write your description
+        """
         unique_attr_response = MagicMock()
         unique_attr_response.entity = None
         self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
@@ -372,6 +557,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
                                                     resource_type=ResourceType.Table.name)
 
     def test_get_resources_owned_by_user_default_owner(self) -> None:
+        """
+        Get a list of entities by user.
+
+        Args:
+            self: (todo): write your description
+        """
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
         self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
@@ -397,6 +588,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(len(res), 1)
 
     def test_add_resource_relation_by_user(self) -> None:
+        """
+        Add relations to the resource.
+
+        Args:
+            self: (todo): write your description
+        """
         bookmark_entity = self._mock_get_bookmark_entity()
         with patch.object(bookmark_entity, 'update') as mock_execute:
             self.proxy.add_resource_relation_by_user(id=self.table_uri,
@@ -406,6 +603,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             mock_execute.assert_called_with()
 
     def test_delete_resource_relation_by_user(self) -> None:
+        """
+        Delete relations by user.
+
+        Args:
+            self: (todo): write your description
+        """
         bookmark_entity = self._mock_get_bookmark_entity()
         with patch.object(bookmark_entity, 'update') as mock_execute:
             self.proxy.delete_resource_relation_by_user(id=self.table_uri,
@@ -415,6 +618,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             mock_execute.assert_called_with()
 
     def test_get_readers(self) -> None:
+        """
+        Get all entities of entities
+
+        Args:
+            self: (todo): write your description
+        """
         basic_search_result = MagicMock()
         basic_search_result.entities = self.reader_entities
 
@@ -433,6 +642,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(expected, res)
 
     def test_get_frequently_used_tables(self) -> None:
+        """
+        Returns a list of all entities that are connected to be used entity.
+
+        Args:
+            self: (todo): write your description
+        """
         entity_unique_attribute_result = MagicMock()
         entity_unique_attribute_result.entity = DottedDict(self.user_entity_2)
         self.proxy._driver.entity_unique_attribute = MagicMock(return_value=entity_unique_attribute_result)
@@ -451,27 +666,57 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(expected, res)
 
     def test_get_latest_updated_ts_when_exists(self) -> None:
+        """
+        Check if a request todo object has updated
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(self.proxy._driver, 'admin_metrics', self.metrics_data):
             result = self.proxy.get_latest_updated_ts()
 
             assert result == 1598342400
 
     def test_get_latest_updated_ts_when_not_exists(self) -> None:
+        """
+        Respond to update a test
+
+        Args:
+            self: (todo): write your description
+        """
         with patch.object(self.proxy._driver, 'admin_metrics', []):
             result = self.proxy.get_latest_updated_ts()
 
             assert result == 0
 
     def test_get_user_detail_default(self) -> None:
+        """
+        Gets user details.
+
+        Args:
+            self: (todo): write your description
+        """
         user_id = "dummy@email.com"
         user_details = self.proxy._get_user_details(user_id=user_id)
         self.assertDictEqual(user_details, {'email': user_id, 'user_id': user_id})
 
     def test_get_user_detail_config_method(self) -> None:
+        """
+        A method configuration.
+
+        Args:
+            self: (todo): write your description
+        """
         user_id = "dummy@email.com"
         response = {'email': user_id, 'user_id': user_id, 'first_name': 'First', 'last_name': 'Last'}
 
         def custom_function(id: str) -> Dict[str, Any]:
+            """
+            Returns a custom function that will return value.
+
+            Args:
+                id: (int): write your description
+            """
             return response
 
         self.app.config['USER_DETAIL_METHOD'] = custom_function
@@ -481,10 +726,22 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.app.config['USER_DETAIL_METHOD'] = None
 
     def test_get_owners_details_no_owner_no_fallback(self) -> None:
+        """
+        Gets the details of the owner.
+
+        Args:
+            self: (todo): write your description
+        """
         res = self.proxy._get_owners(data_owners=list(), fallback_owner=None)
         self.assertEqual(len(res), 0)
 
     def test_get_owners_details_only_fallback(self) -> None:
+        """
+        Gets the details of the current user
+
+        Args:
+            self: (todo): write your description
+        """
         self.app.config['USER_DETAIL_METHOD'] = None
         user_id = "dummy@email.com"
         res = self.proxy._get_owners(data_owners=list(), fallback_owner=user_id)
@@ -492,6 +749,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertListEqual(res, [User(**{'email': user_id, 'user_id': user_id})])
 
     def test_get_owners_details_only_active(self) -> None:
+        """
+        Get the details of the entity details.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app.config['USER_DETAIL_METHOD'] = None
         data_owners = cast(dict, self.entity1)["relationshipAttributes"]["ownedBy"]
         # pass both active and inactive as parameter
@@ -503,6 +766,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(res[0].user_id, 'active_owned_by')
 
     def test_get_owners_details_owner_and_fallback(self) -> None:
+        """
+        Gets owner owner of owner of the entity.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app.config['USER_DETAIL_METHOD'] = None
         user_id = "dummy@email.com"
 
@@ -516,6 +785,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(res[1].user_id, user_id)
 
     def test_get_owners_details_owner_and_fallback_duplicates(self) -> None:
+        """
+        Gets the owner of owner owner.
+
+        Args:
+            self: (todo): write your description
+        """
         self.app.config['USER_DETAIL_METHOD'] = None
         data_owners = cast(dict, self.entity1)["relationshipAttributes"]["ownedBy"]
         user_id = data_owners[0]["displayText"]
@@ -527,6 +802,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(1, len(res))
 
     def test_get_table_watermarks(self) -> None:
+        """
+        Return the watermarks.
+
+        Args:
+            self: (todo): write your description
+        """
         params = [(['%Y%m%d'], 2, '2020-09'),
                   (['%Y,%m'], 2, '2020-08'),
                   (['%Y-%m-%d'], 0, None),

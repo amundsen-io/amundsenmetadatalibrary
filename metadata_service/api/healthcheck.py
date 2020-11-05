@@ -7,4 +7,9 @@ from flasgger import swag_from
 
 @swag_from('swagger_doc/healthcheck_get.yml')
 def healthcheck() -> Tuple[str, int]:
+    """
+    Returns the healthcheck string.
+
+    Args:
+    """
     return '', 200

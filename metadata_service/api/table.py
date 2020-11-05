@@ -25,10 +25,23 @@ class TableDetailAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/table/detail_get.yml')
     def get(self, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Retrieves schema.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (int): write your description
+        """
         try:
             table = self.client.get_table(table_uri=table_uri)
             schema = TableSchema(strict=True)
@@ -44,10 +57,24 @@ class TableOwnerAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/table/owner_put.yml')
     def put(self, table_uri: str, owner: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Updates the owner to the specified table.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            owner: (todo): write your description
+        """
         try:
             self.client.add_owner(table_uri=table_uri, owner=owner)
             return {'message': 'The owner {} for table_uri {} '
@@ -60,6 +87,14 @@ class TableOwnerAPI(Resource):
 
     @swag_from('swagger_doc/table/owner_delete.yml')
     def delete(self, table_uri: str, owner: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Deletes the specified table.
+
+        Args:
+            self: (todo): write your description
+            table_uri: (str): write your description
+            owner: (str): write your description
+        """
         try:
             self.client.delete_owner(table_uri=table_uri, owner=owner)
             return {'message': 'The owner {} for table_uri {} '
@@ -77,6 +112,12 @@ class TableDescriptionAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super(TableDescriptionAPI, self).__init__()
 
@@ -118,6 +159,12 @@ class TableTagAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('tag_type', type=str, required=False, default='default')
@@ -163,6 +210,12 @@ class TableTagAPI(Resource):
 
 class TableBadgeAPI(Resource):
     def __init__(self) -> None:
+        """
+        Initialize the client.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('category', type=str, required=True)
@@ -172,6 +225,14 @@ class TableBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_put.yml')
     def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Updates a badge
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            badge: (str): write your description
+        """
         args = self.parser.parse_args()
         category = args.get('category', '')
 
@@ -182,6 +243,14 @@ class TableBadgeAPI(Resource):
 
     @swag_from('swagger_doc/badge/badge_delete.yml')
     def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Delete a badge
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            badge: (str): write your description
+        """
         args = self.parser.parse_args()
         category = args.get('category', '')
 
@@ -197,6 +266,12 @@ class TableDashboardAPI(BaseAPI):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super().__init__(DashboardSummarySchema, 'resources_using_table', self.client)
 

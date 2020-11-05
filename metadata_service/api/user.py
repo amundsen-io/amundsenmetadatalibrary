@@ -27,11 +27,24 @@ class UserDetailAPI(BaseAPI):
     """
 
     def __init__(self) -> None:
+        """
+        Initializes proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
         super().__init__(UserSchema, 'user', self.client)
 
     @swag_from('swagger_doc/user/detail_get.yml')
     def get(self, *, id: Optional[str] = None) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Get user info.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+        """
         if app.config['USER_DETAIL_METHOD']:
             try:
                 user_data = app.config['USER_DETAIL_METHOD'](id)
@@ -49,6 +62,12 @@ class UserFollowsAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/follow_get.yml')
@@ -96,6 +115,12 @@ class UserFollowAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/follow_put.yml')
@@ -156,6 +181,12 @@ class UserOwnsAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/own_get.yml')
@@ -203,6 +234,12 @@ class UserOwnAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/own_put.yml')
@@ -228,6 +265,15 @@ class UserOwnAPI(Resource):
 
     @swag_from('swagger_doc/user/own_delete.yml')
     def delete(self, user_id: str, resource_type: str, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
+        """
+        Deletes the user.
+
+        Args:
+            self: (todo): write your description
+            user_id: (str): write your description
+            resource_type: (str): write your description
+            table_uri: (str): write your description
+        """
         try:
             self.client.delete_owner(table_uri=table_uri, owner=user_id)
             return {'message': 'The owner {} for table_uri {} '
@@ -246,6 +292,12 @@ class UserReadsAPI(Resource):
     """
 
     def __init__(self) -> None:
+        """
+        Initialize the proxy.
+
+        Args:
+            self: (todo): write your description
+        """
         self.client = get_proxy_client()
 
     @swag_from('swagger_doc/user/read_get.yml')

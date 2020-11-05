@@ -67,6 +67,12 @@ API_RESPONSE = {
 class TestTableDetailAPI(TableTestCase):
     @pytest.mark.skip(reason='The test is flaky in CI')
     def test_should_get_column_details(self) -> None:
+        """
+        Gets the value of the app.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_table.return_value = QUERY_RESPONSE
 
         response = self.app.test_client().get(f'/table/{TABLE_URI}')
@@ -75,6 +81,12 @@ class TestTableDetailAPI(TableTestCase):
         self.mock_proxy.get_table.assert_called_with(table_uri=TABLE_URI)
 
     def test_should_fail_to_get_column_details_when_table_not_foubd(self) -> None:
+        """
+        This method is called when the plugin to be sent to a failure.
+
+        Args:
+            self: (todo): write your description
+        """
         self.mock_proxy.get_table.side_effect = NotFoundException(message='table not found')
 
         response = self.app.test_client().get(f'/table/{TABLE_URI}')

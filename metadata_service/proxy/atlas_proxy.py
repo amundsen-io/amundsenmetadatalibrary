@@ -370,6 +370,13 @@ class AtlasProxy(BaseProxy):
         return sorted(columns, key=lambda item: item.sort_order)
 
     def _get_reports(self, guids: List[str]) -> List[ResourceReport]:
+        """
+        Get reports from the report.
+
+        Args:
+            self: (todo): write your description
+            guids: (list): write your description
+        """
         reports = []
         if guids:
             report_entities_collection = self._driver.entity_bulk(guid=guids)
@@ -393,6 +400,14 @@ class AtlasProxy(BaseProxy):
         return parsed_reports
 
     def _get_owners(self, data_owners: list, fallback_owner: str = None) -> List[User]:
+        """
+        Returns a list of dictionaries.
+
+        Args:
+            self: (todo): write your description
+            data_owners: (str): write your description
+            fallback_owner: (str): write your description
+        """
         owners_detail = list()
         active_owners_list = list()
         active_owners = filter(lambda item:
@@ -414,9 +429,22 @@ class AtlasProxy(BaseProxy):
         return owners_detail
 
     def get_user(self, *, id: str) -> Union[UserEntity, None]:
+        """
+        Get a user.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+        """
         pass
 
     def get_users(self) -> List[UserEntity]:
+        """
+        Get all users.
+
+        Args:
+            self: (todo): write your description
+        """
         pass
 
     def get_table(self, *, table_uri: str) -> Table:
@@ -484,6 +512,13 @@ class AtlasProxy(BaseProxy):
 
     @staticmethod
     def _validate_date(text_date: str, date_format: str) -> Tuple[Optional[datetime.datetime], Optional[str]]:
+        """
+        Parse a date string.
+
+        Args:
+            text_date: (str): write your description
+            date_format: (str): write your description
+        """
         try:
             return datetime.datetime.strptime(text_date, date_format), date_format
         except (ValueError, TypeError):
@@ -491,6 +526,12 @@ class AtlasProxy(BaseProxy):
 
     @staticmethod
     def _select_watermark_format(partition_names: List[str]) -> Optional[str]:
+        """
+        Select watermark watermark format.
+
+        Args:
+            partition_names: (str): write your description
+        """
         result = None
 
         for partition_name in partition_names:
@@ -508,6 +549,12 @@ class AtlasProxy(BaseProxy):
 
     @staticmethod
     def _render_partition_key_name(entity: EntityUniqueAttribute) -> Optional[str]:
+        """
+        Render partition key for a partition key.
+
+        Args:
+            entity: (todo): write your description
+        """
         _partition_keys = []
 
         for partition_key in entity.get('attributes', dict()).get('partitionKeys', []):
@@ -521,6 +568,13 @@ class AtlasProxy(BaseProxy):
         return partition_key
 
     def _get_table_watermarks(self, entity: EntityUniqueAttribute) -> List[Watermark]:
+        """
+        Returns watermark watermarks.
+
+        Args:
+            self: (todo): write your description
+            entity: (dict): write your description
+        """
         partition_value_format = '%Y-%m-%d %H:%M:%S'
 
         _partitions = entity.get('relationshipAttributes', dict()).get('partitions', list())
@@ -668,6 +722,16 @@ class AtlasProxy(BaseProxy):
 
     def add_badge(self, *, id: str, badge_name: str, category: str = '',
                   resource_type: ResourceType) -> None:
+        """
+        Add badge to this resource.
+
+        Args:
+            self: (todo): write your description
+            id: (todo): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+            resource_type: (str): write your description
+        """
         # Not implemented
         raise NotImplementedError
 
@@ -691,6 +755,16 @@ class AtlasProxy(BaseProxy):
 
     def delete_badge(self, *, id: str, badge_name: str, category: str,
                      resource_type: ResourceType) -> None:
+        """
+        Delete a badge
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            badge_name: (str): write your description
+            category: (str): write your description
+            resource_type: (str): write your description
+        """
         # Not implemented
         raise NotImplementedError
 
@@ -770,6 +844,12 @@ class AtlasProxy(BaseProxy):
         return self._serialize_popular_tables(search_results.entities)
 
     def get_latest_updated_ts(self) -> int:
+        """
+        Get the latest update alive alive alive
+
+        Args:
+            self: (todo): write your description
+        """
         date = None
 
         for metrics in self._driver.admin_metrics:
@@ -801,6 +881,12 @@ class AtlasProxy(BaseProxy):
         return tags
 
     def get_badges(self) -> List:
+        """
+        Returns the badge list.
+
+        Args:
+            self: (todo): write your description
+        """
         # Not implemented
         return []
 
@@ -910,9 +996,25 @@ class AtlasProxy(BaseProxy):
 
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
+        """
+        Get a user s dashboard for the given user.
+
+        Args:
+            self: (todo): write your description
+            user_email: (str): write your description
+            relation_type: (str): write your description
+        """
         pass
 
     def get_table_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) -> Dict[str, Any]:
+        """
+        Get all relations by user_email.
+
+        Args:
+            self: (todo): write your description
+            user_email: (str): write your description
+            relation_type: (str): write your description
+        """
         tables = list()
         if relation_type == UserResourceRel.follow:
             tables = self._get_resources_followed_by_user(user_id=user_email,
@@ -924,6 +1026,13 @@ class AtlasProxy(BaseProxy):
         return {'table': tables}
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, List[PopularTable]]:
+        """
+        Gets a list of tables that user has the user.
+
+        Args:
+            self: (todo): write your description
+            user_email: (todo): write your description
+        """
         user = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_email).entity
 
         readers_guids = []
@@ -965,6 +1074,16 @@ class AtlasProxy(BaseProxy):
                                       user_id: str,
                                       relation_type: UserResourceRel,
                                       resource_type: ResourceType) -> None:
+        """
+        Add relations to the entity.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            user_id: (int): write your description
+            relation_type: (str): write your description
+            resource_type: (todo): write your description
+        """
 
         if resource_type is not ResourceType.Table:
             raise NotImplemented('resource type {} is not supported'.format(resource_type))
@@ -978,6 +1097,16 @@ class AtlasProxy(BaseProxy):
                                          user_id: str,
                                          relation_type: UserResourceRel,
                                          resource_type: ResourceType) -> None:
+        """
+        Delete relations by user.
+
+        Args:
+            self: (todo): write your description
+            id: (str): write your description
+            user_id: (int): write your description
+            relation_type: (str): write your description
+            resource_type: (str): write your description
+        """
         if resource_type is not ResourceType.Table:
             raise NotImplemented('resource type {} is not supported'.format(resource_type))
 
@@ -986,6 +1115,13 @@ class AtlasProxy(BaseProxy):
         entity.update()
 
     def _parse_date(self, date: int) -> Optional[int]:
+        """
+        Parse a date string.
+
+        Args:
+            self: (todo): write your description
+            date: (todo): write your description
+        """
         try:
             date_str = str(date)
             date_trimmed = date_str[:10]
@@ -997,6 +1133,14 @@ class AtlasProxy(BaseProxy):
             return None
 
     def _get_readers(self, entity: EntityUniqueAttribute, top: Optional[int] = 15) -> List[Reader]:
+        """
+        Get all readers.
+
+        Args:
+            self: (todo): write your description
+            entity: (dict): write your description
+            top: (str): write your description
+        """
         _readers = entity.get('relationshipAttributes', dict()).get('readers', list())
 
         guids = [_reader.get('guid') for _reader in _readers
@@ -1025,6 +1169,13 @@ class AtlasProxy(BaseProxy):
         return result
 
     def _get_programmatic_descriptions(self, parameters: dict) -> List[ProgrammaticDescription]:
+        """
+        Return a list of descriptions.
+
+        Args:
+            self: (todo): write your description
+            parameters: (dict): write your description
+        """
         programmatic_descriptions: Dict[str, ProgrammaticDescription] = {}
 
         for source, text in parameters.items():
@@ -1048,18 +1199,48 @@ class AtlasProxy(BaseProxy):
     def get_dashboard(self,
                       dashboard_uri: str,
                       ) -> DashboardDetailEntity:
+        """
+        Get a dashboard with the given dashboard.
+
+        Args:
+            self: (todo): write your description
+            dashboard_uri: (str): write your description
+        """
         pass
 
     def get_dashboard_description(self, *,
                                   id: str) -> Description:
+        """
+        Get a dashboard description.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+        """
         pass
 
     def put_dashboard_description(self, *,
                                   id: str,
                                   description: str) -> None:
+        """
+        Put a dashboard description.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            description: (str): write your description
+        """
         pass
 
     def get_resources_using_table(self, *,
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
+        """
+        Returns the resource table for the given resource.
+
+        Args:
+            self: (todo): write your description
+            id: (int): write your description
+            resource_type: (str): write your description
+        """
         return {}
