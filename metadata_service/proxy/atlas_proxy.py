@@ -782,6 +782,10 @@ class AtlasProxy(BaseProxy):
 
         return date
 
+    def get_statistics(self) -> Dict[str, Any]:
+        # Not implemented
+        pass
+
     def get_tags(self) -> List:
         """
         Fetch all the classification entity definitions from atlas  as this

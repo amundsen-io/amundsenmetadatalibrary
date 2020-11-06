@@ -19,7 +19,8 @@ from metadata_service.api.dashboard import (DashboardDetailAPI, DashboardDescrip
                                             DashboardTagAPI, DashboardBadgeAPI)
 from metadata_service.api.healthcheck import healthcheck
 from metadata_service.api.popular_tables import PopularTablesAPI
-from metadata_service.api.system import Neo4jDetailAPI
+from metadata_service.api.system import Neo4jDetailAPI, StatisticsMetricsAPI
+
 from metadata_service.api.table \
     import TableDetailAPI, TableOwnerAPI, TableTagAPI, TableBadgeAPI, TableDescriptionAPI, TableDashboardAPI
 from metadata_service.api.tag import TagAPI
@@ -104,6 +105,8 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/table/<path:table_uri>/column/<column_name>/description')
     api.add_resource(Neo4jDetailAPI,
                      '/latest_updated_ts')
+    api.add_resource(StatisticsMetricsAPI,
+                     '/system/statistics')
     api.add_resource(TagAPI,
                      '/tags/')
     api.add_resource(BadgeAPI,
