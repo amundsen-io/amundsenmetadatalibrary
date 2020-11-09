@@ -38,7 +38,7 @@ class StatisticsMetricsAPI(Resource):
     @swag_from('swagger_doc/system/statistics_get.yml')
     def get(self) -> Iterable[Union[Mapping, int, None]]:
         statistics = self.client.get_statistics()
-        if statistics is not None:
+        if statistics is not {}:
             return {'Statistics': statistics}, HTTPStatus.OK
         else:
             return {'message': 'There was an error with retreiving the metrics of Neo4j'}, HTTPStatus.NO_CONTENT
