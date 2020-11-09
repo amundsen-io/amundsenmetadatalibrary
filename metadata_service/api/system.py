@@ -26,6 +26,7 @@ class Neo4jDetailAPI(Resource):
         else:
             return {'message': 'neo4j / es hasnt been updated / indexed.'}, HTTPStatus.NO_CONTENT
 
+
 class StatisticsMetricsAPI(Resource):
     """
     API to fetch system statistic metrics from the database

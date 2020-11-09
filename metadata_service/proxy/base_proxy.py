@@ -90,7 +90,7 @@ class BaseProxy(metaclass=ABCMeta):
     @abstractmethod
     def get_latest_updated_ts(self) -> int:
         pass
-    
+
     @abstractmethod
     def get_statistics(self) -> Dict[str, Any]:
         pass
