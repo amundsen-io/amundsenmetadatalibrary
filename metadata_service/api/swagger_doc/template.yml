@@ -274,6 +274,10 @@ components:
           type: integer
           description: 'Number of users who have been assigned as owners for tables'
           example: '1'
+        number_of_tables_with_owners:
+          type: integer
+          description: 'Number of tables that have at least one assigned owner'
+          example: '1'
         number_of_documented_and_owned_tables:
           type: integer
           description: 'Total number of tables that have both owner and description at the table level'

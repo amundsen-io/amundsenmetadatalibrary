@@ -840,7 +840,7 @@ class Neo4jProxy(BaseProxy):
         number_of_tables_with_owners, number_of_owners, number_of_documented_cols,
         number_of_documented_tables, number_of_tables
         Return number_of_tables, number_of_documented_tables, number_of_documented_cols,
-        number_of_owners, number_of_documented_and_owned_tables
+        number_of_owners, number_of_tables_with_owners, number_of_documented_and_owned_tables
         """)
         LOGGER.info('Getting Neo4j Statistics')
         records = self._execute_cypher_query(statement=query,
@@ -850,10 +850,11 @@ class Neo4jProxy(BaseProxy):
                                 'number_of_documented_tables': record['number_of_documented_tables'],
                                 'number_of_documented_cols': record['number_of_documented_cols'],
                                 'number_of_owners': record['number_of_owners'],
-                                "number_of_documented_and_owned_tables": record['number_of_documented_and_owned_tables']
+                                'number_of_tables_with_owners': record['number_of_tables_with_owners'],
+                                'number_of_documented_and_owned_tables': record['number_of_documented_and_owned_tables']
                                 }
             return neo4j_statistics
-        return {}
+        return None
 
     @timer_with_counter
     @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
