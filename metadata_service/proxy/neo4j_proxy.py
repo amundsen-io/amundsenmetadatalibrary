@@ -853,6 +853,7 @@ class Neo4jProxy(BaseProxy):
                                 "number_of_documented_and_owned_tables": record['number_of_documented_and_owned_tables']
                                 }
             return neo4j_statistics
+        return {}
 
     @timer_with_counter
     @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
