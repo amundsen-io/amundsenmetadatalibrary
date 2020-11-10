@@ -786,9 +786,9 @@ class Neo4jProxy(BaseProxy):
         query = textwrap.dedent("""
         MATCH (t:Tag{tag_type: 'default'})
         OPTIONAL MATCH (resource)-[:TAGGED_BY]->(t)
-        WITH t as tag_name, count(distinct tbl.key) as tag_count
+        WITH t as tag_name, count(distinct resource.key) as tag_count
         WHERE tag_count > 0
-        RETURN t as tag_name, count(distinct tbl.key) as tag_count
+        RETURN t as tag_name, count(distinct resource.key) as tag_count
         """)
 
         records = self._execute_cypher_query(statement=query,
