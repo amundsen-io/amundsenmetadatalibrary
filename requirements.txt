@@ -31,7 +31,7 @@ pytest-mock==1.1
 # PEP 484
 # License: PSF
 # Upstream url: https://github.com/python/typing
-typing-extensions==3.7.4
+typing-extensions==3.7.4.3
 
 # A common package that holds the models deifnition and schemas that are used
 # accross different amundsen repositories.
