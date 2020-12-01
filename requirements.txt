@@ -54,12 +54,12 @@ jsonschema==2.6.0
 marshmallow>=2.15.3,<3.0
 marshmallow-annotations>=2.4.0,<3.0
 MarkupSafe==1.1 
-pytz==2018.4
+pytz==2020.4
 Werkzeug==0.15.5
 wheel==0.33.1
 neo4j==1.7.6
 neotime==1.7.1
-pytz==2018.4
+pytz==2020.4
 requests-aws4auth==0.9
 statsd==3.2.1
 pyatlasclient==1.0.5
