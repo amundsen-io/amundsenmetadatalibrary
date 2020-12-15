@@ -11,8 +11,11 @@ from typing import Any, Dict, List, Union, Optional, Tuple
 from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Column, Stat, Table, Tag, User, Reader, \
-    ProgrammaticDescription, ResourceReport, Watermark
+    ProgrammaticDescription, ResourceReport, Watermark, Badge
 from amundsen_common.models.user import User as UserEntity
+from apache_atlas.client.base_client import AtlasClient
+from apache_atlas.model.instance import AtlasEntity, AtlasEntityWithExtInfo
+from apache_atlas.utils import type_coerce
 from atlasclient.client import Atlas
 from atlasclient.exceptions import BadRequest, Conflict, NotFound
 from atlasclient.models import EntityUniqueAttribute
@@ -51,6 +54,7 @@ class AtlasProxy(BaseProxy):
     TABLE_ENTITY = app.config['ATLAS_TABLE_ENTITY']
     DB_ATTRIBUTE = app.config['ATLAS_DB_ATTRIBUTE']
     STATISTICS_FORMAT_SPEC = app.config['STATISTICS_FORMAT_SPEC']
+    TABLE_TYPE = 'Table'
     BOOKMARK_TYPE = 'Bookmark'
     USER_TYPE = 'User'
     READER_TYPE = 'Reader'
@@ -81,6 +85,8 @@ class AtlasProxy(BaseProxy):
                              password=password,
                              protocol=protocol,
                              validate_ssl=validate_ssl)
+        self.client = AtlasClient(f'{protocol}://{host}:{port}', (user, password))
+        self.client.session.verify = validate_ssl
 
     def _get_ids_from_basic_search(self, *, params: Dict) -> List[str]:
         """
@@ -209,7 +215,8 @@ class AtlasProxy(BaseProxy):
                                              )
 
         try:
-            return self._driver.entity_unique_attribute(table_info['entity'], qualifiedName=table_qn)
+            return self.client.entity.get_entity_by_attribute(type_name=table_info['entity'],
+                                                              uniq_attributes=[(self.QN_KEY, table_qn)])
         except Exception as ex:
             LOGGER.exception(f'Table not found. {str(ex)}')
             raise NotFoundException('Table URI( {table_uri} ) does not exist'
@@ -222,8 +229,8 @@ class AtlasProxy(BaseProxy):
         :return:
         """
         try:
-            return self._driver.entity_unique_attribute("User",
-                                                        qualifiedName=user_id)
+            return self.client.entity.get_entity_by_attribute(type_name=self.USER_TYPE,
+                                                              uniq_attributes=[(self.QN_KEY, user_id)])
         except Exception as ex:
             raise NotFoundException('(User {user_id}) does not exist'
                                     .format(user_id=user_id))
@@ -248,7 +255,8 @@ class AtlasProxy(BaseProxy):
             }
         }
 
-        self._driver.entity_post.create(data=bookmark_entity)
+        bookmark_entity = type_coerce(bookmark_entity, AtlasEntityWithExtInfo)
+        self.client.entity.create_entity(bookmark_entity)
 
     def _get_bookmark_entity(self, entity_uri: str, user_id: str) -> EntityUniqueAttribute:
         """
@@ -438,15 +446,26 @@ class AtlasProxy(BaseProxy):
                 qualified_name=attrs.get(self.QN_KEY)
             )
 
-            tags = []
+            badges = []
             # Using or in case, if the key 'classifications' is there with a None
             for classification in table_details.get('classifications') or list():
-                tags.append(
-                    Tag(
-                        tag_name=classification.get('typeName'),
-                        tag_type="default"
+                badges.append(
+                    Badge(
+                        badge_name=classification.get('typeName'),
+                        category="default"
                     )
                 )
+
+            tags = []
+            for term in table_details.get(self.REL_ATTRS_KEY).get("meanings") or list():
+                if term.get('entityStatus') == Status.ACTIVE and \
+                        term.get('relationshipStatus') == Status.ACTIVE:
+                    tags.append(
+                        Tag(
+                            tag_name=term.get("displayText"),
+                            tag_type="default"
+                        )
+                    )
 
             columns = self._serialize_columns(entity=entity)
 
@@ -462,6 +481,7 @@ class AtlasProxy(BaseProxy):
                 cluster=table_qn.get('cluster_name', ''),
                 schema=table_qn.get('db_name', ''),
                 name=attrs.get('name') or table_qn.get("table_name", ''),
+                badges=badges,
                 tags=tags,
                 description=attrs.get('description') or attrs.get('comment'),
                 owners=self._get_owners(
@@ -654,13 +674,15 @@ class AtlasProxy(BaseProxy):
     def add_tag(self, *, id: str, tag: str, tag_type: str,
                 resource_type: ResourceType = ResourceType.Table) -> None:
         """
-        Assign the tag/classification to the give table
-        API Ref: /resource_EntityREST.html#resource_EntityREST_addClassification_POST
+        Assign the Glossary Term to the give table. If the term is not there, it will
+        create a new term under the Glossary config.ATLAS_USER_DEFINED_TERMS
         :param table_uri:
-        :param tag: Tag/Classification Name
+        :param tag: Tag Name
         :param tag_type
         :return: None
         """
+        # Checks if the term already exists in the Atlas.
+
         entity = self._get_table_entity(table_uri=id)
         entity_bulk_tag = {"classification": {"typeName": tag},
                            "entityGuids": [entity.entity[self.GUID_KEY]]}
@@ -768,7 +790,7 @@ class AtlasProxy(BaseProxy):
                                 'sortOrder': 'DESCENDING',
                                 'excludeDeletedEntities': True,
                                 'limit': num_entries}
-        search_results = self._driver.search_basic.create(data=popular_query_params)
+        search_results = self.client.discovery.faceted_search(search_parameters=popular_query_params)
         return self._serialize_popular_tables(search_results.entities)
 
     def get_latest_updated_ts(self) -> int:
@@ -838,7 +860,7 @@ class AtlasProxy(BaseProxy):
             'attributes': ['count', self.QN_KEY, self.ENTITY_URI_KEY]
         }
         # Fetches the bookmark entities based on filters
-        search_results = self._driver.search_basic.create(data=params)
+        search_results = self.client.discovery.faceted_search(search_parameters=params)
 
         resources = []
         for record in search_results.entities:
