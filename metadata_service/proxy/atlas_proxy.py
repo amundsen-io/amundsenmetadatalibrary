@@ -88,33 +88,6 @@ class AtlasProxy(BaseProxy):
         self.client = AtlasClient(f'{protocol}://{host}:{port}', (user, password))
         self.client.session.verify = validate_ssl
 
-    def _get_ids_from_basic_search(self, *, params: Dict) -> List[str]:
-        """
-        FixMe (Verdan): UNUSED. Please remove after implementing atlas proxy
-        Search for the entities based on the params provided as argument.
-        :param params: the dictionary of parameters to be used for the basic search
-        :return: The flat list of GUIDs of entities founds based on the params.
-        """
-        ids = list()
-        search_results = self._driver.search_basic(**params)
-        for result in search_results:
-            for entity in result.entities:
-                ids.append(entity.guid)
-        return ids
-
-    def _get_flat_values_from_dsl(self, dsl_param: dict) -> List:
-        """
-        Makes a DSL query asking for specific attribute, extracts that attribute
-        from result (which is a list of list, and converts that into a flat list.
-        :param dsl_param: A DSL parameter, with SELECT clause
-        :return: A Flat list of specified attributes in SELECT clause
-        """
-        attributes: List = list()
-        _search_collection = self._driver.search_dsl(**dsl_param)
-        for collection in _search_collection:
-            attributes = collection.flatten_attrs()
-        return attributes
-
     def _extract_info_from_uri(self, *, table_uri: str) -> Dict:
         """
         Extracts the table information from table_uri coming from frontend.
@@ -136,28 +109,6 @@ class AtlasProxy(BaseProxy):
             $
         """, re.X)
         result = pattern.match(table_uri)
-        return result.groupdict() if result else dict()
-
-    def _parse_reader_qn(self, reader_qn: str) -> Dict:
-        """
-        Parse reader qualifiedName and extract the info
-        :param reader_qn:
-        :return: Dictionary object containing following information:
-        cluster: cluster information
-        db: Database name
-        name: Table name
-        """
-        pattern = re.compile(r"""
-        ^(?P<db>[^.]*)
-        \.
-        (?P<table>[^.]*)
-        \.
-        (?P<user_id>[^.]*)\.reader
-        \@
-        (?P<cluster>.*)
-        $
-        """, re.X)
-        result = pattern.match(reader_qn)
         return result.groupdict() if result else dict()
 
     def _parse_bookmark_qn(self, bookmark_qn: str) -> Dict:
@@ -201,12 +152,8 @@ class AtlasProxy(BaseProxy):
     def _get_table_entity(self, *, table_uri: str) -> EntityUniqueAttribute:
         """
         Fetch information from table_uri and then find the appropriate entity
-        The reason, we're not returning the entity_unique_attribute().entity
-        directly is because the entity_unique_attribute() return entity Object
-        that can be used for update purposes,
-        while entity_unique_attribute().entity only returns the dictionary
-        :param table_uri:
-        :return: A tuple of Table entity and parsed information of table qualified name
+        :param table_uri: The table URI coming from Amundsen Frontend
+        :return: A table entity matching the Qualified Name derived from table_uri
         """
         table_info = self._extract_info_from_uri(table_uri=table_uri)
         table_qn = make_table_qualified_name(table_info.get('name'),
@@ -225,8 +172,8 @@ class AtlasProxy(BaseProxy):
     def _get_user_entity(self, user_id: str) -> EntityUniqueAttribute:
         """
         Fetches an user entity from an id
-        :param user_id:
-        :return:
+        :param user_id: User ID
+        :return: A User entity matching the user_id
         """
         try:
             return self.client.entity.get_entity_by_attribute(type_name=self.USER_TYPE,
@@ -274,24 +221,22 @@ class AtlasProxy(BaseProxy):
                                                        table_info.get('cluster'))
 
         try:
-            bookmark_entity = self._driver.entity_unique_attribute(self.BOOKMARK_TYPE, qualifiedName=bookmark_qn)
-
-            if not bookmark_entity.entity:
-                table_entity = self._get_table_entity(table_uri=entity_uri)
-                # Fetch user entity from user_id for relation
-                user_entity = self._get_user_entity(user_id)
-                # Create bookmark entity with the user relation.
-                self._create_bookmark(table_entity,
-                                      user_entity.entity[self.GUID_KEY], bookmark_qn, entity_uri)
-                # Fetch bookmark entity after creating it.
-                bookmark_entity = self._driver.entity_unique_attribute(self.BOOKMARK_TYPE, qualifiedName=bookmark_qn)
-
-            return bookmark_entity
-
+            bookmark_entity = self.client.entity.get_entity_by_attribute(type_name=self.BOOKMARK_TYPE,
+                                                                         uniq_attributes=[(self.QN_KEY, bookmark_qn)])
         except Exception as ex:
             LOGGER.exception(f'Bookmark not found. {str(ex)}')
-            raise NotFoundException('Bookmark( {bookmark_qn} ) does not exist'
-                                    .format(bookmark_qn=bookmark_qn))
+
+            table_entity = self._get_table_entity(table_uri=entity_uri)
+            # Fetch user entity from user_id for relation
+            user_entity = self._get_user_entity(user_id)
+            # Create bookmark entity with the user relation.
+            self._create_bookmark(table_entity,
+                                  user_entity.entity[self.GUID_KEY], bookmark_qn, entity_uri)
+            # Fetch bookmark entity after creating it.
+            bookmark_entity = self.client.entity.get_entity_by_attribute(type_name=self.BOOKMARK_TYPE,
+                                                                         uniq_attributes=[(self.QN_KEY, bookmark_qn)])
+
+        return bookmark_entity
 
     def _get_column(self, *, table_uri: str, column_name: str) -> Dict:
         """
@@ -380,8 +325,8 @@ class AtlasProxy(BaseProxy):
     def _get_reports(self, guids: List[str]) -> List[ResourceReport]:
         reports = []
         if guids:
-            report_entities_collection = self._driver.entity_bulk(guid=guids)
-            for report_entity in extract_entities(report_entities_collection):
+            report_entities = self.client.entity.get_entities_by_guids(guids=guids)
+            for report_entity in report_entities.entities:
                 try:
                     if report_entity.status == Status.ACTIVE:
                         report_attrs = report_entity.attributes
@@ -552,15 +497,15 @@ class AtlasProxy(BaseProxy):
         if not names:
             return []
 
-        partition_key = AtlasProxy._render_partition_key_name(entity)
-        watermark_date_format = AtlasProxy._select_watermark_format(names)
+        partition_key = self._render_partition_key_name(entity)
+        watermark_date_format = self._select_watermark_format(names)
 
         partitions = {}
 
         for _partition in _partitions:
             partition_name = _partition.get('displayText')
             if partition_name and watermark_date_format:
-                partition_date, _ = AtlasProxy._validate_date(partition_name, watermark_date_format)
+                partition_date, _ = self._validate_date(partition_name, watermark_date_format)
 
                 if partition_date:
                     common_values = {'partition_value': datetime.datetime.strftime(partition_date,
@@ -619,16 +564,16 @@ class AtlasProxy(BaseProxy):
         if not owner_info:
             raise NotFoundException(f'User "{owner}" does not exist.')
 
-        user_dict = {
+        user_dict = type_coerce({
             "entity": {
                 "typeName": "User",
                 "attributes": {"qualifiedName": owner},
             }
-        }
+        }, AtlasEntityWithExtInfo)
 
         # Get or Create a User
-        user_entity = self._driver.entity_post.create(data=user_dict)
-        user_guid = next(iter(user_entity.get("guidAssignments").values()))
+        user_entity = self.client.entity.create_entity(user_dict)
+        user_guid = next(iter(user_entity.guidAssignments.values()))
 
         table = self._get_table_entity(table_uri=table_uri)
 
