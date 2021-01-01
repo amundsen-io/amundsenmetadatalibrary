@@ -60,7 +60,7 @@ wheel==0.33.1
 neo4j==1.7.6
 neotime==1.7.1
 pytz==2018.4
-requests-aws4auth==0.9
+requests-aws4auth==1.0.1
 statsd==3.2.1
 pyatlasclient==1.0.5
 beaker>=1.10.0
