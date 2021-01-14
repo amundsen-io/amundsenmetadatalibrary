@@ -59,6 +59,10 @@ class Config:
     # The relationalAttribute name of Atlas Entity that identifies the database entity.
     ATLAS_DB_ATTRIBUTE = 'db'
 
+    # Qualified Name of the Glossary, that holds the user defined terms.
+    # For Amundsen, we are using Glossary Terms as the Tags.
+    ATLAS_USER_DEFINED_TERMS = 'USER_DEFINED_TERMS'
+
     # Configurable dictionary to influence format of column statistics displayed in UI
     STATISTICS_FORMAT_SPEC: Dict[str, Dict] = {}
 

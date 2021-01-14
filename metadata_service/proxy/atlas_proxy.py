@@ -14,7 +14,9 @@ from amundsen_common.models.table import Column, Stat, Table, Tag, User, Reader,
     ProgrammaticDescription, ResourceReport, Watermark, Badge
 from amundsen_common.models.user import User as UserEntity
 from apache_atlas.client.base_client import AtlasClient
-from apache_atlas.model.instance import AtlasEntity, AtlasEntityWithExtInfo
+from apache_atlas.model.glossary import AtlasGlossary, AtlasGlossaryHeader, AtlasGlossaryTerm
+from apache_atlas.model.instance import AtlasEntityWithExtInfo, AtlasRelatedObjectId, AtlasEntityHeader
+from apache_atlas.model.relationship import AtlasRelationship
 from apache_atlas.utils import type_coerce
 from atlasclient.client import Atlas
 from atlasclient.exceptions import BadRequest, Conflict, NotFound
@@ -542,8 +544,9 @@ class AtlasProxy(BaseProxy):
                                        and item['displayText'] == owner,
                                        table_entity[self.REL_ATTRS_KEY]['ownedBy'])
                 if list(active_owners):
-                    self._driver.relationship_guid(next(active_owners)
-                                                   .get('relationshipGuid')).delete()
+                    self.client.relationship.delete_relationship_by_guid(
+                        guid=next(active_owners).get('relationshipGuid')
+                    )
                 else:
                     raise BadRequest('You can not delete this owner.')
             except NotFound as ex:
@@ -587,7 +590,9 @@ class AtlasProxy(BaseProxy):
             },
         }
         try:
-            self._driver.relationship.create(data=entity_def)
+            relationship = type_coerce(entity_def, AtlasRelationship)
+            self.client.relationship.create_relationship(relationship=relationship)
+
         except Conflict as ex:
             LOGGER.exception('Error while adding the owner information. {}'
                              .format(str(ex)))
@@ -612,26 +617,78 @@ class AtlasProxy(BaseProxy):
         :param description: Description string
         :return: None
         """
-        entity = self._get_table_entity(table_uri=table_uri)
-        entity.entity[self.ATTRS_KEY]['description'] = description
-        entity.update()
+        table = self._get_table_entity(table_uri=table_uri)
 
-    def add_tag(self, *, id: str, tag: str, tag_type: str,
+        self.client.entity.partial_update_entity_by_guid(
+            entity_guid=table.entity.get("guid"), attr_value=description, attr_name='description'
+        )
+
+    @_CACHE.cache('_get_user_defined_glossary_guid')
+    def _get_user_defined_glossary_guid(self) -> str:
+        """
+        This function look for a user defined glossary i.e., config.ATLAS_USER_DEFINED_TERMS
+        If there is not one available, this will create a new glossary.
+        The meain reason to put this functionality into a separate function is to avoid
+        the lookup each time someone assigns a tag to a data source.
+        :return: Glossary object, that holds the user defined terms.
+        """
+        # Check if the user glossary already exists
+        glossaries = self.client.glossary.get_all_glossaries()
+        for glossary in glossaries:
+            if glossary.get(self.QN_KEY) == app.config["ATLAS_USER_DEFINED_TERMS"]:
+                return glossary[self.GUID_KEY]
+
+        # If not already exists, create one
+        glossary_def = AtlasGlossary({"name": app.config["ATLAS_USER_DEFINED_TERMS"],
+                                      "shortDescription": "Amundsen User Defined Terms"})
+        glossary = self.client.glossary.create_glossary(glossary_def)
+        return glossary.guid
+
+    @_CACHE.cache('_get_create_glossary_term')
+    def _get_create_glossary_term(self, term_name: str) -> Union[AtlasGlossaryTerm, AtlasEntityHeader]:
+        """
+        Since Atlas does not provide any API to find a term directly by a qualified name,
+        we need to look for AtlasGlossaryTerm via basic search, if found then return, else
+        create a new glossary term under the user defined glossary.
+        :param term_name: Name of the term. NOTE: this is different from qualified name.
+        :return: Term Object.
+        """
+        params = {
+            'typeName': "AtlasGlossaryTerm",
+            'excludeDeletedEntities': True,
+            'includeSubTypes': True,
+            'attributes': ["assignedEntities", ],
+            'entityFilters': {'condition': "AND",
+                              'criterion': [{'attributeName': "name", 'operator': "=", 'attributeValue': term_name}]
+                              }
+        }
+        result = self.client.discovery.faceted_search(search_parameters=params)
+        if result.approximateCount:
+            term = result.entities[0]
+        else:
+            glossary_guid = self._get_user_defined_glossary_guid()
+            glossary_def = AtlasGlossaryHeader({'glossaryGuid': glossary_guid})
+            term_def = AtlasGlossaryTerm({'name': term_name, 'anchor': glossary_def})
+            term = self.client.glossary.create_glossary_term(term_def)
+
+        return term
+
+    def add_tag(self, *, id: str, tag: str, tag_type: str = "default",
                 resource_type: ResourceType = ResourceType.Table) -> None:
         """
         Assign the Glossary Term to the give table. If the term is not there, it will
         create a new term under the Glossary config.ATLAS_USER_DEFINED_TERMS
-        :param table_uri:
+        :param id: Table URI / Dashboard ID etc.
         :param tag: Tag Name
         :param tag_type
         :return: None
         """
-        # Checks if the term already exists in the Atlas.
-
         entity = self._get_table_entity(table_uri=id)
-        entity_bulk_tag = {"classification": {"typeName": tag},
-                           "entityGuids": [entity.entity[self.GUID_KEY]]}
-        self._driver.entity_bulk_classification.create(data=entity_bulk_tag)
+
+        term = self._get_create_glossary_term(tag)
+        related_entity = AtlasRelatedObjectId({self.GUID_KEY: entity.entity[self.GUID_KEY],
+                                               "typeName": resource_type.name})
+        self.client.glossary.assign_term_to_entities(term.guid, [related_entity])
 
     def add_badge(self, *, id: str, badge_name: str, category: str = '',
                   resource_type: ResourceType) -> None:
@@ -641,20 +698,18 @@ class AtlasProxy(BaseProxy):
     def delete_tag(self, *, id: str, tag: str, tag_type: str,
                    resource_type: ResourceType = ResourceType.Table) -> None:
         """
-        Delete the assigned classfication/tag from the given table
-        API Ref: /resource_EntityREST.html#resource_EntityREST_deleteClassification_DELETE
-        :param table_uri:
-        :param tag:
-        :return:
+        Removes the Glossary Term assignment from the provided source.
+        :param id: Table URI / Dashboard ID etc.
+        :param tag: Tag Name
+        :return:None
         """
-        try:
-            entity = self._get_table_entity(table_uri=id)
-            guid_entity = self._driver.entity_guid(entity.entity[self.GUID_KEY])
-            guid_entity.classifications(tag).delete()
-        except Exception as ex:
-            # FixMe (Verdan): Too broad exception. Please make it specific
-            LOGGER.exception('For some reason this deletes the classification '
-                             'but also always return exception. {}'.format(str(ex)))
+        entity = self._get_table_entity(table_uri=id)
+        term = self._get_create_glossary_term(tag)
+
+        for item in term.attributes.get("assignedEntities") or list():
+            if item.guid == entity.entity[self.GUID_KEY]:
+                related_entity = AtlasRelatedObjectId(item)
+                self.client.glossary.disassociate_term_from_entities(term.guid, [related_entity])
 
     def delete_badge(self, *, id: str, badge_name: str, category: str,
                      resource_type: ResourceType) -> None:
@@ -676,9 +731,9 @@ class AtlasProxy(BaseProxy):
             column_name=column_name)
         col_guid = column_detail[self.GUID_KEY]
 
-        entity = self._driver.entity_guid(col_guid)
-        entity.entity[self.ATTRS_KEY]['description'] = description
-        entity.update(attribute='description')
+        self.client.entity.partial_update_entity_by_guid(
+            entity_guid=col_guid, attr_value=description, attr_name='description'
+        )
 
     def get_column_description(self, *,
                                table_uri: str,
@@ -741,32 +796,37 @@ class AtlasProxy(BaseProxy):
     def get_latest_updated_ts(self) -> int:
         date = None
 
-        for metrics in self._driver.admin_metrics:
-            try:
-                date = self._parse_date(metrics.general.get('stats', {}).get('Notification:lastMessageProcessedTime'))
-            except AttributeError:
-                pass
+        metrics = self.client.admin.get_metrics()
+        try:
+            date = self._parse_date(metrics.general.get('stats', {}).get('Notification:lastMessageProcessedTime'))
+        except AttributeError:
+            pass
 
-        date = date or 0
-
-        return date
+        return date or 0
 
     def get_tags(self) -> List:
         """
-        Fetch all the classification entity definitions from atlas  as this
+        Fetch all the glossary terms from atlas, along with their assigned entities as this
         will be used to generate the autocomplete on the table detail page
         :return: A list of TagDetail Objects
         """
         tags = []
-        for metrics in self._driver.admin_metrics:
-            tag_stats = metrics.tag
-            for tag, count in tag_stats["tagEntities"].items():
-                tags.append(
-                    TagDetail(
-                        tag_name=tag,
-                        tag_count=count
-                    )
+        params = {
+            'typeName': "AtlasGlossaryTerm",
+            'limit': 1000,
+            'offset': 0,
+            'excludeDeletedEntities': True,
+            'includeSubTypes': True,
+            'attributes': ["assignedEntities", ]
+        }
+        result = self.client.discovery.faceted_search(search_parameters=params)
+        for item in result.entities:
+            tags.append(
+                TagDetail(
+                    tag_name=item.attributes.get("name"),
+                    tag_count=len(item.attributes.get("assignedEntities"))
                 )
+            )
         return tags
 
     def get_badges(self) -> List:
@@ -836,7 +896,9 @@ class AtlasProxy(BaseProxy):
             LOGGER.exception(f'Resource Type ({resource_type}) is not yet implemented')
             raise NotImplemented
 
-        user_entity = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_id).entity
+        user_entity = self.client.entity.get_entity_by_attribute(type_name=self.USER_TYPE,
+                                                                 uniq_attributes=[(self.QN_KEY, user_id)]).entity
+        # user_entity = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_id).entity
 
         if not user_entity:
             LOGGER.exception(f'User ({user_id}) not found in Atlas')
@@ -864,14 +926,14 @@ class AtlasProxy(BaseProxy):
             },
             'attributes': [self.GUID_KEY]
         }
-        table_entities = self._driver.search_basic.create(data=params)
-        for table in table_entities.entities:
+        table_entities = self.client.discovery.faceted_search(search_parameters=params)
+        for table in table_entities.entities or list():
             resource_guids.add(table.guid)
 
         if resource_guids:
-            entities = extract_entities(self._driver.entity_bulk(guid=list(resource_guids), ignoreRelationships=True))
+            entities = self.client.entity.get_entities_by_guids(guids=list(resource_guids), ignore_relationships=True)
             if resource_type == ResourceType.Table.name:
-                resources = self._serialize_popular_tables(entities)
+                resources = self._serialize_popular_tables(entities.entities)
         else:
             LOGGER.info(f'User ({user_id}) does not own any "{resource_type}"')
 
