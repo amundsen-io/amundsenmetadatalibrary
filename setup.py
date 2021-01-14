@@ -26,7 +26,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'oidc': ['flaskoidc==0.1.1'],
-        'atlas': ['apache-atlas==0.0.3']
+        'atlas': ['apache-atlas==0.0.4']
     },
     python_requires=">=3.6",
     classifiers=[
