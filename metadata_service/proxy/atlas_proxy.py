@@ -18,15 +18,10 @@ from apache_atlas.model.glossary import AtlasGlossary, AtlasGlossaryHeader, Atla
 from apache_atlas.model.instance import AtlasEntityWithExtInfo, AtlasRelatedObjectId, AtlasEntityHeader
 from apache_atlas.model.relationship import AtlasRelationship
 from apache_atlas.utils import type_coerce
-from atlasclient.client import Atlas
-from atlasclient.exceptions import BadRequest, Conflict, NotFound
-from atlasclient.models import EntityUniqueAttribute
-from atlasclient.utils import (make_table_qualified_name,
-                               parse_table_qualified_name,
-                               extract_entities)
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from flask import current_app as app
+from werkzeug.exceptions import BadRequest
 
 from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.description import Description
@@ -45,6 +40,80 @@ _ATLAS_PROXY_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
 class Status:
     ACTIVE = "ACTIVE"
     DELETED = "DELETED"
+
+
+# TODO: Move this to amundsencommon
+DEFAULT_TABLE_QN_REGEX = re.compile(r"""
+    ^(?P<db_name>.*?)\.(?P<table_name>.*)@(?P<cluster_name>.*?)$
+    """, re.X)
+
+# TODO: Move this to amundsencommon
+DEFAULT_DB_CLUSTER = 'default'
+
+
+# TODO: Move this to amundsencommon
+def parse_table_qualified_name(qualified_name, qn_regex=DEFAULT_TABLE_QN_REGEX):
+    """
+    Parses the Atlas' table qualified name
+    :param qualified_name: Qualified Name of the table
+    :return: A dictionary consisting of database name,
+    table name and cluster name of the table.
+    If database or cluster name not found,
+    then uses the 'atlas_default' as both of them.
+    """
+
+    def apply_qn_regex(name, table_qn_regex):
+        return table_qn_regex.match(name)
+
+    _regex_result = apply_qn_regex(qualified_name, qn_regex)
+
+    if not _regex_result:
+        qn_regex = re.compile(r"""
+        ^(?P<table_name>.*)@(?P<cluster_name>.*?)$
+        """, re.X)
+        _regex_result = apply_qn_regex(qualified_name, qn_regex)
+
+    if not _regex_result:
+        qn_regex = re.compile(r"""
+        ^(?P<db_name>.*?)\.(?P<table_name>.*)$
+        """, re.X)
+        _regex_result = apply_qn_regex(qualified_name, qn_regex)
+
+    if not _regex_result:
+        qn_regex = re.compile(r"""
+        ^(?P<table_name>.*)$
+        """, re.X)
+        _regex_result = apply_qn_regex(qualified_name, qn_regex)
+
+    _regex_result = _regex_result.groupdict()
+
+    qn_dict = {
+        'table_name': _regex_result.get('table_name', qualified_name),
+        'db_name': _regex_result.get('db_name', DEFAULT_DB_CLUSTER),
+        'cluster_name': _regex_result.get('cluster_name', DEFAULT_DB_CLUSTER),
+    }
+
+    return qn_dict
+
+
+# TODO: Move this to amundsencommon
+def make_table_qualified_name(table_name, cluster=None, db=None):
+    """
+    Based on the given parameters, generate the Atlas' table qualified Name
+    :param db: Database Name of the table
+    :param table_name: Table Name
+    :param cluster: Cluster Name of the table
+    :return: A string i.e., Qualified Name of the table
+    If database or cluster name are 'atlas_default', then simply strips that part.
+    """
+    qualified_name = table_name
+    if db and db != DEFAULT_DB_CLUSTER:
+        qualified_name = '{}.{}'.format(db, qualified_name)
+
+    if cluster and cluster != DEFAULT_DB_CLUSTER:
+        qualified_name = '{}@{}'.format(qualified_name, cluster)
+
+    return qualified_name
 
 
 # noinspection PyMethodMayBeStatic
@@ -81,12 +150,6 @@ class AtlasProxy(BaseProxy):
         Initiate the Apache Atlas client with the provided credentials
         """
         protocol = 'https' if encrypted else 'http'
-        self._driver = Atlas(host=host,
-                             port=port,
-                             username=user,
-                             password=password,
-                             protocol=protocol,
-                             validate_ssl=validate_ssl)
         self.client = AtlasClient(f'{protocol}://{host}:{port}', (user, password))
         self.client.session.verify = validate_ssl
 
@@ -151,7 +214,7 @@ class AtlasProxy(BaseProxy):
 
         return user_details
 
-    def _get_table_entity(self, *, table_uri: str) -> EntityUniqueAttribute:
+    def _get_table_entity(self, *, table_uri: str) -> AtlasEntityWithExtInfo:
         """
         Fetch information from table_uri and then find the appropriate entity
         :param table_uri: The table URI coming from Amundsen Frontend
@@ -171,7 +234,7 @@ class AtlasProxy(BaseProxy):
             raise NotFoundException('Table URI( {table_uri} ) does not exist'
                                     .format(table_uri=table_uri))
 
-    def _get_user_entity(self, user_id: str) -> EntityUniqueAttribute:
+    def _get_user_entity(self, user_id: str) -> AtlasEntityWithExtInfo:
         """
         Fetches an user entity from an id
         :param user_id: User ID
@@ -184,7 +247,7 @@ class AtlasProxy(BaseProxy):
             raise NotFoundException('(User {user_id}) does not exist'
                                     .format(user_id=user_id))
 
-    def _create_bookmark(self, entity: EntityUniqueAttribute, user_guid: str, bookmark_qn: str,
+    def _create_bookmark(self, entity: AtlasEntityWithExtInfo, user_guid: str, bookmark_qn: str,
                          table_uri: str) -> None:
         """
         Creates a bookmark entity for a specific user and table uri.
@@ -207,7 +270,7 @@ class AtlasProxy(BaseProxy):
         bookmark_entity = type_coerce(bookmark_entity, AtlasEntityWithExtInfo)
         self.client.entity.create_entity(bookmark_entity)
 
-    def _get_bookmark_entity(self, entity_uri: str, user_id: str) -> EntityUniqueAttribute:
+    def _get_bookmark_entity(self, entity_uri: str, user_id: str) -> AtlasEntityWithExtInfo:
         """
         Fetch a Bookmark entity from parsing table uri and user id.
         If Bookmark is not present, create one for the user.
@@ -261,12 +324,12 @@ class AtlasProxy(BaseProxy):
             LOGGER.exception(f'Column not found: {str(ex)}')
             raise NotFoundException(f'Column not found: {column_name}')
 
-    def _serialize_columns(self, *, entity: EntityUniqueAttribute) -> \
+    def _serialize_columns(self, *, entity: AtlasEntityWithExtInfo) -> \
             Union[List[Column], List]:
         """
         Helper function to fetch the columns from entity and serialize them
         using Column and Stat model.
-        :param entity: EntityUniqueAttribute object,
+        :param entity: AtlasEntityWithExtInfo object,
         along with relationshipAttributes
         :return: A list of Column objects, if there are any columns available,
         else an empty list.
@@ -474,7 +537,7 @@ class AtlasProxy(BaseProxy):
         return result
 
     @staticmethod
-    def _render_partition_key_name(entity: EntityUniqueAttribute) -> Optional[str]:
+    def _render_partition_key_name(entity: AtlasEntityWithExtInfo) -> Optional[str]:
         _partition_keys = []
 
         for partition_key in entity.get('attributes', dict()).get('partitionKeys', []):
@@ -487,7 +550,7 @@ class AtlasProxy(BaseProxy):
 
         return partition_key
 
-    def _get_table_watermarks(self, entity: EntityUniqueAttribute) -> List[Watermark]:
+    def _get_table_watermarks(self, entity: AtlasEntityWithExtInfo) -> List[Watermark]:
         partition_value_format = '%Y-%m-%d %H:%M:%S'
 
         _partitions = entity.get('relationshipAttributes', dict()).get('partitions', list())
@@ -549,7 +612,7 @@ class AtlasProxy(BaseProxy):
                     )
                 else:
                     raise BadRequest('You can not delete this owner.')
-            except NotFound as ex:
+            except Exception as ex:
                 LOGGER.exception('Error while removing table data owner. {}'
                                  .format(str(ex)))
 
@@ -593,7 +656,7 @@ class AtlasProxy(BaseProxy):
             relationship = type_coerce(entity_def, AtlasRelationship)
             self.client.relationship.create_relationship(relationship=relationship)
 
-        except Conflict as ex:
+        except Exception as ex:
             LOGGER.exception('Error while adding the owner information. {}'
                              .format(str(ex)))
             raise BadRequest(f'User {owner} is already added as a data owner for '
@@ -898,7 +961,6 @@ class AtlasProxy(BaseProxy):
 
         user_entity = self.client.entity.get_entity_by_attribute(type_name=self.USER_TYPE,
                                                                  uniq_attributes=[(self.QN_KEY, user_id)]).entity
-        # user_entity = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_id).entity
 
         if not user_entity:
             LOGGER.exception(f'User ({user_id}) not found in Atlas')
@@ -955,7 +1017,8 @@ class AtlasProxy(BaseProxy):
         return {'table': tables}
 
     def get_frequently_used_tables(self, *, user_email: str) -> Dict[str, List[PopularTable]]:
-        user = self._driver.entity_unique_attribute(self.USER_TYPE, qualifiedName=user_email).entity
+        user = self.client.entity.get_entity_by_attribute(type_name=self.USER_TYPE,
+                                                          uniq_attributes=[(self.QN_KEY, user_email)]).entity
 
         readers_guids = []
         for user_reads in user['relationshipAttributes'].get('entityReads'):
@@ -965,10 +1028,10 @@ class AtlasProxy(BaseProxy):
             if entity_status == Status.ACTIVE and relationship_status == Status.ACTIVE:
                 readers_guids.append(user_reads['guid'])
 
-        readers = extract_entities(self._driver.entity_bulk(guid=readers_guids, ignoreRelationships=True))
+        readers = self.client.entity.get_entities_by_guids(guids=list(readers_guids), ignore_relationships=True)
 
         _results = {}
-        for reader in readers:
+        for reader in readers.entities or list():
             entity_uri = reader.attributes.get(self.ENTITY_URI_KEY)
             count = reader.attributes.get('count')
 
@@ -1027,7 +1090,7 @@ class AtlasProxy(BaseProxy):
         except Exception:
             return None
 
-    def _get_readers(self, entity: EntityUniqueAttribute, top: Optional[int] = 15) -> List[Reader]:
+    def _get_readers(self, entity: AtlasEntityWithExtInfo, top: Optional[int] = 15) -> List[Reader]:
         _readers = entity.get('relationshipAttributes', dict()).get('readers', list())
 
         guids = [_reader.get('guid') for _reader in _readers
@@ -1037,11 +1100,11 @@ class AtlasProxy(BaseProxy):
         if not guids:
             return []
 
-        readers = extract_entities(self._driver.entity_bulk(guid=guids, ignoreRelationships=False))
+        readers = self.client.entity.get_entities_by_guids(guids=list(guids), ignore_relationships=False)
 
         _result = []
 
-        for _reader in readers:
+        for _reader in readers.entities or list():
             read_count = _reader.attributes['count']
 
             if read_count >= int(app.config['POPULAR_TABLE_MINIMUM_READER_COUNT']):
