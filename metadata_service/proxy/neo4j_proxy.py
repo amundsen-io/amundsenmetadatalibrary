@@ -1406,3 +1406,26 @@ class Neo4jProxy(BaseProxy):
         for record in records:
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
+
+    @timer_with_counter
+    def get_lineage_item_metadata(self, resource_key: str, resource_type: ResourceType):
+        get_lineage_item_metadata_query = textwrap.dedent(u"""
+            MATCH(resource: {resource_type} {key: $resource_key})
+            OPTIONAL MATCH (resource)-[:BADGE_FOR|HAS_BADGE]-(badge:Badge)
+            OPTIONAL MATCH (resource)-[:STAT]->(usage:Stat {stat_name: $usage_stat_name})
+            RETURN usage, collect(distinct badge) as badges
+        """)
+        # column is currently the only entity with stats
+        record = self._execute_cypher_query(statement=get_lineage_item_metadata_query,
+                                             param_dict={'resource_type': resource_type,
+                                                         'resource_key': resource_key,
+                                                         'stat_name': 'column_usage'})
+        badges = []
+        for badge in record['badges']:
+            badges.append(Badge(badge_name=badge['key'],
+                                category=badge['category']))
+        return {
+            'key': resource_key,
+            'usage': record['usage'],
+            'badges': badges
+        }
