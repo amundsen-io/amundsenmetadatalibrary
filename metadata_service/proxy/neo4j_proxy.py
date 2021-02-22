@@ -1408,7 +1408,9 @@ class Neo4jProxy(BaseProxy):
         return {'dashboards': results}
 
     @timer_with_counter
-    def get_lineage_item_metadata(self, resource_key: str, resource_type: ResourceType):
+    def get_lineage_item_metadata(self,
+                                  resource_key: str,
+                                  resource_type: ResourceType) -> Dict[str, Union[str, int, List[Badge]]]:
         get_lineage_item_metadata_query = textwrap.dedent(u"""
             MATCH(resource: {resource_type} {key: $resource_key})
             OPTIONAL MATCH (resource)-[:BADGE_FOR|HAS_BADGE]-(badge:Badge)
