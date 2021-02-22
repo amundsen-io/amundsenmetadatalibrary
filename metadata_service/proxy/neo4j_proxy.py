@@ -1417,7 +1417,7 @@ class Neo4jProxy(BaseProxy):
         """)
         # column is currently the only entity with stats
         record = self._execute_cypher_query(statement=get_lineage_item_metadata_query,
-                                             param_dict={'resource_type': resource_type,
+                                            param_dict={'resource_type': resource_type,
                                                          'resource_key': resource_key,
                                                          'stat_name': 'column_usage'})
         badges = []
