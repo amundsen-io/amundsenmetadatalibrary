@@ -158,5 +158,5 @@ class BaseProxy(metaclass=ABCMeta):
 
     @abstractmethod
     def get_lineage(self, *,
-                    id, resource_type: ResourceType, ) -> Lineage:
+                    id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
         pass

@@ -14,6 +14,7 @@ from amundsen_common.models.table import (Column, ProgrammaticDescription,
                                           Reader, ResourceReport, Stat, Table,
                                           Tag, User, Watermark)
 from amundsen_common.models.user import User as UserEntity
+from amundsen_common.models.lineage import Lineage
 from atlasclient.client import Atlas
 from atlasclient.exceptions import BadRequest, Conflict, NotFound
 from atlasclient.models import EntityUniqueAttribute
@@ -1068,3 +1069,7 @@ class AtlasProxy(BaseProxy):
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
         return {}
+    
+    def get_lineage(self, *,
+            id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        pass

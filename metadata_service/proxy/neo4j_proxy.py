@@ -17,6 +17,8 @@ from amundsen_common.models.table import (Column, ProgrammaticDescription,
                                           Reader, Source, Stat, Table, Tag,
                                           User, Watermark)
 from amundsen_common.models.user import User as UserEntity
+from amundsen_common.models.lineage import Lineage
+
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from flask import current_app, has_app_context
@@ -1408,7 +1410,7 @@ class Neo4jProxy(BaseProxy):
         return {'dashboards': results}
 
     @timer_with_counter
-    def get_lineage_item_metadata(self,
+    def _get_lineage_item_metadata(self,
                                   resource_key: str,
                                   resource_type: ResourceType) -> Dict[str, Union[str, int, List[Badge]]]:
         get_lineage_item_metadata_query = textwrap.dedent(u"""
@@ -1431,3 +1433,6 @@ class Neo4jProxy(BaseProxy):
             'usage': record['usage'],
             'badges': badges
         }
+    
+    def get_lineage(self, id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        pass

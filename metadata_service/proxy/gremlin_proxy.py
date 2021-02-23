@@ -19,6 +19,7 @@ from amundsen_common.models.table import (Application, Column,
                                           ProgrammaticDescription, Reader,
                                           Source, Stat, Table, Tag, Watermark)
 from amundsen_common.models.user import User
+from amundsen_common.models.lineage import Lineage
 from amundsen_gremlin.gremlin_model import (EdgeType, EdgeTypes, VertexType,
                                             VertexTypes, WellKnownProperties)
 from amundsen_gremlin.gremlin_shared import \
@@ -1721,6 +1722,11 @@ class AbstractGremlinProxy(BaseProxy):
             return EdgeTypes.Follow
 
         raise NotImplementedError(f"Don't know how to handle UserResourceRel={relation}")
+
+    def get_lineage(self, *,
+            id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        pass
+
 
 
 class GenericGremlinProxy(AbstractGremlinProxy):
