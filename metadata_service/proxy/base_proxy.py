@@ -8,6 +8,7 @@ from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table
 from amundsen_common.models.user import User
+from amundsen_common.models.lineage import LineageItem, Lineage
 
 from metadata_service.entity.dashboard_detail import \
     DashboardDetail as DashboardDetailEntity
@@ -153,4 +154,9 @@ class BaseProxy(metaclass=ABCMeta):
     def get_resources_using_table(self, *,
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
+        pass
+
+    @abstractmethod
+    def get_lineage(self, *,
+                    id, resource_type: ResourceType, ) -> Lineage:
         pass
