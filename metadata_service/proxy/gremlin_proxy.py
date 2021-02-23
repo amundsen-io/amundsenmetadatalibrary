@@ -1724,9 +1724,8 @@ class AbstractGremlinProxy(BaseProxy):
         raise NotImplementedError(f"Don't know how to handle UserResourceRel={relation}")
 
     def get_lineage(self, *,
-            id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+                    id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
         pass
-
 
 
 class GenericGremlinProxy(AbstractGremlinProxy):

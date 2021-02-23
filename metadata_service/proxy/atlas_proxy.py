@@ -1069,7 +1069,7 @@ class AtlasProxy(BaseProxy):
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
         return {}
-    
+
     def get_lineage(self, *,
-            id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+                    id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
         pass

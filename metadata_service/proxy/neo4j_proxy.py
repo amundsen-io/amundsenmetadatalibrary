@@ -1408,6 +1408,6 @@ class Neo4jProxy(BaseProxy):
         for record in records:
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
-    
+
     def get_lineage(self, id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
         pass
