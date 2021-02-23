@@ -8,7 +8,7 @@ from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table
 from amundsen_common.models.user import User
-from amundsen_common.models.lineage import LineageItem, Lineage
+from amundsen_common.models.lineage import Lineage
 
 from metadata_service.entity.dashboard_detail import \
     DashboardDetail as DashboardDetailEntity
