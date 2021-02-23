@@ -18,7 +18,6 @@ from amundsen_common.models.table import (Column, ProgrammaticDescription,
                                           Reader, Source, Stat, Table, Tag,
                                           User, Watermark)
 from amundsen_common.models.user import User as UserEntity
-
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from flask import current_app, has_app_context
