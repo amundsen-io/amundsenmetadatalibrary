@@ -493,7 +493,7 @@ class TestNeo4jProxy(unittest.TestCase):
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             mock_execute.return_value.single.return_value = {
                 'ts': {
-                    'latest_timestmap': '1000'
+                    'latest_timestamp': '1000'
                 }
             }
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)

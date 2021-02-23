@@ -818,7 +818,7 @@ class Neo4jProxy(BaseProxy):
         # None means we don't have record for neo4j, es last updated / index ts
         record = record.single()
         if record:
-            return record.get('ts', {}).get('latest_timestmap', 0)
+            return record.get('ts', {}).get('latest_timestamp', 0)
         else:
             return None
 

@@ -1451,7 +1451,7 @@ class AbstractGremlinProxy(BaseProxy):
         """
 
         results = _V(g=self.g, label=VertexTypes.Updatedtimestamp,
-                     key=AMUNDSEN_TIMESTAMP_KEY).values('latest_timestmap').toList()
+                     key=AMUNDSEN_TIMESTAMP_KEY).values('latest_timestamp').toList()
         return _safe_get(results, transform=int)
 
     @timer_with_counter
