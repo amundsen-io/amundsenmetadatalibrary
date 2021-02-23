@@ -10,6 +10,7 @@ from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
 
 import neo4j
 from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.lineage import Lineage
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Application
 from amundsen_common.models.table import Badge as TableBadge
@@ -17,7 +18,6 @@ from amundsen_common.models.table import (Column, ProgrammaticDescription,
                                           Reader, Source, Stat, Table, Tag,
                                           User, Watermark)
 from amundsen_common.models.user import User as UserEntity
-from amundsen_common.models.lineage import Lineage
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
