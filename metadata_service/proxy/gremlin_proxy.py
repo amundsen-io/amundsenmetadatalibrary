@@ -1152,7 +1152,7 @@ class AbstractGremlinProxy(BaseProxy):
             col = Column(name=_safe_get(result, 'column', 'name'),
                          key=_safe_get(result, 'column', self.key_property_name),
                          description=_safe_get(result, 'description', 'description'),
-                         col_type=_safe_get(result, 'column', 'type'),
+                         col_type=_safe_get(result, 'column', 'col_type'),
                          sort_order=_safe_get(result, 'column', 'sort_order', transform=int),
                          stats=_safe_get_list(result, 'stats', transform=self._convert_to_statistics) or [])
             cols.append(col)
@@ -1692,7 +1692,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     def _convert_to_statistics(self, result: Mapping[str, Any]) -> Stat:
         return Stat(
-            stat_type=_safe_get(result, 'stat_name'),
+            stat_type=_safe_get(result, 'stat_type'),
             stat_val=_safe_get(result, 'stat_val'),
             start_epoch=_safe_get(result, 'start_epoch'),
             end_epoch=_safe_get(result, 'end_epoch'))
