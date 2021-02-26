@@ -1,0 +1,11 @@
+Get lineage
+---
+tags:
+  - 'lineage'
+responses:
+  200:
+    description: 'Lineage for requested driection and depth'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Lineage'

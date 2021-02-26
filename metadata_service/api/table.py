@@ -6,9 +6,10 @@ from http import HTTPStatus
 from typing import Any, Iterable, Mapping, Optional, Union
 
 from amundsen_common.models.table import TableSchema
+from amundsen_common.models.lineage import LineageSchema
 from flasgger import swag_from
 from flask import request
-from flask_restful import Resource, reqparse
+from flask_restful import Resource, reqparse, marshal
 
 from metadata_service.api import BaseAPI
 from metadata_service.api.badge import BadgeCommon
@@ -37,6 +38,29 @@ class TableDetailAPI(Resource):
         except NotFoundException:
             return {'message': 'table_uri {} does not exist'.format(table_uri)}, HTTPStatus.NOT_FOUND
 
+
+class TableLineageAPI(Resource):
+    def __init__(self) -> None:
+        self.client = get_proxy_client()
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('direction', type=str, required=False)
+        self.parser.add_argument('depth', type=int, required=False)
+        super(TableLineageAPI, self).__init__()
+
+    def get(self, id:str) -> Iterable[Union[Mapping, int, None]]:
+        args = self.parser.parse_args()
+        direction = args.get('direction', 'both')
+        depth = args.get('depth', 0)
+        try:
+            lineage = self.client.get_lineage(id=id,
+                                              resource_type=ResourceType.Table,
+                                              direction=direction,
+                                              depth=depth)
+            schema = LineageSchema(strict=True)
+
+            return schema.dump(lineage).data, HTTPStatus.OK
+        except Exception as e:
+            return {'message': f'Exception raised when getting lineage {e}'}, HTTPStatus.NOT_FOUND
 
 class TableOwnerAPI(Resource):
     """
