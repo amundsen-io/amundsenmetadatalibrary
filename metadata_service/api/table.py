@@ -9,7 +9,7 @@ from amundsen_common.models.table import TableSchema
 from amundsen_common.models.lineage import LineageSchema
 from flasgger import swag_from
 from flask import request
-from flask_restful import Resource, reqparse, marshal
+from flask_restful import Resource, reqparse
 
 from metadata_service.api import BaseAPI
 from metadata_service.api.badge import BadgeCommon
@@ -19,10 +19,10 @@ from metadata_service.entity.resource_type import ResourceType
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 
-
-from pprint import pprint
 import logging
+
 LOGGER = logging.getLogger(__name__)
+
 
 class TableDetailAPI(Resource):
     """
@@ -51,7 +51,7 @@ class TableLineageAPI(Resource):
         self.parser.add_argument('depth', type=int, required=False)
         super(TableLineageAPI, self).__init__()
 
-    def get(self, id:str) -> Iterable[Union[Mapping, int, None]]:
+    def get(self, id: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
         direction = args.get('direction', 'both')
         depth = args.get('depth', 0)
@@ -64,6 +64,7 @@ class TableLineageAPI(Resource):
             return schema.dump(lineage), HTTPStatus.OK
         except Exception as e:
             return {'message': f'Exception raised when getting lineage: {e}'}, HTTPStatus.NOT_FOUND
+
 
 class TableOwnerAPI(Resource):
     """
