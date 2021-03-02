@@ -1411,5 +1411,4 @@ class Neo4jProxy(BaseProxy):
     def get_lineage(self, *,
                     id: str,
                     resource_type: ResourceType, direction: str, depth: int) -> Lineage:
-        LOGGER.info(" IN PUBLIC GET LINEAGE")
-        return Lineage(key="hello", direction=direction, depth=depth, upstream_entities=[], downstream_entities=[])
+        pass

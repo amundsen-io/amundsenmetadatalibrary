@@ -20,6 +20,10 @@ from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 
 
+from pprint import pprint
+import logging
+LOGGER = logging.getLogger(__name__)
+
 class TableDetailAPI(Resource):
     """
     TableDetail API
@@ -56,11 +60,10 @@ class TableLineageAPI(Resource):
                                               resource_type=ResourceType.Table,
                                               direction=direction,
                                               depth=depth)
-            schema = LineageSchema(strict=True)
-
-            return schema.dump(lineage).data, HTTPStatus.OK
+            schema = LineageSchema()
+            return schema.dump(lineage), HTTPStatus.OK
         except Exception as e:
-            return {'message': f'Exception raised when getting lineage {e}'}, HTTPStatus.NOT_FOUND
+            return {'message': f'Exception raised when getting lineage: {e}'}, HTTPStatus.NOT_FOUND
 
 class TableOwnerAPI(Resource):
     """
