@@ -617,7 +617,7 @@ class TestNeo4jProxy(unittest.TestCase):
             mock_execute.return_value.single.return_value = {'users': [test_user]}
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             users = neo4j_proxy.get_users()
-            actual_data = UserSchema(many=True).load([test_user]).data
+            actual_data = UserSchema(many=True).load([test_user])
             for attr in ['employee_type',
                          'full_name',
                          'is_active',
