@@ -103,7 +103,7 @@ def create_app(*, config_module_class: str) -> Flask:
     api.add_resource(TableBadgeAPI,
                      '/table/<path:id>/badge/<badge>')
     api.add_resource(TableLineageAPI,
-                     '/table/<path:id>/lineage/')
+                     '/table/<path:id>/lineage')
     api.add_resource(TableOwnerAPI,
                      '/table/<path:table_uri>/owner/<owner>')
     api.add_resource(TableDashboardAPI,
