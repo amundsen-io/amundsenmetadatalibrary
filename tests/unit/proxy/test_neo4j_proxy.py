@@ -615,15 +615,15 @@ class TestNeo4jProxy(unittest.TestCase):
                 'manager_fullname': 'test_manager',
             }
             test_user_obj = UserModel(email='test_email',
-                                 first_name='test_first_name',
-                                 last_name='test_last_name',
-                                 full_name='test_full_name',
-                                 is_active=True,
-                                 github_username='test-github',
-                                 team_name='test_team',
-                                 slack_id='test_id',
-                                 employee_type='teamMember',
-                                 manager_fullname='test_manager')
+                                      first_name='test_first_name',
+                                      last_name='test_last_name',
+                                      full_name='test_full_name',
+                                      is_active=True,
+                                      github_username='test-github',
+                                      team_name='test_team',
+                                      slack_id='test_id',
+                                      employee_type='teamMember',
+                                      manager_fullname='test_manager')
 
     # TODO: Add frequent_used, bookmarked, & owned resources)
             mock_execute.return_value.single.return_value = {'users': [test_user]}
