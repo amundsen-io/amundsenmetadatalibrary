@@ -7,8 +7,9 @@ from typing import Any, Dict, Optional, cast
 from unittest.mock import MagicMock, patch
 
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import (Column, ProgrammaticDescription,
-                                          Reader, Stat, Table, Tag, User, Badge)
+from amundsen_common.models.table import (Badge, Column,
+                                          ProgrammaticDescription, Reader,
+                                          Stat, Table, Tag, User)
 from atlasclient.exceptions import BadRequest
 
 from metadata_service import create_app
