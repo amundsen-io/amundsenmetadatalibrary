@@ -121,7 +121,7 @@ class GremlinConfig(LocalConfig, LocalGremlinConfig):
 class NeptuneConfig(LocalGremlinConfig, LocalConfig):
     import boto3
 
-    def __init__(self):
+    def __init__(self) -> None:
         from amundsen_gremlin.test_and_development_shard import shard_set_explicitly
         # The databuilder expects this to be False currently. We are defaulting to true because the testing expects this
         if bool(distutils.util.strtobool(os.environ.get('IGNORE_NEPTUNE_SHARD', 'False'))):
@@ -131,8 +131,8 @@ class NeptuneConfig(LocalGremlinConfig, LocalConfig):
     LOG_LEVEL = 'INFO'
 
     # FORMAT: wss://<NEPTUNE_URL>:<NEPTUNE_PORT>/gremlin
-    PROXY_HOST = os.environ.get('PROXY_HOST')
-    PROXY_PORT = None
+    PROXY_HOST = os.environ.get('PROXY_HOST', '')
+    PROXY_PORT = None   # type: ignore
     PROXY_CLIENT = PROXY_CLIENTS['NEPTUNE']
     PROXY_PASSWORD = boto3.session.Session(region_name=os.environ.get('AWS_REGION', 'us-east-1'))
 
