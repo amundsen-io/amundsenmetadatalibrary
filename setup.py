@@ -27,7 +27,6 @@ setup(
          'annotations.git@a7a2dc96932430369bdef36555082df990ed9bef#egg=marshmallow-annotations')
     ],
     install_requires=[
-        requirements,
         'marshmallow>=3.0,<=3.6',
         'marshmallow-annotations'
     ],
