@@ -12,7 +12,7 @@ from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (Application, Badge, Column,
                                           ProgrammaticDescription, Source,
                                           Stat, Table, Tag, User, Watermark)
-from amundsen_common.models.user import User
+from amundsen_common.models.user import User as UserModel
 from neo4j import GraphDatabase
 
 from metadata_service import create_app
@@ -614,7 +614,7 @@ class TestNeo4jProxy(unittest.TestCase):
                 'email': 'test_email',
                 'manager_fullname': 'test_manager',
             }
-            test_user_obj = User(email='test_email',
+            test_user_obj = UserModel(email='test_email',
                                  first_name='test_first_name',
                                  last_name='test_last_name',
                                  full_name='test_full_name',
