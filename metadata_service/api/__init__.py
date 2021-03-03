@@ -40,4 +40,4 @@ class BaseAPI(Resource):
         else:
             get_objects = getattr(self.client, f'get_{self.str_type}s')
             objects: List[Any] = get_objects()
-            return self.schema().dump(objects), HTTPStatus.OK
+            return self.schema().dump(objects, many=True), HTTPStatus.OK

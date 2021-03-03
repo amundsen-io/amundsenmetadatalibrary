@@ -73,13 +73,13 @@ class UserFollowsAPI(Resource):
             }  # type: Dict[str, List[Any]]
 
             if resources and table_key in resources and len(resources[table_key]) > 0:
-                result[table_key] = PopularTableSchema().dump(resources[table_key])
+                result[table_key] = PopularTableSchema().dump(resources[table_key], many=True)
 
             resources = self.client.get_dashboard_by_user_relation(user_email=user_id,
                                                                    relation_type=UserResourceRel.follow)
 
             if resources and dashboard_key in resources and len(resources[dashboard_key]) > 0:
-                result[dashboard_key] = DashboardSummarySchema().dump(resources[dashboard_key])
+                result[dashboard_key] = DashboardSummarySchema().dump(resources[dashboard_key], many=True)
 
             return result, HTTPStatus.OK
 
@@ -179,13 +179,13 @@ class UserOwnsAPI(Resource):
             resources = self.client.get_table_by_user_relation(user_email=user_id,
                                                                relation_type=UserResourceRel.own)
             if resources and table_key in resources and len(resources[table_key]) > 0:
-                result[table_key] = PopularTableSchema().dump(resources[table_key])
+                result[table_key] = PopularTableSchema().dump(resources[table_key], many=True)
 
             resources = self.client.get_dashboard_by_user_relation(user_email=user_id,
                                                                    relation_type=UserResourceRel.own)
 
             if resources and dashboard_key in resources and len(resources[dashboard_key]) > 0:
-                result[dashboard_key] = DashboardSummarySchema().dump(resources[dashboard_key])
+                result[dashboard_key] = DashboardSummarySchema().dump(resources[dashboard_key], many=True)
 
             return result, HTTPStatus.OK
 
@@ -261,7 +261,7 @@ class UserReadsAPI(Resource):
         try:
             resources = self.client.get_frequently_used_tables(user_email=user_id)
             if len(resources['table']) > 0:
-                return {'table': PopularTableSchema().dump(resources['table'])}, HTTPStatus.OK
+                return {'table': PopularTableSchema().dump(resources['table'], many=True)}, HTTPStatus.OK
             return {'table': []}, HTTPStatus.OK
 
         except NotFoundException:
