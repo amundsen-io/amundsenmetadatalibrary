@@ -119,10 +119,10 @@ class GremlinConfig(LocalConfig, LocalGremlinConfig):
 
 
 class NeptuneConfig(LocalGremlinConfig, LocalConfig):
-    import boto3
+    import boto3    # isort:skip
 
     def __init__(self) -> None:
-        from amundsen_gremlin.test_and_development_shard import shard_set_explicitly
+        from amundsen_gremlin.test_and_development_shard import shard_set_explicitly    # isort:skip
         # The databuilder expects this to be False currently. We are defaulting to true because the testing expects this
         if bool(distutils.util.strtobool(os.environ.get('IGNORE_NEPTUNE_SHARD', 'False'))):
             shard_set_explicitly('')
