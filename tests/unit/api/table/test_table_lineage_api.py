@@ -1,11 +1,8 @@
 # Copyright Contributors to the Amundsen project.
 # SPDX-License-Identifier: Apache-2.0
 
-import unittest
 from http import HTTPStatus
-from unittest.mock import Mock, patch
 
-from tests.unit.test_basics import BasicTestCase
 from tests.unit.api.table.table_test_case import TableTestCase
 
 from metadata_service.exception import NotFoundException
