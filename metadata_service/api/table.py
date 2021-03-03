@@ -32,7 +32,7 @@ class TableDetailAPI(Resource):
     def get(self, table_uri: str) -> Iterable[Union[Mapping, int, None]]:
         try:
             table = self.client.get_table(table_uri=table_uri)
-            schema = TableSchema(strict=True)
+            schema = TableSchema()
             return schema.dump(table), HTTPStatus.OK
 
         except NotFoundException:
