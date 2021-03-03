@@ -33,7 +33,7 @@ class TableDetailAPI(Resource):
         try:
             table = self.client.get_table(table_uri=table_uri)
             schema = TableSchema(strict=True)
-            return schema.dump(table).data, HTTPStatus.OK
+            return schema.dump(table), HTTPStatus.OK
 
         except NotFoundException:
             return {'message': 'table_uri {} does not exist'.format(table_uri)}, HTTPStatus.NOT_FOUND
