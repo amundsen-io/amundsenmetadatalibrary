@@ -53,13 +53,6 @@ class Config:
 
     IS_STATSD_ON = False
 
-    # Used to differentiate tables with other entities in Atlas. For more details:
-    # https://github.com/amundsen-io/amundsenmetadatalibrary/blob/master/docs/proxy/atlas_proxy.md
-    ATLAS_TABLE_ENTITY = 'Table'
-
-    # The relationalAttribute name of Atlas Entity that identifies the database entity.
-    ATLAS_DB_ATTRIBUTE = 'db'
-
     # Configurable dictionary to influence format of column statistics displayed in UI
     STATISTICS_FORMAT_SPEC: Dict[str, Dict] = {}
 
@@ -80,10 +73,6 @@ class Config:
 
     # List of regexes which will exclude certain parameters from appearing as Programmatic Descriptions
     PROGRAMMATIC_DESCRIPTIONS_EXCLUDE_FILTERS = []  # type: list
-
-    # List of accepted date formats for AtlasProxy Watermarks. With this we allow more than one datetime partition
-    # format to be used in tables
-    WATERMARK_DATE_FORMATS = ['%Y%m%d']
 
     # Custom kwargs that will be passed to proxy client. Can be used to fine-tune parameters like timeout
     # or num of retries
@@ -112,6 +101,19 @@ class LocalConfig(Config):
         'title': 'Metadata Service',
         'uiversion': 3
     }
+
+
+class AtlasConfig(LocalConfig):
+    # Used to differentiate tables with other entities in Atlas. For more details:
+    # https://github.com/amundsen-io/amundsenmetadatalibrary/blob/master/docs/proxy/atlas_proxy.md
+    ATLAS_TABLE_ENTITY = 'Table'
+
+    # The relationalAttribute name of Atlas Entity that identifies the database entity.
+    ATLAS_DB_ATTRIBUTE = 'db'
+
+    # List of accepted date formats for AtlasProxy Watermarks. With this we allow more than one datetime partition
+    # format to be used in tables
+    WATERMARK_DATE_FORMATS = ['%Y%m%d']
 
 
 class GremlinConfig(LocalConfig, LocalGremlinConfig):
