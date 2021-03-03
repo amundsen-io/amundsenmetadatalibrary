@@ -62,7 +62,7 @@ API_RESPONSE = {
     ]
 }
 
-LINEAGE_RESPONSE = API_RESPONSE
+# LINEAGE_RESPONSE = API_RESPONSE
 
 
 class TestTableLineageAPI(TableTestCase):
@@ -73,7 +73,7 @@ class TestTableLineageAPI(TableTestCase):
         super().tearDown()
 
     def test_should_return_response(self) -> None:
-        self.mock_proxy.get_lineage.return_value = LINEAGE_RESPONSE
+        self.mock_proxy.get_lineage.return_value = API_RESPONSE
         response = self.app.test_client().get(f'/table/{TABLE_URI}/lineage')
         self.assertEqual(response.json, API_RESPONSE)
         self.assertEqual(response.status_code, HTTPStatus.OK)
