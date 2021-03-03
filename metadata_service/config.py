@@ -104,13 +104,6 @@ class LocalConfig(Config):
 
 
 class AtlasConfig(LocalConfig):
-    # Used to differentiate tables with other entities in Atlas. For more details:
-    # https://github.com/amundsen-io/amundsenmetadatalibrary/blob/master/docs/proxy/atlas_proxy.md
-    ATLAS_TABLE_ENTITY = 'Table'
-
-    # The relationalAttribute name of Atlas Entity that identifies the database entity.
-    ATLAS_DB_ATTRIBUTE = 'db'
-
     # List of accepted date formats for AtlasProxy Watermarks. With this we allow more than one datetime partition
     # format to be used in tables
     WATERMARK_DATE_FORMATS = ['%Y%m%d']
