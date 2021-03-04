@@ -26,7 +26,7 @@ parameters:
     example: 0
 responses:
   200:
-    description: 'Lineage for requested driection and depth'
+    description: 'Lineage for requested direction and depth'
     content:
       application/json:
         schema:
