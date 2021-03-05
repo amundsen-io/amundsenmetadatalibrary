@@ -88,12 +88,14 @@ class BadgeCommon:
 
     def delete(self, id: str, badge_name: str,
                category: str,
-               resource_type: ResourceType) -> Tuple[Any, HTTPStatus]:
+               resource_type: ResourceType,
+               column_name: str = '') -> Tuple[Any, HTTPStatus]:
         try:
             self.client.delete_badge(id=id,
                                      resource_type=resource_type,
                                      badge_name=badge_name,
-                                     category=category)
+                                     category=category,
+                                     column_name=column_name)
             return \
                 {'message': f'The badge {badge_name} with category {category} for resource '
                             f'id {id} and resource_type {resource_type.name} was deleted successfully'}, \
