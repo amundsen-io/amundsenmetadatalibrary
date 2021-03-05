@@ -3,7 +3,7 @@
 
 import json
 from http import HTTPStatus
-from typing import Iterable, Mapping, Union
+from typing import Any, Iterable, Mapping, Optional, Union
 
 from amundsen_common.models.lineage import LineageSchema
 from flasgger import swag_from
@@ -13,6 +13,10 @@ from flask_restful import Resource, reqparse
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
+
+from metadata_service.api.badge import BadgeCommon
+from metadata_service.entity.resource_type import ResourceType
+from metadata_service.exception import NotFoundException
 
 
 class ColumnLineageAPI(Resource):
