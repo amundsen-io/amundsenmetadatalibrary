@@ -604,6 +604,7 @@ class Neo4jProxy(BaseProxy):
         column_suffix = ''
         if column_name:
             column_suffix = '/' + column_name
+            LOGGER.info('Column suffix is: {} which makes the id now {}'.format(column_suffix, id + column_suffix))
 
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
