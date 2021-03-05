@@ -111,7 +111,7 @@ class ColumnBadgeAPI(Resource):
                                       column_name=column_name)
 
     @swag_from('swagger_doc/badge/badge_delete.yml')
-    def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, id: str, badge: str, column_name: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
         category = args.get('category', '')
 
