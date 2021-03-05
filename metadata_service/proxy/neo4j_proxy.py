@@ -661,10 +661,14 @@ class Neo4jProxy(BaseProxy):
         [r1:BADGE_FOR]->(n:{resource_type} {{key: $key}})-[r2:HAS_BADGE]->(b) DELETE r1,r2
         """.format(resource_type=resource_type.name))
 
+        column_suffix = ''
+        if column_name:
+            column_suffix = '/' + column_name
+
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'badge_name': badge_name,
-                                  'key': id,
+                                  'key': id + column_suffix,
                                   'category': category})
             tx.commit()
         except Exception as e:
