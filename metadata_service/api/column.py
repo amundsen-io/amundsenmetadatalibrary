@@ -60,3 +60,34 @@ class ColumnDescriptionAPI(Resource):
 
         except Exception:
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
+
+class ColumnBadgeAPI(Resource):
+    def __init__(self) -> None:
+        self.client = get_proxy_client()
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('category', type=str, required=True)
+        super(ColumnBadgeAPI, self).__init__()
+
+        self._badge_common = BadgeCommon(client=self.client)
+
+    @swag_from('swagger_doc/badge/badge_put.yml')
+    def put(self, id: str, badge: str, column_name: str) -> Iterable[Union[Mapping, int, None]]:
+        args = self.parser.parse_args()
+        category = args.get('category', '')
+
+        return self._badge_common.put(id=id,
+                                      resource_type=ResourceType.Column,
+                                      badge_name=badge,
+                                      category=category,
+                                      column_name=column_name)
+
+    @swag_from('swagger_doc/badge/badge_delete.yml')
+    def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
+        args = self.parser.parse_args()
+        category = args.get('category', '')
+
+        return self._badge_common.delete(id=id,
+                                         resource_type=ResourceType.Column,
+                                         badge_name=badge,
+                                         category=category,
+                                         column_name=column_name)

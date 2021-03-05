@@ -15,7 +15,8 @@ from flask_cors import CORS
 from flask_restful import Api
 
 from metadata_service.api.badge import BadgeAPI
-from metadata_service.api.column import ColumnDescriptionAPI
+from metadata_service.api.column import (ColumnDescriptionAPI,
+                                         ColumnBadgeAPI)
 from metadata_service.api.dashboard import (DashboardBadgeAPI,
                                             DashboardDescriptionAPI,
                                             DashboardDetailAPI,
@@ -110,6 +111,8 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/table/<path:id>/dashboard/')
     api.add_resource(ColumnDescriptionAPI,
                      '/table/<path:table_uri>/column/<column_name>/description')
+    api.add_resource(ColumnBadgeAPI,
+                     '/table/<path:id>/column/<column_name>/badge/<badge>')
     api.add_resource(Neo4jDetailAPI,
                      '/latest_updated_ts')
     api.add_resource(TagAPI,
