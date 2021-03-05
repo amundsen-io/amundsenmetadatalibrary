@@ -601,6 +601,10 @@ class Neo4jProxy(BaseProxy):
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
 
+        column_suffix = ''
+        if column_name:
+            column_suffix = '/' + column_name
+
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
         on CREATE SET u={key: $badge_name, category: $category}
@@ -616,7 +620,7 @@ class Neo4jProxy(BaseProxy):
 
         try:
             tx = self._driver.session().begin_transaction()
-            tbl_result = tx.run(validation_query, {'key': id})
+            tbl_result = tx.run(validation_query, {'key': id + column_suffix})
             if not tbl_result.single():
                 raise NotFoundException('id {} does not exist'.format(id))
 
