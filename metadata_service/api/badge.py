@@ -44,7 +44,8 @@ class BadgeCommon:
 
     def put(self, id: str, resource_type: ResourceType,
             badge_name: str,
-            category: str = '') -> Tuple[Any, HTTPStatus]:
+            category: str = '',
+            column_name: str = '') -> Tuple[Any, HTTPStatus]:
 
         if category == '':
             return \
@@ -75,7 +76,8 @@ class BadgeCommon:
             self.client.add_badge(id=id,
                                   badge_name=badge_name,
                                   category=category,
-                                  resource_type=resource_type)
+                                  resource_type=resource_type,
+                                  column_name=column_name)
             return {'message': f'The badge {badge_name} with category {category} was '
                                f'added successfully to resurce with id {id}'}, HTTPStatus.OK
         except Exception as e:
