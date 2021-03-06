@@ -3,7 +3,7 @@
 
 import json
 from http import HTTPStatus
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Iterable, Mapping, Union
 
 from flasgger import swag_from
 from flask import request
@@ -14,7 +14,6 @@ from metadata_service.proxy import get_proxy_client
 
 from metadata_service.api.badge import BadgeCommon
 from metadata_service.entity.resource_type import ResourceType
-from metadata_service.exception import NotFoundException
 
 
 class ColumnDescriptionAPI(Resource):
@@ -64,6 +63,7 @@ class ColumnDescriptionAPI(Resource):
 
         except Exception:
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
+
 
 class ColumnBadgeAPI(Resource):
     def __init__(self) -> None:
