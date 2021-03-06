@@ -9,11 +9,10 @@ from flasgger import swag_from
 from flask import request
 from flask_restful import Resource, reqparse
 
-from metadata_service.exception import NotFoundException
-from metadata_service.proxy import get_proxy_client
-
 from metadata_service.api.badge import BadgeCommon
 from metadata_service.entity.resource_type import ResourceType
+from metadata_service.exception import NotFoundException
+from metadata_service.proxy import get_proxy_client
 
 
 class ColumnDescriptionAPI(Resource):
