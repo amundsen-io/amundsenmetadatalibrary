@@ -427,7 +427,8 @@ class TestNeo4jProxy(unittest.TestCase):
 
             neo4j_proxy = Neo4jProxy(host='DOES_NOT_MATTER', port=0000)
             neo4j_proxy.add_badge(id='dummy_uri',
-                                  badge_name='hive')
+                                  badge_name='hive',
+                                  column_type=ResourceType.Table)
             # we call neo4j twice in add_tag call
             self.assertEqual(mock_run.call_count, 3)
             self.assertEqual(mock_commit.call_count, 1)
