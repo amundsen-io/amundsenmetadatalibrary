@@ -601,10 +601,9 @@ class Neo4jProxy(BaseProxy):
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
 
-        column_suffix = ''
         if column_name:
-            column_suffix = '/' + column_name
-            LOGGER.info('Column suffix is: {} which makes the id now {}'.format(column_suffix, id + column_suffix))
+            id = '{}/{}'.format(id, column_name)
+            LOGGER.info('ID with colum name is now {}'.format(id))
 
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
@@ -621,22 +620,22 @@ class Neo4jProxy(BaseProxy):
 
         try:
             tx = self._driver.session().begin_transaction()
-            tbl_result = tx.run(validation_query, {'key': id + column_suffix})
+            tbl_result = tx.run(validation_query, {'key': id})
             if not tbl_result.single():
-                raise NotFoundException('id {} does not exist'.format(id + column_suffix))
+                raise NotFoundException('id {} does not exist'.format(id))
 
             tx.run(upsert_badge_query, {'badge_name': badge_name,
                                         'category': category})
 
             result = tx.run(upsert_badge_relation_query, {'badge_name': badge_name,
-                                                          'key': id + column_suffix,
+                                                          'key': id,
                                                           'category': category})
 
             if not result.single():
                 raise RuntimeError('failed to create relation between '
                                    'badge {badge} and resource {resource} of resource type '
                                    '{resource_type} MORE {q}'.format(badge=badge_name,
-                                                                     resource=id + column_suffix,
+                                                                     resource=id,
                                                                      resource_type=resource_type,
                                                                      q=upsert_badge_relation_query))
             tx.commit()
@@ -662,14 +661,14 @@ class Neo4jProxy(BaseProxy):
         [r1:BADGE_FOR]->(n:{resource_type} {{key: $key}})-[r2:HAS_BADGE]->(b) DELETE r1,r2
         """.format(resource_type=resource_type.name))
 
-        column_suffix = ''
         if column_name:
-            column_suffix = '/' + column_name
+            id = '{}/{}'.format(id, column_name)
+            LOGGER.info('ID with colum name is now {}'.format(id))
 
         try:
             tx = self._driver.session().begin_transaction()
             tx.run(delete_query, {'badge_name': badge_name,
-                                  'key': id + column_suffix,
+                                  'key': id,
                                   'category': category})
             tx.commit()
         except Exception as e:
