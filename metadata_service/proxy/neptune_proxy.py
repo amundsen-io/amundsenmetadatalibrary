@@ -65,11 +65,9 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
         if port is not None:
             raise NotImplementedError(f'port is not allowed! port={port}')
 
-
         if client_kwargs.get('ignore_neptune_shard', False):
             _reset_for_testing_only()
             shard_set_explicitly('')
-
 
         # for IAM auth, we need the triplet or a Session which is more general
         if isinstance(password, boto3.session.Session):
