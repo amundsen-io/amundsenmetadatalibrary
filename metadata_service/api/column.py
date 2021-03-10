@@ -42,6 +42,7 @@ class ColumnLineageAPI(Resource):
         except Exception as e:
             return {'message': f'Exception raised when getting lineage: {e}'}, HTTPStatus.NOT_FOUND
 
+
 class ColumnDescriptionAPI(Resource):
     """
     ColumnDescriptionAPI supports PUT and GET operations to upsert column description
