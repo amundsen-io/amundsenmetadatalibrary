@@ -11,26 +11,23 @@ import gremlin_python.driver.protocol
 import requests
 from amundsen_gremlin.gremlin_model import WellKnownProperties
 from amundsen_gremlin.neptune_bulk_loader.api import (
-    NeptuneBulkLoaderApi, get_neptune_graph_traversal_source_factory
-)
+    NeptuneBulkLoaderApi, get_neptune_graph_traversal_source_factory)
 from amundsen_gremlin.script_translator import ScriptTranslatorTargetNeptune
-from amundsen_gremlin.test_and_development_shard import get_shard
+from amundsen_gremlin.test_and_development_shard import (
+    _reset_for_testing_only, get_shard, shard_set_explicitly)
 from for_requests.assume_role_aws4auth import AssumeRoleAWS4Auth
 from for_requests.aws4auth_compatible import to_aws4_request_compatible_host
 from for_requests.host_header_ssl import HostHeaderSSLAdapter
 from gremlin_python.process.traversal import TextP
-from neptune_python_utils.endpoints import (
-    Endpoint, Endpoints, RequestParameters
-)
+from neptune_python_utils.endpoints import (Endpoint, Endpoints,
+                                            RequestParameters)
 from overrides import overrides
-from ssl_override_server_hostname.ssl_context import (
+from ssl_override_server_hostname.ssl_context import \
     OverrideServerHostnameSSLContext
-)
 from tornado import httpclient
 
-from .gremlin_proxy import (
-    AbstractGremlinProxy, FromResultSet, _parse_gremlin_server_error
-)
+from .gremlin_proxy import (AbstractGremlinProxy, FromResultSet,
+                            _parse_gremlin_server_error)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,12 +58,17 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
     def __init__(self, *, host: str, port: Optional[int] = None, user: str = None,
                  password: Optional[Union[str, boto3.session.Session]] = None,
                  driver_remote_connection_options: Mapping[str, Any] = {},
-                 neptune_bulk_loader_s3_bucket_name: Optional[str] = None) -> None:
+                 client_kwargs: Dict = dict(),
+                 **kwargs: dict) -> None:
 
         driver_remote_connection_options = dict(driver_remote_connection_options)
         # port should be part of that url
         if port is not None:
             raise NotImplementedError(f'port is not allowed! port={port}')
+
+        if client_kwargs.get('ignore_neptune_shard', False):
+            _reset_for_testing_only()
+            shard_set_explicitly('')
 
         # for IAM auth, we need the triplet or a Session which is more general
         if isinstance(password, boto3.session.Session):
@@ -104,11 +106,10 @@ class NeptuneGremlinProxy(AbstractGremlinProxy):
         # always g for Neptune
         driver_remote_connection_options.update(traversal_source='g')
 
-        s3_bucket_name: str = ''
-        if neptune_bulk_loader_s3_bucket_name is None:
+        try:
+            s3_bucket_name = client_kwargs['neptune_bulk_loader_s3_bucket_name']  # noqa: E731
+        except Exception:
             raise NotImplementedError(f'Cannot find s3 bucket name!')
-        else:
-            s3_bucket_name = neptune_bulk_loader_s3_bucket_name
 
         # Instantiate bulk loader and graph traversal factory
         bulk_loader_config: Dict[str, Any] = dict(NEPTUNE_SESSION=password, NEPTUNE_URL=host,

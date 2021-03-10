@@ -3,7 +3,8 @@
 
 import logging
 from http import HTTPStatus
-from typing import Iterable, Mapping, Optional, Union, Dict, List, Any  # noqa: F401
+from typing import (Any, Dict, Iterable, List, Mapping, Optional,  # noqa: F401
+                    Union)
 
 from amundsen_common.models.dashboard import DashboardSummarySchema
 from amundsen_common.models.popular_table import PopularTableSchema
@@ -13,7 +14,8 @@ from flask import current_app as app
 from flask_restful import Resource
 
 from metadata_service.api import BaseAPI
-from metadata_service.entity.resource_type import to_resource_type, ResourceType
+from metadata_service.entity.resource_type import (ResourceType,
+                                                   to_resource_type)
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
 from metadata_service.util import UserResourceRel
@@ -35,7 +37,7 @@ class UserDetailAPI(BaseAPI):
         if app.config['USER_DETAIL_METHOD']:
             try:
                 user_data = app.config['USER_DETAIL_METHOD'](id)
-                return UserSchema().dump(user_data).data, HTTPStatus.OK
+                return UserSchema().dump(user_data), HTTPStatus.OK
             except Exception:
                 LOGGER.exception('UserDetailAPI GET Failed - Using "USER_DETAIL_METHOD" config variable')
                 return {'message': 'user_id {} fetch failed'.format(id)}, HTTPStatus.NOT_FOUND
@@ -71,13 +73,13 @@ class UserFollowsAPI(Resource):
             }  # type: Dict[str, List[Any]]
 
             if resources and table_key in resources and len(resources[table_key]) > 0:
-                result[table_key] = PopularTableSchema(many=True).dump(resources[table_key]).data
+                result[table_key] = PopularTableSchema().dump(resources[table_key], many=True)
 
             resources = self.client.get_dashboard_by_user_relation(user_email=user_id,
                                                                    relation_type=UserResourceRel.follow)
 
             if resources and dashboard_key in resources and len(resources[dashboard_key]) > 0:
-                result[dashboard_key] = DashboardSummarySchema(many=True).dump(resources[dashboard_key]).data
+                result[dashboard_key] = DashboardSummarySchema().dump(resources[dashboard_key], many=True)
 
             return result, HTTPStatus.OK
 
@@ -177,13 +179,13 @@ class UserOwnsAPI(Resource):
             resources = self.client.get_table_by_user_relation(user_email=user_id,
                                                                relation_type=UserResourceRel.own)
             if resources and table_key in resources and len(resources[table_key]) > 0:
-                result[table_key] = PopularTableSchema(many=True).dump(resources[table_key]).data
+                result[table_key] = PopularTableSchema().dump(resources[table_key], many=True)
 
             resources = self.client.get_dashboard_by_user_relation(user_email=user_id,
                                                                    relation_type=UserResourceRel.own)
 
             if resources and dashboard_key in resources and len(resources[dashboard_key]) > 0:
-                result[dashboard_key] = DashboardSummarySchema(many=True).dump(resources[dashboard_key]).data
+                result[dashboard_key] = DashboardSummarySchema().dump(resources[dashboard_key], many=True)
 
             return result, HTTPStatus.OK
 
@@ -259,7 +261,7 @@ class UserReadsAPI(Resource):
         try:
             resources = self.client.get_frequently_used_tables(user_email=user_id)
             if len(resources['table']) > 0:
-                return {'table': PopularTableSchema(many=True).dump(resources['table']).data}, HTTPStatus.OK
+                return {'table': PopularTableSchema().dump(resources['table'], many=True)}, HTTPStatus.OK
             return {'table': []}, HTTPStatus.OK
 
         except NotFoundException:

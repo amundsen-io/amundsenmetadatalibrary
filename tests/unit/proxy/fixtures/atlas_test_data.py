@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
-from typing import List, Dict
+from typing import Dict, List
 
 
 class DottedDict(dict):
@@ -54,6 +54,16 @@ class Data:
                 }},
             ]
         },
+        "classifications": [
+            {
+                "typeName": "active_col_badge",
+                "entityStatus": "ACTIVE"
+            },
+            {
+                "typeName": "inactive_col_badge",
+                "entityStatus": "INACTIVE"
+            }
+        ]
     }
 
     test_column_inactive = copy.deepcopy(test_column)

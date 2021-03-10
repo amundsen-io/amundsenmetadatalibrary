@@ -7,26 +7,30 @@ import logging
 import logging.config
 import os
 import sys
-from typing import Dict, Any  # noqa: F401
-from flask_cors import CORS
+from typing import Any, Dict  # noqa: F401
 
 from flasgger import Swagger
-from flask import Flask, Blueprint
+from flask import Blueprint, Flask
+from flask_cors import CORS
 from flask_restful import Api
 
+from metadata_service.api.badge import BadgeAPI
 from metadata_service.api.column import ColumnDescriptionAPI
-from metadata_service.api.dashboard import (DashboardDetailAPI, DashboardDescriptionAPI,
-                                            DashboardTagAPI, DashboardBadgeAPI)
+from metadata_service.api.dashboard import (DashboardBadgeAPI,
+                                            DashboardDescriptionAPI,
+                                            DashboardDetailAPI,
+                                            DashboardTagAPI)
 from metadata_service.api.healthcheck import healthcheck
 from metadata_service.api.popular_tables import PopularTablesAPI
 from metadata_service.api.system import Neo4jDetailAPI
-from metadata_service.api.table \
-    import TableDetailAPI, TableOwnerAPI, TableTagAPI, TableBadgeAPI, TableDescriptionAPI, TableDashboardAPI
+from metadata_service.api.table import (TableBadgeAPI, TableDashboardAPI,
+                                        TableDescriptionAPI, TableDetailAPI,
+                                        TableLineageAPI, TableOwnerAPI,
+                                        TableTagAPI)
 from metadata_service.api.tag import TagAPI
-from metadata_service.api.badge import BadgeAPI
 from metadata_service.api.user import (UserDetailAPI, UserFollowAPI,
-                                       UserFollowsAPI, UserOwnsAPI,
-                                       UserOwnAPI, UserReadsAPI)
+                                       UserFollowsAPI, UserOwnAPI, UserOwnsAPI,
+                                       UserReadsAPI)
 
 # For customized flask use below arguments to override.
 FLASK_APP_MODULE_NAME = os.getenv('FLASK_APP_MODULE_NAME')
@@ -98,6 +102,8 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/table/<path:id>/tag/<tag>')
     api.add_resource(TableBadgeAPI,
                      '/table/<path:id>/badge/<badge>')
+    api.add_resource(TableLineageAPI,
+                     '/table/<path:id>/lineage')
     api.add_resource(TableOwnerAPI,
                      '/table/<path:table_uri>/owner/<owner>')
     api.add_resource(TableDashboardAPI,

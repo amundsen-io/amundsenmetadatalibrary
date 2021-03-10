@@ -6,12 +6,15 @@ import logging
 import re
 from operator import attrgetter
 from random import randint
-from typing import Any, Dict, List, Union, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.lineage import Lineage
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Column, Stat, Table, Tag, User, Reader, \
-    ProgrammaticDescription, ResourceReport, Watermark, Badge
+from amundsen_common.models.table import (Badge, Column,
+                                          ProgrammaticDescription, Reader,
+                                          ResourceReport, Stat, Table, Tag,
+                                          User, Watermark)
 from amundsen_common.models.user import User as UserEntity
 from apache_atlas.client.base_client import AtlasClient
 from apache_atlas.model.glossary import AtlasGlossary, AtlasGlossaryHeader, AtlasGlossaryTerm
@@ -23,7 +26,8 @@ from beaker.util import parse_cache_config_options
 from flask import current_app as app
 from werkzeug.exceptions import BadRequest
 
-from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
+from metadata_service.entity.dashboard_detail import \
+    DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.entity.tag_detail import TagDetail
@@ -145,10 +149,12 @@ class AtlasProxy(BaseProxy):
                  user: str = 'admin',
                  password: str = '',
                  encrypted: bool = False,
-                 validate_ssl: bool = False) -> None:
+                 validate_ssl: bool = False,
+                 client_kwargs: dict = dict()) -> None:
         """
         Initiate the Apache Atlas client with the provided credentials
         """
+        # FixMe (Verdan): Need to apply client_kwargs
         protocol = 'https' if encrypted else 'http'
         self.client = AtlasClient(f'{protocol}://{host}:{port}', (user, password))
         self.client.session.verify = validate_ssl
@@ -345,6 +351,14 @@ class AtlasProxy(BaseProxy):
             col_attrs = col_entity[self.ATTRS_KEY]
             statistics = list()
 
+            badges = list()
+            # FixMe (Verdan): Need to fix this based on new client
+            for column_classification in col_entity.get('classifications') or list():
+                if column_classification.get('entityStatus') == Status.ACTIVE:
+                    name = column_classification.get('typeName')
+
+                    badges.append(Badge(badge_name=name, category='default'))
+
             for stats in col_attrs.get('statistics') or list():
                 stats_attrs = stats['attributes']
 
@@ -383,6 +397,7 @@ class AtlasProxy(BaseProxy):
                     col_type=col_attrs.get('type') or col_attrs.get('dataType') or col_attrs.get('data_type'),
                     sort_order=col_attrs.get('position') or 9999,
                     stats=statistics,
+                    badges=badges
                 )
             )
         return sorted(columns, key=lambda item: item.sort_order)
@@ -1157,3 +1172,7 @@ class AtlasProxy(BaseProxy):
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
         return {}
+
+    def get_lineage(self, *,
+                    id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        pass

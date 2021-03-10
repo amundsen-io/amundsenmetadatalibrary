@@ -10,11 +10,13 @@ from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
 
 import neo4j
 from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.lineage import Lineage
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import (Application, Column, Reader, Source,
-                                          Stat, Table, User,
-                                          Watermark, ProgrammaticDescription, Tag,
-                                          Badge as TableBadge)
+from amundsen_common.models.table import Application
+from amundsen_common.models.table import Badge as TableBadge
+from amundsen_common.models.table import (Column, ProgrammaticDescription,
+                                          Reader, Source, Stat, Table, Tag,
+                                          User, Watermark)
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -22,12 +24,14 @@ from flask import current_app, has_app_context
 from neo4j import BoltStatementResult, Driver, GraphDatabase  # noqa: F401
 
 from metadata_service import config
-from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
-from metadata_service.entity.dashboard_query import DashboardQuery as DashboardQueryEntity
+from metadata_service.entity.badge import Badge
+from metadata_service.entity.dashboard_detail import \
+    DashboardDetail as DashboardDetailEntity
+from metadata_service.entity.dashboard_query import \
+    DashboardQuery as DashboardQueryEntity
 from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.entity.tag_detail import TagDetail
-from metadata_service.entity.badge import Badge
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy.base_proxy import BaseProxy
 from metadata_service.proxy.statsd_utilities import timer_with_counter
@@ -54,7 +58,8 @@ class Neo4jProxy(BaseProxy):
                  num_conns: int = 50,
                  max_connection_lifetime_sec: int = 100,
                  encrypted: bool = False,
-                 validate_ssl: bool = False) -> None:
+                 validate_ssl: bool = False,
+                 **kwargs: dict) -> None:
         """
         There's currently no request timeout from client side where server
         side can be enforced via "dbms.transaction.timeout"
@@ -141,7 +146,7 @@ class Neo4jProxy(BaseProxy):
             col_stats = []
             for stat in tbl_col_neo4j_record['col_stats']:
                 col_stat = Stat(
-                    stat_type=stat['stat_name'],
+                    stat_type=stat['stat_type'],
                     stat_val=stat['stat_val'],
                     start_epoch=int(float(stat['start_epoch'])),
                     end_epoch=int(float(stat['end_epoch']))
@@ -155,7 +160,7 @@ class Neo4jProxy(BaseProxy):
             last_neo4j_record = tbl_col_neo4j_record
             col = Column(name=tbl_col_neo4j_record['col']['name'],
                          description=self._safe_get(tbl_col_neo4j_record, 'col_dscrpt', 'description'),
-                         col_type=tbl_col_neo4j_record['col']['type'],
+                         col_type=tbl_col_neo4j_record['col']['col_type'],
                          sort_order=int(tbl_col_neo4j_record['col']['sort_order']),
                          stats=col_stats,
                          badges=column_badges)
@@ -814,13 +819,13 @@ class Neo4jProxy(BaseProxy):
         # None means we don't have record for neo4j, es last updated / index ts
         record = record.single()
         if record:
-            return record.get('ts', {}).get('latest_timestmap', 0)
+            return record.get('ts', {}).get('latest_timestamp', 0)
         else:
             return None
 
     @timer_with_counter
-    @_CACHE.cache('_get_popular_tables_uris', expire=_GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
-    def _get_popular_tables_uris(self, num_entries: int) -> List[str]:
+    @_CACHE.cache('_get_global_popular_tables_uris', expire=_GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
+    def _get_global_popular_tables_uris(self, num_entries: int) -> List[str]:
         """
         Retrieve popular table uris. Will provide tables with top x popularity score.
         Popularity score = number of distinct readers * log(total number of reads)
@@ -847,6 +852,38 @@ class Neo4jProxy(BaseProxy):
         return [record['table_key'] for record in records]
 
     @timer_with_counter
+    @_CACHE.cache('_get_personal_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
+    def _get_personal_popular_tables_uris(self, num_entries: int,
+                                          user_id: str) -> List[str]:
+        """
+        Retrieve personalized popular table uris. Will provide tables with top
+        popularity score that have been read by a peer of the user_id provided.
+        The popularity score is defined in the same way as `_get_global_popular_tables_uris`
+
+        The result of this method will be cached based on the key (num_entries, user_id),
+        and the cache will be expired based on _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC
+
+        :return: Iterable of table uri
+        """
+        statement = textwrap.dedent("""
+        MATCH (:User {key:$user_id})<-[:READ_BY]-(:Table)-[:READ_BY]->
+             (coUser:User)<-[coRead:READ_BY]-(table:Table)
+        WITH table.key AS table_key, count(DISTINCT coUser) AS co_readers,
+             sum(coRead.read_count) AS total_co_reads
+        WHERE co_readers >= $num_readers
+        RETURN table_key, (co_readers * log(total_co_reads)) AS score
+        ORDER BY score DESC LIMIT $num_entries;
+        """)
+        LOGGER.info('Querying popular tables URIs')
+        num_readers = current_app.config['POPULAR_TABLE_MINIMUM_READER_COUNT']
+        records = self._execute_cypher_query(statement=statement,
+                                             param_dict={'user_id': user_id,
+                                                         'num_readers': num_readers,
+                                                         'num_entries': num_entries})
+
+        return [record['table_key'] for record in records]
+
+    @timer_with_counter
     def get_popular_tables(self, *,
                            num_entries: int,
                            user_id: Optional[str] = None) -> List[PopularTable]:
@@ -857,8 +894,13 @@ class Neo4jProxy(BaseProxy):
         :param num_entries:
         :return: Iterable of PopularTable
         """
+        if user_id is None:
+            # Get global popular table URIs
+            table_uris = self._get_global_popular_tables_uris(num_entries)
+        else:
+            # Get personalized popular table URIs
+            table_uris = self._get_personal_popular_tables_uris(num_entries, user_id)
 
-        table_uris = self._get_popular_tables_uris(num_entries)
         if not table_uris:
             return []
 
@@ -1365,3 +1407,8 @@ class Neo4jProxy(BaseProxy):
         for record in records:
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
+
+    def get_lineage(self, *,
+                    id: str,
+                    resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        pass

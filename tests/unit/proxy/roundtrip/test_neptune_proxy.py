@@ -1,16 +1,17 @@
 # Copyright Contributors to the Amundsen project.
 # SPDX-License-Identifier: Apache-2.0
 
-import gremlin_python.driver.protocol
 import json
-from typing import Any, Mapping
 import unittest
+from typing import Any, Mapping
 
-from metadata_service.proxy.neptune_proxy import NeptuneGremlinProxy
+import gremlin_python.driver.protocol
 from amundsen_gremlin.gremlin_model import VertexTypes
 from amundsen_gremlin.script_translator import ScriptTranslator
-from gremlin_python.process.traversal import Cardinality
 from gremlin_python.process.graph_traversal import __
+from gremlin_python.process.traversal import Cardinality
+
+from metadata_service.proxy.neptune_proxy import NeptuneGremlinProxy
 
 from .abstract_gremlin_proxy_tests import abstract_gremlin_proxy_test_class
 from .roundtrip_neptune_proxy import RoundtripNeptuneGremlinProxy
@@ -20,8 +21,15 @@ class NeptuneGremlinProxyTest(
         abstract_gremlin_proxy_test_class(), unittest.TestCase):  # type: ignore
     def _create_gremlin_proxy(self, config: Mapping[str, Any]) -> RoundtripNeptuneGremlinProxy:
         # Don't use PROXY_HOST, PROXY_PORT, PROXY_PASSWORD.  They might not be neptune
-        return RoundtripNeptuneGremlinProxy(host=config['NEPTUNE_URL'], password=config['NEPTUNE_SESSION'],
-                                            neptune_bulk_loader_s3_bucket_name=config['NEPTUNE_BULK_LOADER_S3_BUCKET_NAME']) # noqa E501
+        client_kwargs = {
+            'neptune_bulk_loader_s3_bucket_name': config['NEPTUNE_BULK_LOADER_S3_BUCKET_NAME'],
+            'ignore_neptune_shard': False
+        }
+        return RoundtripNeptuneGremlinProxy(
+            host=config['NEPTUNE_URL'],
+            password=config['NEPTUNE_SESSION'],
+            client_kwargs=client_kwargs
+        )  # noqa E501
 
     def test_is_retryable(self) -> None:
         exception = gremlin_python.driver.protocol.GremlinServerError(dict(
