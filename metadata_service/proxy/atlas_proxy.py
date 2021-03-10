@@ -154,7 +154,6 @@ class AtlasProxy(BaseProxy):
         """
         Initiate the Apache Atlas client with the provided credentials
         """
-        # FixMe (Verdan): Need to apply client_kwargs
         protocol = 'https' if encrypted else 'http'
         self.client = AtlasClient(f'{protocol}://{host}:{port}', (user, password))
         self.client.session.verify = validate_ssl
@@ -352,7 +351,6 @@ class AtlasProxy(BaseProxy):
             statistics = list()
 
             badges = list()
-            # FixMe (Verdan): Need to fix this based on new client
             for column_classification in col_entity.get('classifications') or list():
                 if column_classification.get('entityStatus') == Status.ACTIVE:
                     name = column_classification.get('typeName')
@@ -898,7 +896,7 @@ class AtlasProxy(BaseProxy):
             'attributes': ["assignedEntities", ]
         }
         result = self.client.discovery.faceted_search(search_parameters=params)
-        for item in result.entities:
+        for item in result.entities or list():
             tags.append(
                 TagDetail(
                     tag_name=item.attributes.get("name"),
