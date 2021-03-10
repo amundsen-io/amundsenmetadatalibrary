@@ -123,7 +123,8 @@ class NeptuneConfig(LocalGremlinConfig, LocalConfig):
     LOG_LEVEL = 'INFO'
 
     # PROXY_HOST FORMAT: wss://<NEPTUNE_URL>:<NEPTUNE_PORT>/gremlin
-    PROXY_PORT = None
+    PROXY_PORT = None   # type: ignore
+
     PROXY_CLIENT = PROXY_CLIENTS['NEPTUNE']
     PROXY_PASSWORD = boto3.session.Session(region_name=os.environ.get('AWS_REGION', 'us-east-1'))
 
