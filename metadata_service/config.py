@@ -91,8 +91,7 @@ class Config:
     PROXY_CLIENT_KWARGS: Dict = dict()
 
 
-# NB: If you're using the gremlin proxy, the appropriate GremlinConfig must be added to any other configs
-class LocalConfig(LocalGremlinConfig, Config):
+class LocalConfig(Config):
     DEBUG = True
     TESTING = False
     LOG_LEVEL = 'DEBUG'
@@ -104,8 +103,6 @@ class LocalConfig(LocalGremlinConfig, Config):
     PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'True')))
     PROXY_VALIDATE_SSL = bool(distutils.util.strtobool(os.environ.get(PROXY_VALIDATE_SSL, 'False')))
 
-    JANUS_GRAPH_URL = None
-
     IS_STATSD_ON = bool(distutils.util.strtobool(os.environ.get(IS_STATSD_ON, 'False')))
 
     SWAGGER_ENABLED = True
@@ -117,18 +114,17 @@ class LocalConfig(LocalGremlinConfig, Config):
     }
 
 
-class NeptuneConfig(LocalGremlinConfig, Config):
-    DEBUG = False
-    TESTING = False
-    LOG_LEVEL = 'INFO'
-    LOCAL_HOST = '0.0.0.0'
+class GremlinConfig(LocalGremlinConfig, LocalConfig):
+    JANUS_GRAPH_URL = None
 
-    # FORMAT: wss://<NEPTUNE_URL>:<NEPTUNE_PORT>/gremlin
-    PROXY_HOST = os.environ.get('PROXY_HOST')
+
+class NeptuneConfig(LocalGremlinConfig, LocalConfig):
+    DEBUG = False
+    LOG_LEVEL = 'INFO'
+
+    # PROXY_HOST FORMAT: wss://<NEPTUNE_URL>:<NEPTUNE_PORT>/gremlin
     PROXY_PORT = None
-    PROXY_CLIENT = PROXY_CLIENTS['NEPTUNE']
-    PROXY_ENCRYPTED = bool(distutils.util.strtobool(os.environ.get(PROXY_ENCRYPTED, 'True')))
-    PROXY_VALIDATE_SSL = bool(distutils.util.strtobool(os.environ.get(PROXY_VALIDATE_SSL, 'False')))
+    PROXY_CLIENT = PROXY_CLIENTS[os.environ.get('PROXY_CLIENT', 'NEPTUNE')]
     PROXY_PASSWORD = boto3.session.Session(region_name=os.environ.get('AWS_REGION', 'us-east-1'))
 
     PROXY_CLIENT_KWARGS = {
@@ -137,13 +133,3 @@ class NeptuneConfig(LocalGremlinConfig, Config):
     }
 
     JANUS_GRAPH_URL = None
-
-    IS_STATSD_ON = bool(distutils.util.strtobool(os.environ.get(IS_STATSD_ON, 'False')))
-
-    SWAGGER_ENABLED = True
-    SWAGGER_TEMPLATE_PATH = os.path.join('api', 'swagger_doc', 'template.yml')
-    SWAGGER = {
-        'openapi': '3.0.2',
-        'title': 'Metadata Service',
-        'uiversion': 3
-    }
