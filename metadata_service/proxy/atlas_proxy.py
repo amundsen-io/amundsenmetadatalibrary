@@ -895,8 +895,8 @@ class AtlasProxy(BaseProxy):
             'includeSubTypes': True,
             'attributes': ["assignedEntities", ]
         }
-        result = self.client.discovery.faceted_search(search_parameters=params)
-        for item in result.entities or list():
+        glossary_terms = self.client.discovery.faceted_search(search_parameters=params)
+        for item in glossary_terms.entities or list():
             tags.append(
                 TagDetail(
                     tag_name=item.attributes.get("name"),

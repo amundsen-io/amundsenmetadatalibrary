@@ -10,7 +10,10 @@ from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (Badge, Column,
                                           ProgrammaticDescription, Reader,
                                           Stat, Table, Tag, User)
-from atlasclient.exceptions import BadRequest
+from apache_atlas.model.instance import AtlasRelatedObjectId
+from apache_atlas.model.relationship import AtlasRelationship
+from apache_atlas.utils import type_coerce
+from werkzeug.exceptions import BadRequest
 
 from metadata_service import create_app
 from metadata_service.entity.resource_type import ResourceType
@@ -29,12 +32,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
-        with patch('metadata_service.proxy.atlas_proxy.Atlas'):
+        with patch('metadata_service.proxy.atlas_proxy.AtlasClient'):
             # Importing here to make app context work before
             # importing `current_app` indirectly using the AtlasProxy
             from metadata_service.proxy.atlas_proxy import AtlasProxy
             self.proxy = AtlasProxy(host='DOES_NOT_MATTER', port=0000)
-            self.proxy._driver = MagicMock()
+            self.proxy.client = MagicMock()
 
     def to_class(self, entity: Dict) -> Any:
         class ObjectView(object):
@@ -55,6 +58,13 @@ class TestAtlasProxy(unittest.TestCase, Data):
             mocked_entity.referredEntities = {}
         self.proxy._get_table_entity = MagicMock(return_value=mocked_entity)  # type: ignore
         return mocked_entity
+
+    def _mock_get_create_glossary_term(self, tag):
+        term = MagicMock()
+        term.guid = 123
+        self.proxy._get_create_glossary_term = MagicMock(return_value=term)
+        return term
+
 
     def _mock_get_bookmark_entity(self, entity: Optional[Any] = None) -> Any:
         entity = entity or self.entity1
@@ -82,7 +92,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
         basic_search_response = MagicMock()
         basic_search_response.entities = [entity1, entity2]
 
-        self.proxy._driver.search_basic = MagicMock(return_value=[basic_search_response])
+        self.proxy.client.search_basic = MagicMock(return_value=[basic_search_response])
         response = self.proxy._get_ids_from_basic_search(params={})
         expected = ['1', '2']
         self.assertListEqual(response, expected)
@@ -90,7 +100,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_table_entity(self) -> None:
         unique_attr_response = MagicMock()
 
-        self.proxy._driver.entity_unique_attribute = MagicMock(
+        self.proxy.client.entity_unique_attribute = MagicMock(
             return_value=unique_attr_response)
         ent = self.proxy._get_table_entity(table_uri=self.table_uri)
 
@@ -144,7 +154,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
                          cluster=self.cluster,
                          schema=self.db,
                          name=ent_attrs['name'],
-                         tags=[Tag(tag_name=classif_name, tag_type="default")],
+                         tags=[],
+                         badges=[Badge(badge_name=classif_name, category="default")],
                          description=ent_attrs['description'],
                          owners=[User(email=ent_attrs['owner'])],
                          resource_reports=[],
@@ -172,7 +183,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
     def test_get_table_not_found(self) -> None:
         with self.assertRaises(NotFoundException):
-            self.proxy._driver.entity_unique_attribute = MagicMock(side_effect=Exception('Boom!'))
+            self.proxy.client.entity.get_entity_by_attribute = MagicMock(side_effect=Exception('Boom!'))
             self.proxy.get_table(table_uri=self.table_uri)
 
     def test_get_table_missing_info(self) -> None:
@@ -182,8 +193,8 @@ class TestAtlasProxy(unittest.TestCase, Data):
             unique_attr_response = MagicMock()
             unique_attr_response.entity = local_entity
 
-            self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
-            self.proxy.get_table(table_uri=self.table_uri)
+            self.proxy.client.entity.get_entity_by_attribute = MagicMock(return_value=unique_attr_response)
+            self.proxy.get_table(table_uri=cast(str, self.table_uri))
 
     def test_get_popular_tables(self) -> None:
         ent1 = self.to_class(self.entity1)
@@ -195,7 +206,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
         result = MagicMock(return_value=table_collection)
 
-        with patch.object(self.proxy._driver.search_basic, 'create', result):
+        with patch.object(self.proxy.client.discovery, 'faceted_search', result):
             response = self.proxy.get_popular_tables(num_entries=2)
 
             ent1_attrs = cast(dict, self.entity1['attributes'])
@@ -222,38 +233,40 @@ class TestAtlasProxy(unittest.TestCase, Data):
                                          description="DOESNT_MATTER")
 
     def test_get_tags(self) -> None:
-        tag_response = {
-            'tagEntities': {
-                'PII': 3,
-                'NON_PII': 2
-            }
+        mocked_term = MagicMock()
+        mocked_term.attributes = {
+            "name": "PII",
+            "assignedEntities": ["a", "b"]
         }
 
-        mocked_metrics = MagicMock()
-        mocked_metrics.tag = tag_response
+        result = MagicMock()
+        result.entities = [mocked_term]
 
-        self.proxy._driver.admin_metrics = [mocked_metrics]
+        self.proxy.client.discovery.faceted_search = MagicMock(return_value=result)
 
         response = self.proxy.get_tags()
 
-        expected = [TagDetail(tag_name='PII', tag_count=3), TagDetail(tag_name='NON_PII', tag_count=2)]
+        expected = [TagDetail(tag_name='PII', tag_count=2)]
         self.assertEqual(expected.__repr__(), response.__repr__())
 
     def test_add_tag(self) -> None:
         tag = "TAG"
         self._mock_get_table_entity()
+        term = self._mock_get_create_glossary_term(tag)
 
-        with patch.object(self.proxy._driver.entity_bulk_classification, 'create') as mock_execute:
+        with patch.object(self.proxy.client.glossary, 'assign_term_to_entities') as mock_execute:
             self.proxy.add_tag(id=self.table_uri, tag=tag, tag_type='default')
             mock_execute.assert_called_with(
-                data={'classification': {'typeName': tag}, 'entityGuids': [self.entity1['guid']]}
+                term.guid,
+                [AtlasRelatedObjectId({self.proxy.GUID_KEY: self.entity1['guid'],
+                                       "typeName": "Table"})]
             )
 
     def test_delete_tag(self) -> None:
         tag = "TAG"
         self._mock_get_table_entity()
         mocked_entity = MagicMock()
-        self.proxy._driver.entity_guid = MagicMock(return_value=mocked_entity)
+        self.proxy.client.entity_guid = MagicMock(return_value=mocked_entity)
 
         with patch.object(mocked_entity.classifications(tag), 'delete') as mock_execute:
             self.proxy.delete_tag(id=self.table_uri, tag=tag, tag_type='default')
@@ -263,15 +276,17 @@ class TestAtlasProxy(unittest.TestCase, Data):
         owner = "OWNER"
         user_guid = 123
         self._mock_get_table_entity()
-        self.proxy._driver.entity_post = MagicMock()
-        self.proxy._driver.entity_post.create = MagicMock(return_value={"guidAssignments": {user_guid: user_guid}})
+        mocked_user_entity = MagicMock()
+        mocked_user_entity.guidAssignments = dict(user_guid=user_guid)
+        self.proxy.client.entity.create_entity = MagicMock(return_value=mocked_user_entity)
 
-        with patch.object(self.proxy._driver.relationship, 'create') as mock_execute:
+        with patch.object(self.proxy.client.relationship, 'create_relationship') as mock_execute:
             self.proxy.add_owner(table_uri=self.table_uri, owner=owner)
             mock_execute.assert_called_with(
-                data={'typeName': 'DataSet_Users_Owner',
-                      'end1': {'guid': self.entity1['guid'], 'typeName': 'Table'},
-                      'end2': {'guid': user_guid, 'typeName': 'User'}}
+                relationship= type_coerce({'typeName': 'DataSet_Users_Owner',
+                             'end1': {'guid': self.entity1['guid'], 'typeName': 'Table'},
+                             'end2': {'guid': user_guid, 'typeName': 'User'}}, AtlasRelationship)
+
             )
 
     def test_get_column(self) -> None:
@@ -314,7 +329,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
         bookmark_collection = MagicMock()
         bookmark_collection.entities = [bookmark1]
 
-        self.proxy._driver.search_basic.create = MagicMock(return_value=bookmark_collection)
+        self.proxy.client.search_basic.create = MagicMock(return_value=bookmark_collection)
         res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
                                                     relation_type=UserResourceRel.follow)
 
@@ -326,11 +341,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_table_by_user_relation_own(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
-        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.entity1)]
-        self.proxy._driver.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
 
         res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
                                                     relation_type=UserResourceRel.own)
@@ -347,11 +362,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_resources_owned_by_user_success(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
-        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.entity1)]
-        self.proxy._driver.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
 
         res = self.proxy._get_resources_owned_by_user(user_id='test_user_2',
                                                       resource_type=ResourceType.Table.name)
@@ -368,7 +383,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_resources_owned_by_user_no_user(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = None
-        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
         with self.assertRaises(NotFoundException):
             self.proxy._get_resources_owned_by_user(user_id='test_user_2',
                                                     resource_type=ResourceType.Table.name)
@@ -376,7 +391,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_resources_owned_by_user_default_owner(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
-        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
 
         basic_search_result = MagicMock()
         basic_search_result.entities = self.reader_entities
@@ -387,11 +402,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
         basic_search_response = MagicMock()
         basic_search_response.entities = [entity2]
 
-        self.proxy._driver.search_basic.create = MagicMock(return_value=basic_search_response)
+        self.proxy.client.search_basic.create = MagicMock(return_value=basic_search_response)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.entity1)]
-        self.proxy._driver.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
 
         res = self.proxy._get_resources_owned_by_user(user_id='test_user_2',
                                                       resource_type=ResourceType.Table.name)
@@ -420,11 +435,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
         basic_search_result = MagicMock()
         basic_search_result.entities = self.reader_entities
 
-        self.proxy._driver.search_basic.create = MagicMock(return_value=basic_search_result)
+        self.proxy.client.search_basic.create = MagicMock(return_value=basic_search_result)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = self.reader_entities
-        self.proxy._driver.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
 
         res = self.proxy._get_readers(dict(relationshipAttributes=dict(readers=[dict(guid=1, entityStatus='ACTIVE',
                                                                                      relationshipStatus='ACTIVE')])),
@@ -437,11 +452,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_frequently_used_tables(self) -> None:
         entity_unique_attribute_result = MagicMock()
         entity_unique_attribute_result.entity = DottedDict(self.user_entity_2)
-        self.proxy._driver.entity_unique_attribute = MagicMock(return_value=entity_unique_attribute_result)
+        self.proxy.client.entity_unique_attribute = MagicMock(return_value=entity_unique_attribute_result)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.reader_entity_1)]
-        self.proxy._driver.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
 
         expected = {'table': [PopularTable(cluster=self.cluster,
                                            name='Table1',
@@ -453,13 +468,13 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(expected, res)
 
     def test_get_latest_updated_ts_when_exists(self) -> None:
-        with patch.object(self.proxy._driver, 'admin_metrics', self.metrics_data):
+        with patch.object(self.proxy.client, 'admin_metrics', self.metrics_data):
             result = self.proxy.get_latest_updated_ts()
 
             assert result == 1598342400
 
     def test_get_latest_updated_ts_when_not_exists(self) -> None:
-        with patch.object(self.proxy._driver, 'admin_metrics', []):
+        with patch.object(self.proxy.client, 'admin_metrics', []):
             result = self.proxy.get_latest_updated_ts()
 
             assert result == 0
