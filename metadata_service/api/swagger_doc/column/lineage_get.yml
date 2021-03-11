@@ -3,7 +3,7 @@ Get lineage
 tags:
   - 'lineage'
 parameters:
-  - name: id
+  - name: table_uri
     in: path
     type: string
     schema:

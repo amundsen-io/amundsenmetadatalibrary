@@ -28,12 +28,12 @@ class ColumnLineageAPI(Resource):
         super(ColumnLineageAPI, self).__init__()
 
     @swag_from('swagger_doc/column/lineage_get.yml')
-    def get(self, id: str) -> Iterable[Union[Mapping, int, None]]:
+    def get(self, table_uri: str, column_name: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
         direction = args.get('direction', 'both')
         depth = args.get('depth', 0)
         try:
-            lineage = self.client.get_lineage(id=id,
+            lineage = self.client.get_lineage(id=f"{table_uri}/{column_name}",
                                               resource_type=ResourceType.Column,
                                               direction=direction,
                                               depth=depth)
