@@ -11,6 +11,7 @@ from amundsen_common.models.table import (Badge, Column,
                                           ProgrammaticDescription, Reader,
                                           Stat, Table, Tag, User)
 from apache_atlas.model.instance import AtlasRelatedObjectId
+from apache_atlas.model.misc import AtlasBase
 from apache_atlas.model.relationship import AtlasRelationship
 from apache_atlas.utils import type_coerce
 from werkzeug.exceptions import BadRequest
@@ -59,9 +60,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.proxy._get_table_entity = MagicMock(return_value=mocked_entity)  # type: ignore
         return mocked_entity
 
-    def _mock_get_create_glossary_term(self, tag):
+    def _mock_get_create_glossary_term(self, tag, assigned_ent=None, guid=None):
         term = MagicMock()
-        term.guid = 123
+        term.guid = guid or 123
+        if assigned_ent:
+            term.attributes = {"assignedEntities": [assigned_ent]}
         self.proxy._get_create_glossary_term = MagicMock(return_value=term)
         return term
 
@@ -82,25 +85,10 @@ class TestAtlasProxy(unittest.TestCase, Data):
             'name': self.name
         })
 
-    def test_get_ids_from_basic_search(self) -> None:
-        entity1 = MagicMock()
-        entity1.guid = self.entity1['guid']
-
-        entity2 = MagicMock()
-        entity2.guid = self.entity2['guid']
-
-        basic_search_response = MagicMock()
-        basic_search_response.entities = [entity1, entity2]
-
-        self.proxy.client.search_basic = MagicMock(return_value=[basic_search_response])
-        response = self.proxy._get_ids_from_basic_search(params={})
-        expected = ['1', '2']
-        self.assertListEqual(response, expected)
-
     def test_get_table_entity(self) -> None:
         unique_attr_response = MagicMock()
 
-        self.proxy.client.entity_unique_attribute = MagicMock(
+        self.proxy.client.entity.get_entity_by_attribute = MagicMock(
             return_value=unique_attr_response)
         ent = self.proxy._get_table_entity(table_uri=self.table_uri)
 
@@ -264,13 +252,13 @@ class TestAtlasProxy(unittest.TestCase, Data):
 
     def test_delete_tag(self) -> None:
         tag = "TAG"
-        self._mock_get_table_entity()
-        mocked_entity = MagicMock()
-        self.proxy.client.entity_guid = MagicMock(return_value=mocked_entity)
+        ent = self._mock_get_table_entity()
+        term = self._mock_get_create_glossary_term(tag, ent.entity)
 
-        with patch.object(mocked_entity.classifications(tag), 'delete') as mock_execute:
+        with patch.object(self.proxy.client.glossary, 'disassociate_term_from_entities') as mock_execute:
             self.proxy.delete_tag(id=self.table_uri, tag=tag, tag_type='default')
-            mock_execute.assert_called_with()
+            mock_execute.assert_called_with(term.guid,
+                                            [AtlasRelatedObjectId(self.entity1)])
 
     def test_add_owner(self) -> None:
         owner = "OWNER"
@@ -329,7 +317,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
         bookmark_collection = MagicMock()
         bookmark_collection.entities = [bookmark1]
 
-        self.proxy.client.search_basic.create = MagicMock(return_value=bookmark_collection)
+        self.proxy.client.discovery.faceted_search = MagicMock(return_value=bookmark_collection)
         res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
                                                     relation_type=UserResourceRel.follow)
 
@@ -341,11 +329,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_table_by_user_relation_own(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
-        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity.get_entity_by_attribute = MagicMock(return_value=unique_attr_response)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.entity1)]
-        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity.get_entities_by_guids = MagicMock(return_value=entity_bulk_result)
 
         res = self.proxy.get_table_by_user_relation(user_email='test_user_id',
                                                     relation_type=UserResourceRel.own)
@@ -362,11 +350,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_resources_owned_by_user_success(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
-        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity.get_entity_by_attribute = MagicMock(return_value=unique_attr_response)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.entity1)]
-        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity.get_entities_by_guids = MagicMock(return_value=entity_bulk_result)
 
         res = self.proxy._get_resources_owned_by_user(user_id='test_user_2',
                                                       resource_type=ResourceType.Table.name)
@@ -383,7 +371,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_resources_owned_by_user_no_user(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = None
-        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity.get_entity_by_attribute = MagicMock(return_value=unique_attr_response)
         with self.assertRaises(NotFoundException):
             self.proxy._get_resources_owned_by_user(user_id='test_user_2',
                                                     resource_type=ResourceType.Table.name)
@@ -391,7 +379,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_resources_owned_by_user_default_owner(self) -> None:
         unique_attr_response = MagicMock()
         unique_attr_response.entity = Data.user_entity_2
-        self.proxy.client.entity_unique_attribute = MagicMock(return_value=unique_attr_response)
+        self.proxy.client.entity.get_entity_by_attribute = MagicMock(return_value=unique_attr_response)
 
         basic_search_result = MagicMock()
         basic_search_result.entities = self.reader_entities
@@ -402,11 +390,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
         basic_search_response = MagicMock()
         basic_search_response.entities = [entity2]
 
-        self.proxy.client.search_basic.create = MagicMock(return_value=basic_search_response)
+        self.proxy.client.discovery.faceted_search = MagicMock(return_value=basic_search_response)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.entity1)]
-        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity.get_entities_by_guids = MagicMock(return_value=entity_bulk_result)
 
         res = self.proxy._get_resources_owned_by_user(user_id='test_user_2',
                                                       resource_type=ResourceType.Table.name)
@@ -432,18 +420,12 @@ class TestAtlasProxy(unittest.TestCase, Data):
             mock_execute.assert_called_with()
 
     def test_get_readers(self) -> None:
-        basic_search_result = MagicMock()
-        basic_search_result.entities = self.reader_entities
-
-        self.proxy.client.search_basic.create = MagicMock(return_value=basic_search_result)
-
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = self.reader_entities
-        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity.get_entities_by_guids = MagicMock(return_value=entity_bulk_result)
 
         res = self.proxy._get_readers(dict(relationshipAttributes=dict(readers=[dict(guid=1, entityStatus='ACTIVE',
-                                                                                     relationshipStatus='ACTIVE')])),
-                                      1)
+                                                                                     relationshipStatus='ACTIVE')])), 1)
 
         expected = [Reader(user=User(email='test_user_2', user_id='test_user_2'), read_count=150)]
 
@@ -452,11 +434,11 @@ class TestAtlasProxy(unittest.TestCase, Data):
     def test_get_frequently_used_tables(self) -> None:
         entity_unique_attribute_result = MagicMock()
         entity_unique_attribute_result.entity = DottedDict(self.user_entity_2)
-        self.proxy.client.entity_unique_attribute = MagicMock(return_value=entity_unique_attribute_result)
+        self.proxy.client.entity.get_entity_by_attribute = MagicMock(return_value=entity_unique_attribute_result)
 
         entity_bulk_result = MagicMock()
         entity_bulk_result.entities = [DottedDict(self.reader_entity_1)]
-        self.proxy.client.entity_bulk = MagicMock(return_value=[entity_bulk_result])
+        self.proxy.client.entity.get_entities_by_guids = MagicMock(return_value=entity_bulk_result)
 
         expected = {'table': [PopularTable(cluster=self.cluster,
                                            name='Table1',
@@ -468,16 +450,14 @@ class TestAtlasProxy(unittest.TestCase, Data):
         self.assertEqual(expected, res)
 
     def test_get_latest_updated_ts_when_exists(self) -> None:
-        with patch.object(self.proxy.client, 'admin_metrics', self.metrics_data):
-            result = self.proxy.get_latest_updated_ts()
-
-            assert result == 1598342400
+        self.proxy.client.admin.get_metrics = MagicMock(return_value=self.metrics_data)
+        result = self.proxy.get_latest_updated_ts()
+        assert result == 1598342400
 
     def test_get_latest_updated_ts_when_not_exists(self) -> None:
-        with patch.object(self.proxy.client, 'admin_metrics', []):
-            result = self.proxy.get_latest_updated_ts()
-
-            assert result == 0
+        self.proxy.client.admin.get_metrics = MagicMock()
+        result = self.proxy.get_latest_updated_ts()
+        assert result == 0
 
     def test_get_user_detail_default(self) -> None:
         user_id = "dummy@email.com"

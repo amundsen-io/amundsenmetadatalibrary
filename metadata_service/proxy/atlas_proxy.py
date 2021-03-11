@@ -783,7 +783,7 @@ class AtlasProxy(BaseProxy):
         term = self._get_create_glossary_term(tag)
 
         for item in term.attributes.get("assignedEntities") or list():
-            if item.guid == entity.entity[self.GUID_KEY]:
+            if item.get(self.GUID_KEY) == entity.entity[self.GUID_KEY]:
                 related_entity = AtlasRelatedObjectId(item)
                 self.client.glossary.disassociate_term_from_entities(term.guid, [related_entity])
 
