@@ -15,8 +15,7 @@ from flask_cors import CORS
 from flask_restful import Api
 
 from metadata_service.api.badge import BadgeAPI
-from metadata_service.api.column import (ColumnDescriptionAPI,
-                                         ColumnLineageAPI)
+from metadata_service.api.column import ColumnDescriptionAPI, ColumnLineageAPI
 from metadata_service.api.dashboard import (DashboardBadgeAPI,
                                             DashboardDescriptionAPI,
                                             DashboardDetailAPI,

@@ -3,13 +3,12 @@
 
 import json
 from http import HTTPStatus
-from typing import Iterable, Union, Mapping
+from typing import Iterable, Mapping, Union
 
+from amundsen_common.models.lineage import LineageSchema
 from flasgger import swag_from
 from flask import request
 from flask_restful import Resource, reqparse
-
-from amundsen_common.models.lineage import LineageSchema
 
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.exception import NotFoundException
