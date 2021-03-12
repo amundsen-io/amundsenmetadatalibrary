@@ -11,9 +11,9 @@ from flask_restful import Resource, reqparse
 
 from amundsen_common.models.lineage import LineageSchema
 
+from metadata_service.entity.resource_type import ResourceType
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy import get_proxy_client
-from metadata_service.entity.resource_type import ResourceType
 
 
 class ColumnLineageAPI(Resource):
