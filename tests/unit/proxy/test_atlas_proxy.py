@@ -9,9 +9,8 @@ from unittest.mock import MagicMock, patch
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (Badge, Column,
                                           ProgrammaticDescription, Reader,
-                                          Stat, Table, Tag, User)
+                                          Stat, Table, User)
 from apache_atlas.model.instance import AtlasRelatedObjectId
-from apache_atlas.model.misc import AtlasBase
 from apache_atlas.model.relationship import AtlasRelationship
 from apache_atlas.utils import type_coerce
 from werkzeug.exceptions import BadRequest
@@ -67,7 +66,6 @@ class TestAtlasProxy(unittest.TestCase, Data):
             term.attributes = {"assignedEntities": [assigned_ent]}
         self.proxy._get_create_glossary_term = MagicMock(return_value=term)
         return term
-
 
     def _mock_get_bookmark_entity(self, entity: Optional[Any] = None) -> Any:
         entity = entity or self.entity1
@@ -271,9 +269,9 @@ class TestAtlasProxy(unittest.TestCase, Data):
         with patch.object(self.proxy.client.relationship, 'create_relationship') as mock_execute:
             self.proxy.add_owner(table_uri=self.table_uri, owner=owner)
             mock_execute.assert_called_with(
-                relationship= type_coerce({'typeName': 'DataSet_Users_Owner',
-                             'end1': {'guid': self.entity1['guid'], 'typeName': 'Table'},
-                             'end2': {'guid': user_guid, 'typeName': 'User'}}, AtlasRelationship)
+                relationship=type_coerce({'typeName': 'DataSet_Users_Owner',
+                                          'end1': {'guid': self.entity1['guid'], 'typeName': 'Table'},
+                                          'end2': {'guid': user_guid, 'typeName': 'User'}}, AtlasRelationship)
 
             )
 
