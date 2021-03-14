@@ -32,7 +32,7 @@ setup(
     ],
     extras_require={
         'oidc': ['flaskoidc==0.1.1'],
-        'atlas': ['apache-atlas==0.0.4']
+        'atlas': ['apache-atlas==0.0.5']
     },
     python_requires=">=3.6",
     classifiers=[
