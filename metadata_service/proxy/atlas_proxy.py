@@ -6,7 +6,7 @@ import logging
 import re
 from operator import attrgetter
 from random import randint
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Pattern
 
 from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.lineage import Lineage
@@ -56,17 +56,18 @@ DEFAULT_DB_CLUSTER = 'default'
 
 
 # TODO: Move this to amundsencommon
-def parse_table_qualified_name(qualified_name, qn_regex=DEFAULT_TABLE_QN_REGEX):
+def parse_table_qualified_name(qualified_name: str, qn_regex: Pattern = DEFAULT_TABLE_QN_REGEX) -> Dict:
     """
     Parses the Atlas' table qualified name
     :param qualified_name: Qualified Name of the table
+    :param qn_regex: Default Qualified Name regex.
     :return: A dictionary consisting of database name,
     table name and cluster name of the table.
     If database or cluster name not found,
     then uses the 'atlas_default' as both of them.
     """
 
-    def apply_qn_regex(name, table_qn_regex):
+    def apply_qn_regex(name: str, table_qn_regex: Pattern) -> Any:
         return table_qn_regex.match(name)
 
     _regex_result = apply_qn_regex(qualified_name, qn_regex)
@@ -101,7 +102,7 @@ def parse_table_qualified_name(qualified_name, qn_regex=DEFAULT_TABLE_QN_REGEX):
 
 
 # TODO: Move this to amundsencommon
-def make_table_qualified_name(table_name, cluster=None, db=None):
+def make_table_qualified_name(table_name: str, cluster: Optional[Any] = None, db: Optional[Any] = None) -> str:
     """
     Based on the given parameters, generate the Atlas' table qualified Name
     :param db: Database Name of the table
@@ -226,7 +227,7 @@ class AtlasProxy(BaseProxy):
         :return: A table entity matching the Qualified Name derived from table_uri
         """
         table_info = self._extract_info_from_uri(table_uri=table_uri)
-        table_qn = make_table_qualified_name(table_info.get('name'),
+        table_qn = make_table_qualified_name(table_info.get('name', ''),
                                              table_info.get('cluster'),
                                              table_info.get('db')
                                              )
