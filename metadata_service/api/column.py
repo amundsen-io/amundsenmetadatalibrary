@@ -92,7 +92,7 @@ class ColumnDescriptionAPI(Resource):
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-class ColumnBadgeAPI(Resource):
+class ColumnBadgeAPI(BaseAPI):
     def __init__(self) -> None:
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()

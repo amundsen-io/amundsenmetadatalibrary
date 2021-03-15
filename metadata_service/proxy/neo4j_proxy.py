@@ -603,7 +603,6 @@ class Neo4jProxy(BaseProxy):
 
         if column_name:
             id = '{}/{}'.format(id, column_name)
-            LOGGER.info('ID with colum name is now {}'.format(id))
 
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
@@ -663,7 +662,6 @@ class Neo4jProxy(BaseProxy):
 
         if column_name:
             id = '{}/{}'.format(id, column_name)
-            LOGGER.info('ID with colum name is now {}'.format(id))
 
         try:
             tx = self._driver.session().begin_transaction()
