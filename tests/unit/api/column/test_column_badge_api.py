@@ -27,7 +27,7 @@ class TestColumnBadgeAPI(BasicTestCase):
 
     def test_block_bad_badge_name(self) -> None:
         self.app.config['WHITELIST_BADGES'] = []
-        response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}'
+        response = self.app.test_client().put(f'/table/{TABLE_NAME}/{COLUMN_NAME}/column'
                                               f'/badge/{BADGE_NAME}?category=table_status')
 
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
@@ -35,7 +35,7 @@ class TestColumnBadgeAPI(BasicTestCase):
     def test_block_badge_missing_category(self) -> None:
         self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
                                                      category='table_status')]
-        response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}'
+        response = self.app.test_client().put(f'/table/{TABLE_NAME}/{COLUMN_NAME}/column'
                                               f'/badge/{BADGE_NAME}')
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
@@ -43,7 +43,7 @@ class TestColumnBadgeAPI(BasicTestCase):
     def test_badge_with_category(self) -> None:
         self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
                                                      category='table_status')]
-        response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}'
+        response = self.app.test_client().put(f'/table/{TABLE_NAME}/{COLUMN_NAME}/column'
                                               f'/badge/{BADGE_NAME}?category=table_status')
 
         self.assertEqual(response.status_code, HTTPStatus.OK)

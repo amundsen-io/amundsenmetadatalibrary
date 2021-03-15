@@ -44,8 +44,7 @@ class BadgeCommon:
 
     def put(self, id: str, resource_type: ResourceType,
             badge_name: str,
-            category: str = '',
-            column_name: str = '') -> Tuple[Any, HTTPStatus]:
+            category: str = '') -> Tuple[Any, HTTPStatus]:
 
         if category == '':
             return \
@@ -76,8 +75,7 @@ class BadgeCommon:
             self.client.add_badge(id=id,
                                   badge_name=badge_name,
                                   category=category,
-                                  resource_type=resource_type,
-                                  column_name=column_name)
+                                  resource_type=resource_type)
             return {'message': f'The badge {badge_name} with category {category} was '
                                f'added successfully to resurce with id {id}'}, HTTPStatus.OK
         except Exception as e:
@@ -88,14 +86,12 @@ class BadgeCommon:
 
     def delete(self, id: str, badge_name: str,
                category: str,
-               resource_type: ResourceType,
-               column_name: str = '') -> Tuple[Any, HTTPStatus]:
+               resource_type: ResourceType) -> Tuple[Any, HTTPStatus]:
         try:
             self.client.delete_badge(id=id,
                                      resource_type=resource_type,
                                      badge_name=badge_name,
-                                     category=category,
-                                     column_name=column_name)
+                                     category=category)
             return \
                 {'message': f'The badge {badge_name} with category {category} for resource '
                             f'id {id} and resource_type {resource_type.name} was deleted successfully'}, \
