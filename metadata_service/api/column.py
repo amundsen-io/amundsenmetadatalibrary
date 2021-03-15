@@ -10,7 +10,6 @@ from flasgger import swag_from
 from flask import request
 from flask_restful import Resource, reqparse
 
-from metadata_service.api import BaseAPI
 from metadata_service.api.badge import BadgeCommon
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.exception import NotFoundException
@@ -93,7 +92,7 @@ class ColumnDescriptionAPI(Resource):
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-class ColumnBadgeAPI(BaseAPI):
+class ColumnBadgeAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
         self.parser = reqparse.RequestParser()
