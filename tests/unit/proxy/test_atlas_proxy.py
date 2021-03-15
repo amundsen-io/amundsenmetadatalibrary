@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
-
 import unittest
+from typing import Any, Dict, Optional, cast
+from unittest.mock import MagicMock, patch
+
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (Badge, Column,
                                           ProgrammaticDescription, Reader,
@@ -11,8 +13,6 @@ from amundsen_common.models.table import (Badge, Column,
 from apache_atlas.model.instance import AtlasRelatedObjectId
 from apache_atlas.model.relationship import AtlasRelationship
 from apache_atlas.utils import type_coerce
-from typing import Any, Dict, Optional, cast
-from unittest.mock import MagicMock, patch
 from werkzeug.exceptions import BadRequest
 
 from metadata_service import create_app

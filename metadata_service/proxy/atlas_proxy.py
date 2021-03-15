@@ -4,6 +4,10 @@
 import datetime
 import logging
 import re
+from operator import attrgetter
+from random import randint
+from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
+
 from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.lineage import Lineage
 from amundsen_common.models.popular_table import PopularTable
@@ -13,16 +17,16 @@ from amundsen_common.models.table import (Badge, Column,
                                           User, Watermark)
 from amundsen_common.models.user import User as UserEntity
 from apache_atlas.client.base_client import AtlasClient
-from apache_atlas.model.glossary import AtlasGlossary, AtlasGlossaryHeader, AtlasGlossaryTerm
-from apache_atlas.model.instance import AtlasEntityWithExtInfo, AtlasRelatedObjectId, AtlasEntityHeader
+from apache_atlas.model.glossary import (AtlasGlossary, AtlasGlossaryHeader,
+                                         AtlasGlossaryTerm)
+from apache_atlas.model.instance import (AtlasEntityHeader,
+                                         AtlasEntityWithExtInfo,
+                                         AtlasRelatedObjectId)
 from apache_atlas.model.relationship import AtlasRelationship
 from apache_atlas.utils import type_coerce
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from flask import current_app as app
-from operator import attrgetter
-from random import randint
-from typing import Any, Dict, List, Optional, Tuple, Union, Pattern
 from werkzeug.exceptions import BadRequest
 
 from metadata_service.entity.dashboard_detail import \
