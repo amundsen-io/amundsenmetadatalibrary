@@ -59,7 +59,8 @@ class BaseProxy(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_badge(self, *, id: str, badge_name: str, category: str = '', resource_type: ResourceType) -> None:
+    def add_badge(self, *, id: str, badge_name: str, category: str = '',
+                  resource_type: ResourceType) -> None:
         pass
 
     @abstractmethod
@@ -67,7 +68,8 @@ class BaseProxy(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def delete_badge(self, *, id: str, badge_name: str, category: str, resource_type: ResourceType) -> None:
+    def delete_badge(self, *, id: str, badge_name: str, category: str,
+                     resource_type: ResourceType) -> None:
         pass
 
     @abstractmethod
