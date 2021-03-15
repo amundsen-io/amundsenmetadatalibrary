@@ -102,23 +102,21 @@ class ColumnBadgeAPI(Resource):
         self._badge_common = BadgeCommon(client=self.client)
 
     @swag_from('swagger_doc/badge/badge_put.yml')
-    def put(self, id: str, badge: str, column_name: str) -> Iterable[Union[Mapping, int, None]]:
+    def put(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
         category = args.get('category', '')
 
         return self._badge_common.put(id=id,
                                       resource_type=ResourceType.Column,
                                       badge_name=badge,
-                                      category=category,
-                                      column_name=column_name)
+                                      category=category)
 
     @swag_from('swagger_doc/badge/badge_delete.yml')
-    def delete(self, id: str, badge: str, column_name: str) -> Iterable[Union[Mapping, int, None]]:
+    def delete(self, id: str, badge: str) -> Iterable[Union[Mapping, int, None]]:
         args = self.parser.parse_args()
         category = args.get('category', '')
 
         return self._badge_common.delete(id=id,
                                          resource_type=ResourceType.Column,
                                          badge_name=badge,
-                                         category=category,
-                                         column_name=column_name)
+                                         category=category)

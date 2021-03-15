@@ -1292,11 +1292,11 @@ class AbstractGremlinProxy(BaseProxy):
               vertex1_id=vertex_id, vertex2_label=vertex_type, vertex2_key=id)
 
     def add_badge(self, *, id: str, badge_name: str, category: str = '',
-                  resource_type: ResourceType, column_name: str = '') -> None:
+                  resource_type: ResourceType) -> None:
         pass
 
     def delete_badge(self, *, id: str, badge_name: str, category: str,
-                     resource_type: ResourceType, column_name: str = '') -> None:
+                     resource_type: ResourceType) -> None:
         pass
 
     @timer_with_counter

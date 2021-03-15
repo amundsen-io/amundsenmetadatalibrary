@@ -592,17 +592,13 @@ class Neo4jProxy(BaseProxy):
                   id: str,
                   badge_name: str,
                   category: str = '',
-                  resource_type: ResourceType,
-                  column_name: str = '') -> None:
+                  resource_type: ResourceType) -> None:
 
         LOGGER.info('New badge {} for id {} with category {} '
                     'and resource type {}'.format(badge_name, id, category, resource_type.name))
 
         validation_query = \
             'MATCH (n:{resource_type} {{key: $key}}) return n'.format(resource_type=resource_type.name)
-
-        if column_name:
-            id = '{}/{}'.format(id, column_name)
 
         upsert_badge_query = textwrap.dedent("""
         MERGE (u:Badge {key: $badge_name})
@@ -647,8 +643,7 @@ class Neo4jProxy(BaseProxy):
     def delete_badge(self, id: str,
                      badge_name: str,
                      category: str,
-                     resource_type: ResourceType,
-                     column_name: str = '') -> None:
+                     resource_type: ResourceType) -> None:
 
         # TODO for some reason when deleting it will say it was successful
         # even when the badge never existed to begin with
@@ -659,9 +654,6 @@ class Neo4jProxy(BaseProxy):
         MATCH (b:Badge {{key:$badge_name, category:$category}})-
         [r1:BADGE_FOR]->(n:{resource_type} {{key: $key}})-[r2:HAS_BADGE]->(b) DELETE r1,r2
         """.format(resource_type=resource_type.name))
-
-        if column_name:
-            id = '{}/{}'.format(id, column_name)
 
         try:
             tx = self._driver.session().begin_transaction()
