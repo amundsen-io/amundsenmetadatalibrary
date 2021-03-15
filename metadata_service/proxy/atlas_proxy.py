@@ -884,6 +884,8 @@ class AtlasProxy(BaseProxy):
 
         return date or 0
 
+
+
     def get_tags(self) -> List:
         """
         Fetch all the glossary terms from atlas, along with their assigned entities as this
@@ -910,8 +912,20 @@ class AtlasProxy(BaseProxy):
         return tags
 
     def get_badges(self) -> List:
-        # Not implemented
-        return []
+        badges = list()
+
+        metrics = self.client.admin.get_metrics()
+        try:
+            system_badges = metrics["tag"].get("tagEntities").keys()
+
+            for item in system_badges:
+                badges.append(
+                    Badge(badge_name=item, category="default")
+                )
+        except AttributeError:
+            LOGGER.info("No badges/classifications available in the system.")
+
+        return badges
 
     def _get_resources_followed_by_user(self, user_id: str, resource_type: str) \
             -> List[Union[PopularTable, DashboardSummary]]:
