@@ -1,17 +1,17 @@
-Delete badges of a resource
+Add badge to a resource
 ---
 tags:
   - 'table'
   - 'dashboard'
 parameters:
-  - name: id
+  - name: table_uri
     in: path
     type: string
     schema:
       type: string
     required: true
     example: 'hive://gold.test_schema/test_table1'
-  - name: badge_name
+  - name: badge
     in: path
     type: string
     schema:
@@ -25,15 +25,22 @@ parameters:
       type: string
     required: true
     example: 'table_status'
+  - name: column_name
+    in: path
+    type: string
+    schema:
+      type: string
+    required: true
+    example: 'beta'
 responses:
   200:
-    description: 'The badge was deleted successfully'
+    description: 'The badge was added successfully'
     content:
       application/json:
         schema:
           $ref: '#/components/schemas/MessageResponse'
   404:
-    description: 'Table or badge not found'
+    description: 'Table not found, or badge is not whitelisted'
     content:
       application/json:
         schema:
