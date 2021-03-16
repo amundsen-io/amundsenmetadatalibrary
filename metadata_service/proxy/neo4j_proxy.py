@@ -146,7 +146,7 @@ class Neo4jProxy(BaseProxy):
             col_stats = []
             for stat in tbl_col_neo4j_record['col_stats']:
                 col_stat = Stat(
-                    stat_type=stat['stat_type'],
+                    stat_type=stat['stat_name'],
                     stat_val=stat['stat_val'],
                     start_epoch=int(float(stat['start_epoch'])),
                     end_epoch=int(float(stat['end_epoch']))
@@ -158,9 +158,11 @@ class Neo4jProxy(BaseProxy):
                 column_badges.append(TableBadge(badge_name=badge['key'], category=badge['category']))
 
             last_neo4j_record = tbl_col_neo4j_record
+
             col = Column(name=tbl_col_neo4j_record['col']['name'],
+                         key=tbl_col_neo4j_record['col']['key'],
                          description=self._safe_get(tbl_col_neo4j_record, 'col_dscrpt', 'description'),
-                         col_type=tbl_col_neo4j_record['col']['col_type'],
+                         col_type=tbl_col_neo4j_record['col']['type'],
                          sort_order=int(tbl_col_neo4j_record['col']['sort_order']),
                          stats=col_stats,
                          badges=column_badges)
