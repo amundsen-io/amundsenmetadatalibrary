@@ -22,13 +22,9 @@ setup(
     packages=find_packages(exclude=['tests*']),
     include_package_data=True,
     zip_safe=False,
-    dependency_links=[
-        ('git+https://www.github.com/hilearn/marshmallow-'
-         'annotations.git@a7a2dc96932430369bdef36555082df990ed9bef#egg=marshmallow-annotations')
-    ],
+    dependency_links=[],
     install_requires=[
-        'marshmallow>=3.0,<=3.6',
-        'marshmallow-annotations'
+        'marshmallow>=3.0,<=3.6'
     ],
     extras_require={
         'oidc': ['flaskoidc==0.1.1']
