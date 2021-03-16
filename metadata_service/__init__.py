@@ -110,7 +110,7 @@ def create_app(*, config_module_class: str) -> Flask:
     api.add_resource(TableDashboardAPI,
                      '/table/<path:id>/dashboard/')
     api.add_resource(ColumnBadgeAPI,
-                     '/table/<path:id>/column/badge/<badge>')
+                     '/table/<path:table_uri>/column/<column_name>/badge/<badge>')
     api.add_resource(ColumnDescriptionAPI,
                      '/table/<path:table_uri>/column/<column_name>/description')
     api.add_resource(ColumnLineageAPI,

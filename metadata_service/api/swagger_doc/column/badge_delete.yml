@@ -4,7 +4,7 @@ tags:
   - 'table'
   - 'dashboard'
 parameters:
-  - name: id
+  - name: table_uri
     in: path
     type: string
     schema:
@@ -25,6 +25,13 @@ parameters:
       type: string
     required: true
     example: 'table_status'
+  - name: column_name
+    in: path
+    type: string
+    schema:
+      type: string
+    required: true
+    example: 'beta'
 responses:
   200:
     description: 'The badge was deleted successfully'

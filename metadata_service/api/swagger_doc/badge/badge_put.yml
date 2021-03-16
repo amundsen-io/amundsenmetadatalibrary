@@ -10,8 +10,7 @@ parameters:
     schema:
       type: string
     required: true
-    table_example: 'hive://gold.test_schema/test_table1'
-    column_example: 'hive://gold.test_schema/test_table1/test_column'
+    example: 'hive://gold.test_schema/test_table1'
   - name: badge
     in: path
     type: string
