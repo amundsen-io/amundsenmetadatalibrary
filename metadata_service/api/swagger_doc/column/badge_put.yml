@@ -1,8 +1,7 @@
 Add badge to a resource
 ---
 tags:
-  - 'table'
-  - 'dashboard'
+  - 'column'
 parameters:
   - name: table_uri
     in: path

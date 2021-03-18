@@ -1,8 +1,7 @@
 Delete badges of a resource
 ---
 tags:
-  - 'table'
-  - 'dashboard'
+  - 'column'
 parameters:
   - name: table_uri
     in: path
