@@ -113,10 +113,6 @@ class AtlasConfig(LocalConfig):
     # format to be used in tables
     WATERMARK_DATE_FORMATS = ['%Y%m%d']
 
-    # Qualified Name of the Glossary, that holds the user defined terms.
-    # For Amundsen, we are using Glossary Terms as the Tags.
-    ATLAS_USER_DEFINED_TERMS = 'USER_DEFINED_TERMS'
-
 
 class GremlinConfig(LocalGremlinConfig, LocalConfig):
     JANUS_GRAPH_URL = None

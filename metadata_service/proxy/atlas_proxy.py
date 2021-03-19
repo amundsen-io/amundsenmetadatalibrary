@@ -143,6 +143,9 @@ class AtlasProxy(BaseProxy):
     ATTRS_KEY = 'attributes'
     REL_ATTRS_KEY = 'relationshipAttributes'
     ENTITY_URI_KEY = 'entityUri'
+    # Qualified Name of the Glossary, that holds the user defined terms.
+    # For Amundsen, we are using Glossary Terms as the Tags.
+    AMUNDSEN_USER_TAGS = 'amundsen_user_tags'
     _CACHE = CacheManager(**parse_cache_config_options({'cache.regions': 'atlas_proxy',
                                                         'cache.atlas_proxy.type': 'memory',
                                                         'cache.atlas_proxy.expire': _ATLAS_PROXY_CACHE_EXPIRY_SEC}))
@@ -706,7 +709,7 @@ class AtlasProxy(BaseProxy):
     @_CACHE.cache('_get_user_defined_glossary_guid')
     def _get_user_defined_glossary_guid(self) -> str:
         """
-        This function look for a user defined glossary i.e., config.ATLAS_USER_DEFINED_TERMS
+        This function look for a user defined glossary i.e., self.ATLAS_USER_DEFINED_TERMS
         If there is not one available, this will create a new glossary.
         The meain reason to put this functionality into a separate function is to avoid
         the lookup each time someone assigns a tag to a data source.
@@ -715,11 +718,11 @@ class AtlasProxy(BaseProxy):
         # Check if the user glossary already exists
         glossaries = self.client.glossary.get_all_glossaries()
         for glossary in glossaries:
-            if glossary.get(self.QN_KEY) == app.config["ATLAS_USER_DEFINED_TERMS"]:
+            if glossary.get(self.QN_KEY) == self.AMUNDSEN_USER_TAGS:
                 return glossary[self.GUID_KEY]
 
         # If not already exists, create one
-        glossary_def = AtlasGlossary({"name": app.config["ATLAS_USER_DEFINED_TERMS"],
+        glossary_def = AtlasGlossary({"name": self.AMUNDSEN_USER_TAGS,
                                       "shortDescription": "Amundsen User Defined Terms"})
         glossary = self.client.glossary.create_glossary(glossary_def)
         return glossary.guid
@@ -757,7 +760,7 @@ class AtlasProxy(BaseProxy):
                 resource_type: ResourceType = ResourceType.Table) -> None:
         """
         Assign the Glossary Term to the give table. If the term is not there, it will
-        create a new term under the Glossary config.ATLAS_USER_DEFINED_TERMS
+        create a new term under the Glossary self.ATLAS_USER_DEFINED_TERMS
         :param id: Table URI / Dashboard ID etc.
         :param tag: Tag Name
         :param tag_type
@@ -786,10 +789,15 @@ class AtlasProxy(BaseProxy):
         entity = self._get_table_entity(table_uri=id)
         term = self._get_create_glossary_term(tag)
 
-        for item in term.attributes.get("assignedEntities") or list():
+        if not term:
+            return
+
+        assigned_entities = self.client.glossary.get_entities_assigned_with_term(term.guid, "ASC", -1, 0)
+
+        for item in assigned_entities or list():
             if item.get(self.GUID_KEY) == entity.entity[self.GUID_KEY]:
                 related_entity = AtlasRelatedObjectId(item)
-                self.client.glossary.disassociate_term_from_entities(term.guid, [related_entity])
+                return self.client.glossary.disassociate_term_from_entities(term.guid, [related_entity])
 
     def delete_badge(self, *, id: str, badge_name: str, category: str,
                      resource_type: ResourceType) -> None:

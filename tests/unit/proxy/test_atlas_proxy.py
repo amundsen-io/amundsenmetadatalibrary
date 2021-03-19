@@ -252,6 +252,7 @@ class TestAtlasProxy(unittest.TestCase, Data):
         tag = "TAG"
         ent = self._mock_get_table_entity()
         term = self._mock_get_create_glossary_term(tag, ent.entity)
+        self.proxy.client.glossary.get_entities_assigned_with_term = MagicMock(return_value=[ent.entity])
 
         with patch.object(self.proxy.client.glossary, 'disassociate_term_from_entities') as mock_execute:
             self.proxy.delete_tag(id=self.table_uri, tag=tag, tag_type='default')
