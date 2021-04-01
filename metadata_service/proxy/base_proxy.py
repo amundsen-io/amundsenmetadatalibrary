@@ -5,6 +5,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
 from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.data_quality_checks import TableQualityCheck
 from amundsen_common.models.lineage import Lineage
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table
@@ -164,5 +165,13 @@ class BaseProxy(metaclass=ABCMeta):
         :param direction: if the request is for a list of upstream/downstream nodes or both
         :param depth: the level of lineage requested (ex: 1 would mean only nodes directly connected
         to the current id in whatever direction is specified)
+        """
+        pass
+
+    @abstractmethod
+    def get_table_quality_checks_summary(self, *, table_uri: str) -> List[TableQualityChecks]:
+        """
+        Method can be implemented by fetching data from neo4j if table quality checks are indexed, or
+        calling internal quality checks service
         """
         pass

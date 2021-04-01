@@ -21,6 +21,7 @@ from metadata_service.api.dashboard import (DashboardBadgeAPI,
                                             DashboardDescriptionAPI,
                                             DashboardDetailAPI,
                                             DashboardTagAPI)
+from metadata_service.api.data_quality_checks import TableQualityChecksSummaryAPI
 from metadata_service.api.healthcheck import healthcheck
 from metadata_service.api.popular_tables import PopularTablesAPI
 from metadata_service.api.system import Neo4jDetailAPI
@@ -109,6 +110,8 @@ def create_app(*, config_module_class: str) -> Flask:
                      '/table/<path:table_uri>/owner/<owner>')
     api.add_resource(TableDashboardAPI,
                      '/table/<path:id>/dashboard/')
+    api.add_resource(TableQualityChecksSummaryAPI,
+                     '/table/<path:table_uri>/quality_checks_summary')
     api.add_resource(ColumnDescriptionAPI,
                      '/table/<path:table_uri>/column/<column_name>/description')
     api.add_resource(ColumnBadgeAPI,

@@ -1,0 +1,24 @@
+Get quality checks summary
+---
+tags:
+  - 'table'
+parameters:
+  - name: table_uri
+    in: path
+    type: string
+    schema:
+      type: string
+    required: true
+    example: 'hive://gold.test_schema/test_table1'
+responses:
+  200:
+    description: 'table quality checks summary'
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            table_quality_checks:
+              type: array
+              items:
+                $ref: '#/components/schemas/TableQualityCheck'

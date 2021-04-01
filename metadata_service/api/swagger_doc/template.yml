@@ -431,6 +431,16 @@ components:
         query_text:
           type: string
           description: 'Query statement text'
+    TableQualityCheck:
+      type: object
+      properties:
+        check_id:
+          type: string
+        last_execution_status:
+          type: string
+        last_execution_timestamp:
+          type: int
+          description: 'last execution timestamp in epoch'
     ErrorResponse:
       type: object
       properties:
