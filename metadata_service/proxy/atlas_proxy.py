@@ -9,6 +9,7 @@ from random import randint
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.data_quality_checks import TableQualityCheck
 from amundsen_common.models.lineage import Lineage
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import (Badge, Column,
@@ -1082,4 +1083,7 @@ class AtlasProxy(BaseProxy):
 
     def get_lineage(self, *,
                     id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        pass
+
+    def get_table_quality_checks_summary(self, *, table_uri: str) -> List[TableQualityChecks]:
         pass
