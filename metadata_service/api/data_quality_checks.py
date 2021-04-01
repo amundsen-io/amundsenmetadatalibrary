@@ -11,15 +11,15 @@ from flask_restful import Resource
 from metadata_service.proxy import get_proxy_client
 
 
-class TableQualityChecksSummaryAPI(Resource):
+class TableQualityChecksAPI(Resource):
     def __init__(self) -> None:
         self.client = get_proxy_client()
-        super(TableQualityChecksSummaryAPI, self).__init__()
+        super(TableQualityChecksAPI, self).__init__()
 
-    @swag_from('swagger_doc/data_quality_checks/table_quality_checks_summary_get.yml')
+    @swag_from('swagger_doc/data_quality_checks/table_quality_checks_get.yml')
     def get(self, table_uri: str) -> Tuple[Any, HTTPStatus]:
         try:
-            table_quality_checks = self.client.get_table_quality_checks_summary(table_uri=table_uri)
+            table_quality_checks = self.client.get_table_quality_checks(table_uri=table_uri)
             schema = TableQualityCheckSchema()
             return {'table_quality_checks': [schema.dump(x) for x in table_quality_checks]}, HTTPStatus.OK
         except Exception as e:

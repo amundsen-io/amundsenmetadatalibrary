@@ -1414,5 +1414,5 @@ class Neo4jProxy(BaseProxy):
                     resource_type: ResourceType, direction: str, depth: int) -> Lineage:
         pass
 
-    def get_table_quality_checks_summary(self, *, table_uri: str) -> List[TableQualityCheck]:
+    def get_table_quality_checks(self, *, table_uri: str) -> List[TableQualityCheck]:
         pass

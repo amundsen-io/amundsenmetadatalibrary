@@ -169,7 +169,7 @@ class BaseProxy(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_table_quality_checks_summary(self, *, table_uri: str) -> List[TableQualityCheck]:
+    def get_table_quality_checks(self, *, table_uri: str) -> List[TableQualityCheck]:
         """
         Method can be implemented by fetching data from neo4j if table quality checks are indexed, or
         calling internal quality checks service
