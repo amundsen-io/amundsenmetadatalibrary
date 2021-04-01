@@ -6,7 +6,7 @@ import logging
 import re
 from operator import attrgetter
 from random import randint
-from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Pattern, Tuple, Union
 
 from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.lineage import Lineage
@@ -988,10 +988,13 @@ class AtlasProxy(BaseProxy):
         :return: A list of PopularTable, DashboardSummary or any other resource.
         """
         resources = list()
+
         if resource_type == ResourceType.Table.name:
             type_regex = "(.*)_table$"
+            entity_type = 'Table'
         # elif resource_type == ResourceType.Dashboard.name:
         #     type_regex = "Dashboard"
+        #     entity_type = 'Dashboard'
         else:
             LOGGER.exception(f'Resource Type ({resource_type}) is not yet implemented')
             raise NotImplemented
@@ -1010,33 +1013,29 @@ class AtlasProxy(BaseProxy):
                     re.compile(type_regex).match(item['typeName'])):
                 resource_guids.add(item[self.GUID_KEY])
 
-        params = {
-            'typeName': self.TABLE_ENTITY,
-            'excludeDeletedEntities': True,
-            'entityFilters': {
-                'condition': 'AND',
-                'criterion': [
-                    {
-                        'attributeName': 'owner',
-                        'operator': 'startsWith',
-                        'attributeValue': user_id.lower()
-                    }
-                ]
-            },
-            'attributes': [self.GUID_KEY]
-        }
-        table_entities = self.client.discovery.faceted_search(search_parameters=params)
+        owned_tables_query = f'{entity_type} where owner like "{user_id.lower()}*" and __state = "ACTIVE"'
+        table_entities = self.client.discovery.dsl_search(owned_tables_query)
+
         for table in table_entities.entities or list():
             resource_guids.add(table.guid)
 
         if resource_guids:
-            entities = self.client.entity.get_entities_by_guids(guids=list(resource_guids), ignore_relationships=True)
-            if resource_type == ResourceType.Table.name:
-                resources = self._serialize_popular_tables(entities.entities)
+            resource_guids_chunks = AtlasProxy.split_list_to_chunks(list(resource_guids), 100)
+
+            for chunk in resource_guids_chunks:
+                entities = self.client.entity.get_entities_by_guids(guids=list(chunk), ignore_relationships=True)
+                if resource_type == ResourceType.Table.name:
+                    resources += self._serialize_popular_tables(entities.entities)
         else:
             LOGGER.info(f'User ({user_id}) does not own any "{resource_type}"')
 
         return resources
+
+    @staticmethod
+    def split_list_to_chunks(input_list: List[Any], n: int) -> Generator:
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(input_list), n):
+            yield input_list[i:i + n]
 
     def get_dashboard_by_user_relation(self, *, user_email: str, relation_type: UserResourceRel) \
             -> Dict[str, List[DashboardSummary]]:
