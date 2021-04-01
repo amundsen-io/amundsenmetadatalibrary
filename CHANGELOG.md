@@ -1,4 +1,6 @@
 ### Feature
+* Add Column Badge API ([#273](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/273)) ([`ee0ac63`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/ee0ac63194a4286715cd32c34042443c979f4cea))
+* Column Lineage API ([#280](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/280)) ([`681893f`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/681893fb47ebcfc61ed4736f535618fddb6c4631))
 * Table Lineage API ([#262](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/262)) ([`e306034`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/e306034043e067a2d6c24477bd197d10177d1d6d))
 * Column badges in Atlas Proxy ([#263](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/263)) ([`a3efb4c`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/a3efb4cb778a6a5a58b0e55874622f114fd2e7e7))
 * Added get_lineage method to neo4j proxy ([#259](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/259)) ([`b129cc7`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/b129cc701117871a90ae05c36bcf0f112ae36e5e))
@@ -12,6 +14,7 @@
 * Data Owner Implementation of Atlas Proxy ([#156](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/156)) ([`48b4c71`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/48b4c71054f7b34bca8a8f148e8b7499dfb986fc))
 
 ### Fix
+* Swagger docs don't align with common entity ([#283](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/283)) ([`db33af9`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/db33af98d6ed2ba29c059b790bc7d09ce71b24c8))
 * Compatibility changes  to the gremlin integration ([#260](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/260)) ([`a765424`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/a765424aa13c71afdb04f7457f30d8a8977974a2))
 * Proxy client creation fails after adding client_kwargs ([#258](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/258)) ([`1880cec`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/1880cec3bf0ed4b889c5fe3b61633228063cdfad))
 * Reapply previous fix ([#245](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/245)) ([`c7dc172`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/c7dc172b2b8c3b8ff4d7f145e5564474a3cb8dd8))
