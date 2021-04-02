@@ -3,7 +3,7 @@
 
 import copy
 import unittest
-from typing import Any, Dict, Optional, cast, List
+from typing import Any, Dict, Optional, cast
 from unittest.mock import MagicMock, patch
 
 from amundsen_common.models.popular_table import PopularTable
