@@ -1045,8 +1045,7 @@ class Neo4jProxy(BaseProxy):
                 if k in record:
                     other_key_values[k] = record[k]
 
-        return UserEntity(user_id=record['user_id'], # Is there a reason this was not previously here?
-                          email=record['email'],
+        return UserEntity(email=record['email'],
                           first_name=record.get('first_name'),
                           last_name=record.get('last_name'),
                           full_name=record.get('full_name'),
