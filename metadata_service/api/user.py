@@ -69,7 +69,7 @@ class UserDetailAPI(BaseAPI):
 
         except SchemaValidationError as schema_err:
             err_msg = 'User inputs provided are not valid: %s' % schema_err
-            return {'message': err_msg}, HTTPStatus.BAD_GATEWAY
+            return {'message': err_msg}, HTTPStatus.BAD_REQUEST
 
         except Exception:
             LOGGER.exception('UserDetailAPI PUT Failed - Using "USER_DETAIL_METHOD" config variable')
