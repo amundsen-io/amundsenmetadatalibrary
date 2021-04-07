@@ -1,0 +1,54 @@
+Create or update a user
+---
+tags:
+  - 'user'
+# parameters:
+  # - name: user_attributes
+  #   in: body
+  #   # example: '#/components/schemas/UserDetailFields'
+  #   schema:
+  #     $ref: '#/components/schemas/UserFields'
+  #     # type: object
+  #     # properties: 
+  #     #   userName:
+  #     #     type: string
+  #     #   firstName:
+  #     #     type: string
+  #     #   lastName:
+  #     #     type: string
+  #     # required:
+  #     #   - userName
+requestBody:
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/UserDetailFields'
+        description: User attribute fields
+        required: true
+# requestBody:
+#   content:
+#     application/json:
+#       schema:
+#         type: object
+#         $ref: '#/components/schemas/UserDetailFields'
+#         description: 'User attributes'
+#         required: true
+responses:
+  200:
+    description: 'Existing user found and updated'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/UserDetailFields'
+  201:
+    description: 'User created'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/UserDetailFields'
+  500:
+    description: 'Internal server error'
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'
