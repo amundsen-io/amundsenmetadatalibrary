@@ -10,7 +10,7 @@ from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
 
 import neo4j
 from amundsen_common.models.dashboard import DashboardSummary
-from amundsen_common.models.lineage import Lineage
+from amundsen_common.models.lineage import Lineage, LineageItem
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Application
 from amundsen_common.models.table import Badge as TableBadge
@@ -1408,7 +1408,87 @@ class Neo4jProxy(BaseProxy):
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
 
+    def _get_table_lineage_query(self, direction: str, depth: int):
+        get_both_lineage_query = textwrap.dedent(u"""
+        MATCH (source:Table {{key: $query_key}})
+        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_table:Table)
+        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_table:Table)
+        WITH
+        CASE WHEN upstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:LENGTH(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
+        END AS upstream_entities,
+        CASE WHEN downstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:LENGTH(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
+        END AS downstream_entities
+        RETURN upstream_entities, downstream_entities
+        """).format(depth=depth)
+
+        get_upstream_lineage_query = textwrap.dedent(u"""
+        MATCH (source:Table {{key: $query_key}})
+        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_table:Table)
+        WITH
+        source.key as source_key,
+        CASE WHEN upstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:LENGTH(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
+        END AS upstream_entities,
+        RETURN upstream_entities
+        """).format(depth=depth)
+
+        get_downstream_lineage_query = textwrap.dedent(u"""
+        MATCH (source:Table {{key: $query_key}})
+        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_table:Table)
+        WITH
+        source.key as source_key,
+        CASE WHEN downstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:LENGTH(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
+        END AS downstream_entities
+        RETURN downstream_entities
+        """)
+
+        if direction == 'upstream':
+            return get_upstream_lineage_query
+
+        if direction == 'downstream':
+            return get_downstream_lineage_query
+
+        return get_both_lineage_query
+
     def get_lineage(self, *,
                     id: str,
-                    resource_type: ResourceType, direction: str, depth: int) -> Lineage:
-        pass
+                    resource_type: ResourceType, direction: str, depth: int = 1) -> Lineage:
+
+        lineage_query = ""
+
+        if resource_type == ResourceType.Table:
+            lineage_query = self._get_table_lineage_query(direction, depth)
+
+        records = self._execute_cypher_query(statement=lineage_query,
+                                             param_dict={'query_key': id})
+
+        result = records.single()
+
+        downstream_tables = []
+        upstream_tables = []
+        for downstream in result.get("downstream_entities") or []:
+            downstream_tables.append(LineageItem(**{
+                "key": downstream["key"],
+                "source": downstream["source"],
+                "level": downstream["level"]
+            }))
+
+        for upstream in result.get("upstream_entities") or []:
+            upstream_tables.append(LineageItem(**{
+                "key": upstream["key"],
+                "source": upstream["source"],
+                "level": upstream["level"]
+            }))
+
+        return Lineage(**{
+                "key": id,
+                "upstream_entities": upstream_tables,
+                "downstream_entities": downstream_tables,
+                "direction": direction, "depth": depth})
