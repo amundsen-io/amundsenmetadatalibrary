@@ -37,6 +37,16 @@ class UserDetailAPITest(unittest.TestCase):
         self.assertEqual(list(response)[1], HTTPStatus.OK)
         self.mock_client.get_users.assert_called_once()
 
+    # def test_put(self) -> None:
+    #     m = MagicMock()
+    #     m.data = {}
+    #     with mock.patch("metadata_service.api.user.request", m):
+    #         # somefile.method_called_from_route()
+    #         self.mock_client.get_user.return_value = {}
+    #         response = self.api.put()
+    #         self.assertEqual(list(response)[1], HTTPStatus.OK)
+    #         self.mock_client.get_user.assert_called_once_with(id='username')
+        
 
 class UserFollowsAPITest(unittest.TestCase):
 

@@ -988,7 +988,7 @@ class Neo4jProxy(BaseProxy):
             tx = self._driver.session().begin_transaction()
             result = tx.run(create_update_user_query, user_data)
 
-            user_result = result.single() 
+            user_result = result.single()
             if not user_result:
                 raise RuntimeError('Failed to create user with data %s' % user_data)
             tx.commit()
