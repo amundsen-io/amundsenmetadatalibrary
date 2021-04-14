@@ -8,7 +8,7 @@ from abc import abstractmethod
 from datetime import date, datetime, timedelta
 from operator import attrgetter
 from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
-                    Sequence, Set, Type, TypeVar, Tuple, Union, no_type_check,
+                    Sequence, Set, Tuple, Type, TypeVar, Union, no_type_check,
                     overload)
 from urllib.parse import unquote
 

@@ -14,8 +14,8 @@ from flasgger import swag_from
 from flask import current_app as app
 from flask import request
 from flask_restful import Resource
-
 from marshmallow.exceptions import ValidationError as SchemaValidationError
+
 from metadata_service.api import BaseAPI
 from metadata_service.entity.resource_type import (ResourceType,
                                                    to_resource_type)
@@ -57,7 +57,7 @@ class UserDetailAPI(BaseAPI):
         """
         if not request.data:
             return {'message': 'No user information provided in the request.'}, HTTPStatus.BAD_REQUEST
-        
+
         try:
             user_attributes = json.loads(request.data)
             schema = UserSchema()
@@ -72,9 +72,9 @@ class UserDetailAPI(BaseAPI):
             return {'message': err_msg}, HTTPStatus.BAD_REQUEST
 
         except Exception:
-            LOGGER.exception('UserDetailAPI PUT Failed - Using "USER_DETAIL_METHOD" config variable')
+            LOGGER.exception('UserDetailAPI PUT Failed')
             return {'message': 'Internal server error!'}, HTTPStatus.INTERNAL_SERVER_ERROR
-        
+
 
 class UserFollowsAPI(Resource):
     """

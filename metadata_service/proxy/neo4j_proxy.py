@@ -968,7 +968,7 @@ class Neo4jProxy(BaseProxy):
     def create_update_user(self, *, user: User) -> Tuple[User, bool]:
         """
         Create a user if it does not exist, otherwise update the user. Required
-        fields for creating / updating a user are validated upstream to this when 
+        fields for creating / updating a user are validated upstream to this when
         the User object is created.
 
         :param user:
@@ -983,7 +983,7 @@ class Neo4jProxy(BaseProxy):
         on MATCH SET %s
         RETURN usr, usr.%s = timestamp() as created
         """ % (user_props, CREATED_EPOCH_MS, user_props, CREATED_EPOCH_MS))
-        
+
         try:
             tx = self._driver.session().begin_transaction()
             result = tx.run(create_update_user_query, user_data)
@@ -995,7 +995,7 @@ class Neo4jProxy(BaseProxy):
 
             new_user = self._build_user_from_record(user_result['usr'])
             new_user_created = True if user_result['created'] is True else False
-            
+
         except Exception as e:
             if not tx.closed():
                 tx.rollback()
@@ -1008,8 +1008,8 @@ class Neo4jProxy(BaseProxy):
                            record_dict: dict,
                            identifier: str) -> str:
         """
-        Mostly copy/paste from data builder: 
-        https://github.com/amundsen-io/amundsendatabuilder/blob/master/databuilder/publisher/neo4j_csv_publisher.py#L382
+        Creates a Neo4j property body by converting a dictionary into a comma
+        separated string of KEY = VALUE.
         """
         props = []
         for k, v in record_dict.items():

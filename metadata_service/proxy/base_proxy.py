@@ -31,7 +31,7 @@ class BaseProxy(metaclass=ABCMeta):
     def create_update_user(self, *, user: User) -> Tuple[User, bool]:
         """
         Allows creating and updating users. Returns a tuple of the User
-        object that has been created or updated as well as a flag that 
+        object that has been created or updated as well as a flag that
         depicts whether or no the user was created or updated.
 
         :param user: a User object
