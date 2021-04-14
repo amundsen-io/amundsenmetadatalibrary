@@ -1416,11 +1416,11 @@ class Neo4jProxy(BaseProxy):
         WITH
         CASE WHEN upstream_len IS NULL THEN [] 
         ELSE COLLECT(
-        distinct{{level:LENGTH(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
+        distinct{{level:SIZE(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
         END AS upstream_entities,
         CASE WHEN downstream_len IS NULL THEN [] 
         ELSE COLLECT(
-        distinct{{level:LENGTH(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
+        distinct{{level:SIZE(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
         END AS downstream_entities
         RETURN upstream_entities, downstream_entities
         """).format(depth=depth)
@@ -1432,7 +1432,7 @@ class Neo4jProxy(BaseProxy):
         source.key as source_key,
         CASE WHEN upstream_len IS NULL THEN [] 
         ELSE COLLECT(
-        distinct{{level:LENGTH(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
+        distinct{{level:SIZE(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
         END AS upstream_entities,
         RETURN upstream_entities
         """).format(depth=depth)
@@ -1444,7 +1444,7 @@ class Neo4jProxy(BaseProxy):
         source.key as source_key,
         CASE WHEN downstream_len IS NULL THEN [] 
         ELSE COLLECT(
-        distinct{{level:LENGTH(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
+        distinct{{level:SIZE(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
         END AS downstream_entities
         RETURN downstream_entities
         """)
