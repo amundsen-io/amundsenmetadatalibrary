@@ -1463,10 +1463,8 @@ class Neo4jProxy(BaseProxy):
 
         records = self._execute_cypher_query(statement=lineage_query,
                                              param_dict={'query_key': id})
-        if not records:
-            return []
-
         result = records.single()
+
         downstream_tables = []
         upstream_tables = []
         for downstream in result.get("downstream_entities") or []:
