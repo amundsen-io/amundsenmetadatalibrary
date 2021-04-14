@@ -1408,69 +1408,65 @@ class Neo4jProxy(BaseProxy):
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
 
-    def _get_table_lineage_query(self, direction: str, depth: int):
-        get_both_lineage_query = textwrap.dedent(u"""
-        MATCH (source:Table {{key: $query_key}})
-        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_table:Table)
-        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_table:Table)
-        WITH
-        CASE WHEN upstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
-        END AS upstream_entities,
-        CASE WHEN downstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
-        END AS downstream_entities
-        RETURN upstream_entities, downstream_entities
-        """).format(depth=depth)
-
-        get_upstream_lineage_query = textwrap.dedent(u"""
-        MATCH (source:Table {{key: $query_key}})
-        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_table:Table)
-        WITH
-        source.key as source_key,
-        CASE WHEN upstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(upstream_len),source:split(upstream_table.key,'://')[0],key:upstream_table.key}}) 
-        END AS upstream_entities,
-        RETURN upstream_entities
-        """).format(depth=depth)
-
-        get_downstream_lineage_query = textwrap.dedent(u"""
-        MATCH (source:Table {{key: $query_key}})
-        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_table:Table)
-        WITH
-        source.key as source_key,
-        CASE WHEN downstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(downstream_len),source:split(downstream_table.key,'://')[0],key:downstream_table.key}}) 
-        END AS downstream_entities
-        RETURN downstream_entities
-        """)
-
-        if direction == 'upstream':
-            return get_upstream_lineage_query
-
-        if direction == 'downstream':
-            return get_downstream_lineage_query
-
-        return get_both_lineage_query
 
     def get_lineage(self, *,
                     id: str,
                     resource_type: ResourceType, direction: str, depth: int = 1) -> Lineage:
+        """:type
+        """
+        get_both_lineage_query = textwrap.dedent(u"""
+        MATCH (source:{resource} {{key: $query_key}})
+        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
+        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
+        WITH
+        CASE WHEN upstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key}}) 
+        END AS upstream_entities,
+        CASE WHEN downstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key}}) 
+        END AS downstream_entities
+        RETURN upstream_entities, downstream_entities
+        """).format(depth=depth, resource=resource_type.name)
 
-        lineage_query = ""
+        get_upstream_lineage_query = textwrap.dedent(u"""
+        MATCH (source:{resource} {{key: $query_key}})
+        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
+        WITH
+        CASE WHEN upstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key}}) 
+        END AS upstream_entities,
+        RETURN upstream_entities
+        """).format(depth=depth, resource=resource_type.name)
 
-        if resource_type == ResourceType.Table:
-            lineage_query = self._get_table_lineage_query(direction, depth)
+        get_downstream_lineage_query = textwrap.dedent(u"""
+        MATCH (source:{resource} {{key: $query_key}})
+        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
+        WITH
+        CASE WHEN downstream_len IS NULL THEN [] 
+        ELSE COLLECT(
+        distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key}}) 
+        END AS downstream_entities
+        RETURN downstream_entities
+        """).format(depth=depth, resource=resource_type.name)
+
+        if direction == 'upstream':
+            lineage_query = get_upstream_lineage_query
+
+        elif direction == 'downstream':
+            lineage_query = get_downstream_lineage_query
+
+        else:
+            lineage_query = get_both_lineage_query
 
         records = self._execute_cypher_query(statement=lineage_query,
                                              param_dict={'query_key': id})
+        if not records:
+            return []
 
         result = records.single()
-
         downstream_tables = []
         upstream_tables = []
         for downstream in result.get("downstream_entities") or []:
