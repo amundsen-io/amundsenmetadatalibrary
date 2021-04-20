@@ -1408,47 +1408,73 @@ class Neo4jProxy(BaseProxy):
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
 
-
     def get_lineage(self, *,
                     id: str,
                     resource_type: ResourceType, direction: str, depth: int = 1) -> Lineage:
         """:type
         """
+        def _get_badges(badges):
+            _badges = []
+            for badge in badges:
+                _badges.append(Badge(badge_name=badge["key"], category=badge["category"]))
+            return _badges
+
         get_both_lineage_query = textwrap.dedent(u"""
         MATCH (source:{resource} {{key: $query_key}})
         OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
         OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
+        WITH downstream_entity, upstream_entity, downstream_len, upstream_len
+        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(ubadge:Badge)
+        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(dbadge:Badge)
+        WITH 
+            CASE WHEN dbadge IS NULL THEN [] 
+                ELSE collect(distinct {{key:dbadge.key,category:dbadge.category}}) 
+            END AS dbadges, 
+            CASE WHEN ubadge IS NULL THEN [] 
+                ELSE collect(distinct {{key:ubadge.key,category:ubadge.category}}) 
+            END AS ubadges, 
+            upstream_entity, downstream_entity, upstream_len, downstream_len
         WITH
-        CASE WHEN upstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key}}) 
-        END AS upstream_entities,
-        CASE WHEN downstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key}}) 
-        END AS downstream_entities
-        RETURN upstream_entities, downstream_entities
+            CASE WHEN upstream_len IS NULL THEN [] 
+                ELSE COLLECT(distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key, badges:ubadges}}) 
+            END AS upstream_entities,
+            CASE WHEN downstream_len IS NULL THEN [] 
+                ELSE COLLECT(distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key, badges:dbadges}}) 
+            END AS downstream_entities
+        RETURN downstream_entities, upstream_entities  
         """).format(depth=depth, resource=resource_type.name)
 
         get_upstream_lineage_query = textwrap.dedent(u"""
         MATCH (source:{resource} {{key: $query_key}})
         OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
+        WITH upstream_entity, upstream_len
+        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(ubadge:Badge)
+        WITH  
+            CASE WHEN ubadge IS NULL THEN [] 
+                ELSE collect(distinct {{key:ubadge.key,category:ubadge.category}}) 
+            END AS ubadges, 
+            upstream_entity, upstream_len
         WITH
-        CASE WHEN upstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key}}) 
-        END AS upstream_entities,
-        RETURN upstream_entities
+            CASE WHEN upstream_len IS NULL THEN [] 
+                ELSE COLLECT(distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key, badges:ubadges}}) 
+            END AS upstream_entities
+        RETURN upstream_entities  
         """).format(depth=depth, resource=resource_type.name)
 
         get_downstream_lineage_query = textwrap.dedent(u"""
         MATCH (source:{resource} {{key: $query_key}})
         OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
+        WITH downstream_entity, downstream_len
+        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(dbadge:Badge)
+        WITH 
+            CASE WHEN dbadge IS NULL THEN [] 
+                ELSE collect(distinct {{key:dbadge.key,category:dbadge.category}}) 
+            END AS dbadges,
+            downstream_entity, downstream_len
         WITH
-        CASE WHEN downstream_len IS NULL THEN [] 
-        ELSE COLLECT(
-        distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key}}) 
-        END AS downstream_entities
+            CASE WHEN downstream_len IS NULL THEN [] 
+                ELSE COLLECT(distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key, badges:dbadges}}) 
+            END AS downstream_entities
         RETURN downstream_entities
         """).format(depth=depth, resource=resource_type.name)
 
@@ -1467,18 +1493,21 @@ class Neo4jProxy(BaseProxy):
 
         downstream_tables = []
         upstream_tables = []
+
         for downstream in result.get("downstream_entities") or []:
             downstream_tables.append(LineageItem(**{
                 "key": downstream["key"],
                 "source": downstream["source"],
-                "level": downstream["level"]
+                "level": downstream["level"],
+                "badges": _get_badges(downstream["badges"])
             }))
 
         for upstream in result.get("upstream_entities") or []:
             upstream_tables.append(LineageItem(**{
                 "key": upstream["key"],
                 "source": upstream["source"],
-                "level": upstream["level"]
+                "level": upstream["level"],
+                "badges": _get_badges(upstream["badges"])
             }))
 
         return Lineage(**{
