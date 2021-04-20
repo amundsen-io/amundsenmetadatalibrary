@@ -1424,22 +1424,43 @@ class Neo4jProxy(BaseProxy):
         OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
         OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
         WITH downstream_entity, upstream_entity, downstream_len, upstream_len
-        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(ubadge:Badge)
-        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(dbadge:Badge)
+        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(upstream_badge:Badge)
+        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(downstream_badge:Badge)
         WITH 
-            CASE WHEN dbadge IS NULL THEN [] 
-                ELSE collect(distinct {{key:dbadge.key,category:dbadge.category}}) 
-            END AS dbadges, 
-            CASE WHEN ubadge IS NULL THEN [] 
-                ELSE collect(distinct {{key:ubadge.key,category:ubadge.category}}) 
-            END AS ubadges, 
+            CASE WHEN downstream_badge IS NULL THEN [] 
+                ELSE collect(distinct {{key:downstream_badge.key,category:downstream_badge.category}}) 
+            END AS downstream_badges, 
+            CASE WHEN upstream_badge IS NULL THEN [] 
+                ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}}) 
+            END AS upstream_badges, 
             upstream_entity, downstream_entity, upstream_len, downstream_len
+        OPTIONAL MATCH (downstream_entity:Table)-[downstream_read:READ_BY]->(:User)
+        WITH 
+            upstream_entity, downstream_entity, upstream_len, downstream_len, 
+            downstream_badges, upstream_badges, sum(downstream_read.read_count) as downstream_read_count
+        OPTIONAL MATCH (upstream_entity:Table)-[upstream_read:READ_BY]->(:User)
+        WITH 
+            upstream_entity, downstream_entity, upstream_len, downstream_len, 
+            downstream_badges, upstream_badges, downstream_read_count, 
+            sum(upstream_read.read_count) as upstream_read_count
         WITH
             CASE WHEN upstream_len IS NULL THEN [] 
-                ELSE COLLECT(distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key, badges:ubadges}}) 
+                ELSE COLLECT(distinct{{
+                                level:SIZE(upstream_len),
+                                source:split(upstream_entity.key,'://')[0],
+                                key:upstream_entity.key, 
+                                badges:upstream_badges,
+                                usage:upstream_read_count
+                                }}) 
             END AS upstream_entities,
             CASE WHEN downstream_len IS NULL THEN [] 
-                ELSE COLLECT(distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key, badges:dbadges}}) 
+                ELSE COLLECT(distinct{{
+                                level:SIZE(downstream_len),
+                                source:split(downstream_entity.key,'://')[0],
+                                key:downstream_entity.key, 
+                                badges:downstream_badges,
+                                usage:downstream_read_count
+                                }}) 
             END AS downstream_entities
         RETURN downstream_entities, upstream_entities  
         """).format(depth=depth, resource=resource_type.name)
@@ -1448,15 +1469,25 @@ class Neo4jProxy(BaseProxy):
         MATCH (source:{resource} {{key: $query_key}})
         OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
         WITH upstream_entity, upstream_len
-        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(ubadge:Badge)
+        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(upstream_badge:Badge)
         WITH  
-            CASE WHEN ubadge IS NULL THEN [] 
-                ELSE collect(distinct {{key:ubadge.key,category:ubadge.category}}) 
-            END AS ubadges, 
+            CASE WHEN upstream_badge IS NULL THEN [] 
+                ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}}) 
+            END AS upstream_badges, 
             upstream_entity, upstream_len
+        OPTIONAL MATCH (upstream_entity:Table)-[upstream_read:READ_BY]->(:User)
+        WITH 
+            upstream_entity, upstream_len, upstream_badges, 
+            sum(upstream_read.read_count) as upstream_read_count              
         WITH
             CASE WHEN upstream_len IS NULL THEN [] 
-                ELSE COLLECT(distinct{{level:SIZE(upstream_len),source:split(upstream_entity.key,'://')[0],key:upstream_entity.key, badges:ubadges}}) 
+                ELSE COLLECT(distinct{{
+                                level:SIZE(upstream_len),
+                                source:split(upstream_entity.key,'://')[0],
+                                key:upstream_entity.key, 
+                                badges:upstream_badges,
+                                usage:upstream_read_count
+                                }}) 
             END AS upstream_entities
         RETURN upstream_entities  
         """).format(depth=depth, resource=resource_type.name)
@@ -1465,15 +1496,25 @@ class Neo4jProxy(BaseProxy):
         MATCH (source:{resource} {{key: $query_key}})
         OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
         WITH downstream_entity, downstream_len
-        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(dbadge:Badge)
+        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(downstream_badge:Badge)
         WITH 
-            CASE WHEN dbadge IS NULL THEN [] 
-                ELSE collect(distinct {{key:dbadge.key,category:dbadge.category}}) 
-            END AS dbadges,
+            CASE WHEN downstream_badge IS NULL THEN [] 
+                ELSE collect(distinct {{key:downstream_badge.key,category:downstream_badge.category}}) 
+            END AS downstream_badges,
             downstream_entity, downstream_len
+        OPTIONAL MATCH (downstream_entity:Table)-[downstream_read:READ_BY]->(:User)
+        WITH 
+            downstream_entity, downstream_len, downstream_badges, 
+            sum(downstream_read.read_count) as downstream_read_count
         WITH
             CASE WHEN downstream_len IS NULL THEN [] 
-                ELSE COLLECT(distinct{{level:SIZE(downstream_len),source:split(downstream_entity.key,'://')[0],key:downstream_entity.key, badges:dbadges}}) 
+                ELSE COLLECT(distinct{{
+                                level:SIZE(downstream_len),
+                                source:split(downstream_entity.key,'://')[0],
+                                key:downstream_entity.key, 
+                                badges:downstream_badges,
+                                usage:downstream_read_count
+                                }}) 
             END AS downstream_entities
         RETURN downstream_entities
         """).format(depth=depth, resource=resource_type.name)
@@ -1499,7 +1540,8 @@ class Neo4jProxy(BaseProxy):
                 "key": downstream["key"],
                 "source": downstream["source"],
                 "level": downstream["level"],
-                "badges": _get_badges(downstream["badges"])
+                "badges": _get_badges(downstream["badges"]),
+                "usage": downstream.get("usage", 0)
             }))
 
         for upstream in result.get("upstream_entities") or []:
@@ -1507,7 +1549,8 @@ class Neo4jProxy(BaseProxy):
                 "key": upstream["key"],
                 "source": upstream["source"],
                 "level": upstream["level"],
-                "badges": _get_badges(upstream["badges"])
+                "badges": _get_badges(upstream["badges"]),
+                "usage": upstream.get("usage", 0)
             }))
 
         return Lineage(**{
