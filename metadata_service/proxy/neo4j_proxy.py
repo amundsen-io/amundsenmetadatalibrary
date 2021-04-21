@@ -1467,11 +1467,11 @@ class Neo4jProxy(BaseProxy):
         WITH upstream_entity, upstream_len
         OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(upstream_badge:Badge)
         WITH CASE WHEN upstream_badge IS NULL THEN []
-        ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}}) 
+        ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}})
         END AS upstream_badges, upstream_entity, upstream_len
         OPTIONAL MATCH (upstream_entity:Table)-[upstream_read:READ_BY]->(:User)
         WITH upstream_entity, upstream_len, upstream_badges,
-        sum(upstream_read.read_count) as upstream_read_count              
+        sum(upstream_read.read_count) as upstream_read_count
         WITH CASE WHEN upstream_len IS NULL THEN []
         ELSE COLLECT(distinct{{level:SIZE(upstream_len), source:split(upstream_entity.key,'://')[0],
         key:upstream_entity.key, badges:upstream_badges, usage:upstream_read_count}})
