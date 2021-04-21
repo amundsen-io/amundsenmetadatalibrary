@@ -1041,7 +1041,7 @@ class TestNeo4jProxy(unittest.TestCase):
                        '[r2:FOLLOW]->(resource:Dashboard {key: $resource_key})'
             self.assertEqual(expected, actual)
 
-    def test_get_lineage_no_lineage_information(self):
+    def test_get_lineage_no_lineage_information(self) -> None:
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             key = "alpha"
             mock_execute.return_value.single.side_effect = [{}]
@@ -1058,7 +1058,7 @@ class TestNeo4jProxy(unittest.TestCase):
             actual = neo4j_proxy.get_lineage(id=key, resource_type=ResourceType.Table, direction="both", depth=1)
             self.assertEqual(expected, actual)
 
-    def test_get_lineage_success(self):
+    def test_get_lineage_success(self) -> None:
         with patch.object(GraphDatabase, 'driver'), patch.object(Neo4jProxy, '_execute_cypher_query') as mock_execute:
             key = "alpha"
             mock_execute.return_value.single.side_effect = [{
