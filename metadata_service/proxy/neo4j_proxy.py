@@ -1408,12 +1408,26 @@ class Neo4jProxy(BaseProxy):
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
 
+    @timer_with_counter
     def get_lineage(self, *,
-                    id: str,
-                    resource_type: ResourceType, direction: str, depth: int = 1) -> Lineage:
-        """:type
+                    id: str, resource_type: ResourceType, direction: str, depth: int = 1) -> Lineage:
         """
+        Retrieves the lineage information for the specified resource type.
+
+        :param id: key of a table or a column
+        :param resource_type: Type of the entity for which lineage is being retrieved
+        :param direction: Whether to get the upstream/downstream or both directions
+        :param depth: depth or level of lineage information
+        :return: The Lineage object with upstream & downstream lineage items
+        """
+
         def _get_badges(badges):
+            """
+            Generates a list of Badges objects
+
+            :param badges: A list of badges of a table or a column
+            :return: a list of Badge objects
+            """
             _badges = []
             for badge in badges:
                 _badges.append(Badge(badge_name=badge["key"], category=badge["category"]))
@@ -1498,25 +1512,20 @@ class Neo4jProxy(BaseProxy):
         upstream_tables = []
 
         for downstream in result.get("downstream_entities") or []:
-            downstream_tables.append(LineageItem(**{
-                "key": downstream["key"],
-                "source": downstream["source"],
-                "level": downstream["level"],
-                "badges": _get_badges(downstream["badges"]),
-                "usage": downstream.get("usage", 0)
-            }))
+            downstream_tables.append(LineageItem(**{"key": downstream["key"],
+                                                    "source": downstream["source"],
+                                                    "level": downstream["level"],
+                                                    "badges": _get_badges(downstream["badges"]),
+                                                    "usage": downstream.get("usage", 0)}))
 
         for upstream in result.get("upstream_entities") or []:
-            upstream_tables.append(LineageItem(**{
-                "key": upstream["key"],
-                "source": upstream["source"],
-                "level": upstream["level"],
-                "badges": _get_badges(upstream["badges"]),
-                "usage": upstream.get("usage", 0)
-            }))
+            upstream_tables.append(LineageItem(**{"key": upstream["key"],
+                                                  "source": upstream["source"],
+                                                  "level": upstream["level"],
+                                                  "badges": _get_badges(upstream["badges"]),
+                                                  "usage": upstream.get("usage", 0)}))
 
-        return Lineage(**{
-                "key": id,
-                "upstream_entities": upstream_tables,
-                "downstream_entities": downstream_tables,
-                "direction": direction, "depth": depth})
+        return Lineage(**{"key": id,
+                          "upstream_entities": upstream_tables,
+                          "downstream_entities": downstream_tables,
+                          "direction": direction, "depth": depth})
