@@ -5,8 +5,8 @@ import logging
 import textwrap
 import time
 from random import randint
-from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
-                    no_type_check, Iterable)
+from typing import (Any, Dict, Iterable, List, Optional, Tuple,  # noqa: F401
+                    Union, no_type_check)
 
 import neo4j
 from amundsen_common.models.dashboard import DashboardSummary
