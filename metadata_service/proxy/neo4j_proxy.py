@@ -12,11 +12,10 @@ import neo4j
 from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.lineage import Lineage, LineageItem
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Application
-from amundsen_common.models.table import Badge
-from amundsen_common.models.table import (Column, ProgrammaticDescription,
-                                          Reader, Source, Stat, Table, Tag,
-                                          User, Watermark)
+from amundsen_common.models.table import (Application, Badge, Column,
+                                          ProgrammaticDescription, Reader,
+                                          Source, Stat, Table, Tag, User,
+                                          Watermark)
 from amundsen_common.models.user import User as UserEntity
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -1436,10 +1435,10 @@ class Neo4jProxy(BaseProxy):
         END AS downstream_badges, CASE WHEN upstream_badge IS NULL THEN []
         ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}})
         END AS upstream_badges, upstream_entity, downstream_entity, upstream_len, downstream_len
-        OPTIONAL MATCH (downstream_entity:Table)-[downstream_read:READ_BY]->(:User)
+        OPTIONAL MATCH (downstream_entity:{resource})-[downstream_read:READ_BY]->(:User)
         WITH upstream_entity, downstream_entity, upstream_len, downstream_len,
         downstream_badges, upstream_badges, sum(downstream_read.read_count) as downstream_read_count
-        OPTIONAL MATCH (upstream_entity:Table)-[upstream_read:READ_BY]->(:User)
+        OPTIONAL MATCH (upstream_entity:{resource})-[upstream_read:READ_BY]->(:User)
         WITH upstream_entity, downstream_entity, upstream_len, downstream_len,
         downstream_badges, upstream_badges, downstream_read_count,
         sum(upstream_read.read_count) as upstream_read_count
@@ -1460,7 +1459,7 @@ class Neo4jProxy(BaseProxy):
         WITH CASE WHEN upstream_badge IS NULL THEN []
         ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}})
         END AS upstream_badges, upstream_entity, upstream_len
-        OPTIONAL MATCH (upstream_entity:Table)-[upstream_read:READ_BY]->(:User)
+        OPTIONAL MATCH (upstream_entity:{resource})-[upstream_read:READ_BY]->(:User)
         WITH upstream_entity, upstream_len, upstream_badges,
         sum(upstream_read.read_count) as upstream_read_count
         WITH CASE WHEN upstream_len IS NULL THEN []
@@ -1477,7 +1476,7 @@ class Neo4jProxy(BaseProxy):
         WITH CASE WHEN downstream_badge IS NULL THEN []
         ELSE collect(distinct {{key:downstream_badge.key,category:downstream_badge.category}})
         END AS downstream_badges, downstream_entity, downstream_len
-        OPTIONAL MATCH (downstream_entity:Table)-[downstream_read:READ_BY]->(:User)
+        OPTIONAL MATCH (downstream_entity:{resource})-[downstream_read:READ_BY]->(:User)
         WITH downstream_entity, downstream_len, downstream_badges,
         sum(downstream_read.read_count) as downstream_read_count
         WITH CASE WHEN downstream_len IS NULL THEN []
