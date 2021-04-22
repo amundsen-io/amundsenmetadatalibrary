@@ -6,14 +6,14 @@ import textwrap
 import time
 from random import randint
 from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
-                    no_type_check)
+                    no_type_check, Iterable)
 
 import neo4j
 from amundsen_common.models.dashboard import DashboardSummary
 from amundsen_common.models.lineage import Lineage, LineageItem
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Application
-from amundsen_common.models.table import Badge as TableBadge
+from amundsen_common.models.table import Badge
 from amundsen_common.models.table import (Column, ProgrammaticDescription,
                                           Reader, Source, Stat, Table, Tag,
                                           User, Watermark)
@@ -24,7 +24,6 @@ from flask import current_app, has_app_context
 from neo4j import BoltStatementResult, Driver, GraphDatabase  # noqa: F401
 
 from metadata_service import config
-from metadata_service.entity.badge import Badge
 from metadata_service.entity.dashboard_detail import \
     DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.dashboard_query import \
@@ -153,9 +152,7 @@ class Neo4jProxy(BaseProxy):
                 )
                 col_stats.append(col_stat)
 
-            column_badges = []
-            for badge in tbl_col_neo4j_record['col_badges']:
-                column_badges.append(TableBadge(badge_name=badge['key'], category=badge['category']))
+            column_badges = self._make_badges(tbl_col_neo4j_record['col_badges'])
 
             last_neo4j_record = tbl_col_neo4j_record
             col = Column(name=tbl_col_neo4j_record['col']['name'],
@@ -249,14 +246,8 @@ class Neo4jProxy(BaseProxy):
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
 
-        badges = []
         # this is for any badges added with BadgeAPI instead of TagAPI
-        if table_records.get('badge_records'):
-            badge_records = table_records['badge_records']
-            for record in badge_records:
-                badge_result = TableBadge(badge_name=record['key'],
-                                          category=record['category'])
-                badges.append(badge_result)
+        badges = self._make_badges(table_records.get('badge_records'))
 
         application_record = table_records['application']
         if application_record is not None:
@@ -327,6 +318,19 @@ class Neo4jProxy(BaseProxy):
             # TODO: Add support on statsd
             if LOGGER.isEnabledFor(logging.DEBUG):
                 LOGGER.debug('Cypher query execution elapsed for {} seconds'.format(time.time() - start))
+
+    # noinspection PyMethodMayBeStatic
+    def _make_badges(self, badges: Iterable) -> List[Badge]:
+        """
+        Generates a list of Badges objects
+
+        :param badges: A list of badges of a table or a column
+        :return: a list of Badge objects
+        """
+        _badges = []
+        for badge in badges:
+            _badges.append(Badge(badge_name=badge["key"], category=badge["category"]))
+        return _badges
 
     @timer_with_counter
     def _get_resource_description(self, *,
@@ -1305,8 +1309,7 @@ class Neo4jProxy(BaseProxy):
         owners = [self._build_user_from_record(record=owner) for owner in dashboard_record['owners']]
         tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_record['tags']]
 
-        badges = [TableBadge(badge_name=badge['key'],
-                             category=badge['category']) for badge in dashboard_record['badges']]
+        badges = self._make_badges(dashboard_record['badges'])
 
         chart_names = [chart['name'] for chart in dashboard_record['charts'] if 'name' in chart and chart['name']]
         # TODO Deprecate query_names in favor of queries after several releases from v2.5.0
@@ -1421,18 +1424,6 @@ class Neo4jProxy(BaseProxy):
         :return: The Lineage object with upstream & downstream lineage items
         """
 
-        def _get_badges(badges: list) -> List[Badge]:
-            """
-            Generates a list of Badges objects
-
-            :param badges: A list of badges of a table or a column
-            :return: a list of Badge objects
-            """
-            _badges = []
-            for badge in badges:
-                _badges.append(Badge(badge_name=badge["key"], category=badge["category"]))
-            return _badges
-
         get_both_lineage_query = textwrap.dedent(u"""
         MATCH (source:{resource} {{key: $query_key}})
         OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
@@ -1515,14 +1506,14 @@ class Neo4jProxy(BaseProxy):
             downstream_tables.append(LineageItem(**{"key": downstream["key"],
                                                     "source": downstream["source"],
                                                     "level": downstream["level"],
-                                                    "badges": _get_badges(downstream["badges"]),
+                                                    "badges": self._make_badges(downstream["badges"]),
                                                     "usage": downstream.get("usage", 0)}))
 
         for upstream in result.get("upstream_entities") or []:
             upstream_tables.append(LineageItem(**{"key": upstream["key"],
                                                   "source": upstream["source"],
                                                   "level": upstream["level"],
-                                                  "badges": _get_badges(upstream["badges"]),
+                                                  "badges": self._make_badges(upstream["badges"]),
                                                   "usage": upstream.get("usage", 0)}))
 
         return Lineage(**{"key": id,
