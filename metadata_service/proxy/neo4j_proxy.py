@@ -5,29 +5,32 @@ import logging
 import textwrap
 import time
 from random import randint
-from typing import (Any, Dict, List, Optional, Tuple, Union,  # noqa: F401
-                    no_type_check)
+from typing import (Any, Dict, Iterable, List, Optional, Tuple,  # noqa: F401
+                    Union, no_type_check)
 
 import neo4j
 from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.lineage import Lineage, LineageItem
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import (Application, Column, Reader, Source,
-                                          Stat, Table, User,
-                                          Watermark, ProgrammaticDescription, Tag,
-                                          Badge as TableBadge)
+from amundsen_common.models.table import (Application, Badge, Column,
+                                          ProgrammaticDescription, Reader,
+                                          Source, Stat, Table, Tag, User,
+                                          Watermark)
 from amundsen_common.models.user import User as UserEntity
+from amundsen_common.models.user import UserSchema
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 from flask import current_app, has_app_context
 from neo4j import BoltStatementResult, Driver, GraphDatabase  # noqa: F401
 
 from metadata_service import config
-from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
-from metadata_service.entity.dashboard_query import DashboardQuery as DashboardQueryEntity
+from metadata_service.entity.dashboard_detail import \
+    DashboardDetail as DashboardDetailEntity
+from metadata_service.entity.dashboard_query import \
+    DashboardQuery as DashboardQueryEntity
 from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.entity.tag_detail import TagDetail
-from metadata_service.entity.badge import Badge
 from metadata_service.exception import NotFoundException
 from metadata_service.proxy.base_proxy import BaseProxy
 from metadata_service.proxy.statsd_utilities import timer_with_counter
@@ -37,6 +40,12 @@ _CACHE = CacheManager(**parse_cache_config_options({'cache.type': 'memory'}))
 
 # Expire cache every 11 hours + jitter
 _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC = 11 * 60 * 60 + randint(0, 3600)
+
+
+CREATED_EPOCH_MS = 'publisher_created_epoch_ms'
+LAST_UPDATED_EPOCH_MS = 'publisher_last_updated_epoch_ms'
+PUBLISHED_TAG_PROPERTY_NAME = 'published_tag'
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,7 +63,8 @@ class Neo4jProxy(BaseProxy):
                  num_conns: int = 50,
                  max_connection_lifetime_sec: int = 100,
                  encrypted: bool = False,
-                 validate_ssl: bool = False) -> None:
+                 validate_ssl: bool = False,
+                 **kwargs: dict) -> None:
         """
         There's currently no request timeout from client side where server
         side can be enforced via "dbms.transaction.timeout"
@@ -141,21 +151,19 @@ class Neo4jProxy(BaseProxy):
             col_stats = []
             for stat in tbl_col_neo4j_record['col_stats']:
                 col_stat = Stat(
-                    stat_type=stat['stat_name'],
+                    stat_type=stat['stat_type'],
                     stat_val=stat['stat_val'],
                     start_epoch=int(float(stat['start_epoch'])),
                     end_epoch=int(float(stat['end_epoch']))
                 )
                 col_stats.append(col_stat)
 
-            column_badges = []
-            for badge in tbl_col_neo4j_record['col_badges']:
-                column_badges.append(TableBadge(badge_name=badge['key'], category=badge['category']))
+            column_badges = self._make_badges(tbl_col_neo4j_record['col_badges'])
 
             last_neo4j_record = tbl_col_neo4j_record
             col = Column(name=tbl_col_neo4j_record['col']['name'],
                          description=self._safe_get(tbl_col_neo4j_record, 'col_dscrpt', 'description'),
-                         col_type=tbl_col_neo4j_record['col']['type'],
+                         col_type=tbl_col_neo4j_record['col']['col_type'],
                          sort_order=int(tbl_col_neo4j_record['col']['sort_order']),
                          stats=col_stats,
                          badges=column_badges)
@@ -244,14 +252,8 @@ class Neo4jProxy(BaseProxy):
                                  tag_type=record['tag_type'])
                 tags.append(tag_result)
 
-        badges = []
         # this is for any badges added with BadgeAPI instead of TagAPI
-        if table_records.get('badge_records'):
-            badge_records = table_records['badge_records']
-            for record in badge_records:
-                badge_result = TableBadge(badge_name=record['key'],
-                                          category=record['category'])
-                badges.append(badge_result)
+        badges = self._make_badges(table_records.get('badge_records'))
 
         application_record = table_records['application']
         if application_record is not None:
@@ -322,6 +324,19 @@ class Neo4jProxy(BaseProxy):
             # TODO: Add support on statsd
             if LOGGER.isEnabledFor(logging.DEBUG):
                 LOGGER.debug('Cypher query execution elapsed for {} seconds'.format(time.time() - start))
+
+    # noinspection PyMethodMayBeStatic
+    def _make_badges(self, badges: Iterable) -> List[Badge]:
+        """
+        Generates a list of Badges objects
+
+        :param badges: A list of badges of a table or a column
+        :return: a list of Badge objects
+        """
+        _badges = []
+        for badge in badges:
+            _badges.append(Badge(badge_name=badge["key"], category=badge["category"]))
+        return _badges
 
     @timer_with_counter
     def _get_resource_description(self, *,
@@ -587,7 +602,7 @@ class Neo4jProxy(BaseProxy):
                   id: str,
                   badge_name: str,
                   category: str = '',
-                  resource_type: ResourceType = ResourceType.Table) -> None:
+                  resource_type: ResourceType) -> None:
 
         LOGGER.info('New badge {} for id {} with category {} '
                     'and resource type {}'.format(badge_name, id, category, resource_type.name))
@@ -638,7 +653,7 @@ class Neo4jProxy(BaseProxy):
     def delete_badge(self, id: str,
                      badge_name: str,
                      category: str,
-                     resource_type: ResourceType = ResourceType.Table) -> None:
+                     resource_type: ResourceType) -> None:
 
         # TODO for some reason when deleting it will say it was successful
         # even when the badge never existed to begin with
@@ -786,7 +801,9 @@ class Neo4jProxy(BaseProxy):
         query = textwrap.dedent("""
         MATCH (t:Tag{tag_type: 'default'})
         OPTIONAL MATCH (resource)-[:TAGGED_BY]->(t)
-        RETURN t as tag_name, count(distinct resource.key) as tag_count
+        WITH t as tag_name, count(distinct resource.key) as tag_count
+        WHERE tag_count > 0
+        RETURN tag_name, tag_count
         """)
 
         records = self._execute_cypher_query(statement=query,
@@ -812,7 +829,7 @@ class Neo4jProxy(BaseProxy):
         # None means we don't have record for neo4j, es last updated / index ts
         record = record.single()
         if record:
-            return record.get('ts', {}).get('latest_timestmap', 0)
+            return record.get('ts', {}).get('latest_timestamp', 0)
         else:
             return None
 
@@ -856,9 +873,8 @@ class Neo4jProxy(BaseProxy):
             return neo4j_statistics
         return {}
 
-    @timer_with_counter
-    @_CACHE.cache('_get_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
-    def _get_popular_tables_uris(self, num_entries: int) -> List[str]:
+    @_CACHE.cache('_get_global_popular_tables_uris', expire=_GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
+    def _get_global_popular_tables_uris(self, num_entries: int) -> List[str]:
         """
         Retrieve popular table uris. Will provide tables with top x popularity score.
         Popularity score = number of distinct readers * log(total number of reads)
@@ -885,7 +901,41 @@ class Neo4jProxy(BaseProxy):
         return [record['table_key'] for record in records]
 
     @timer_with_counter
-    def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
+    @_CACHE.cache('_get_personal_popular_tables_uris', _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC)
+    def _get_personal_popular_tables_uris(self, num_entries: int,
+                                          user_id: str) -> List[str]:
+        """
+        Retrieve personalized popular table uris. Will provide tables with top
+        popularity score that have been read by a peer of the user_id provided.
+        The popularity score is defined in the same way as `_get_global_popular_tables_uris`
+
+        The result of this method will be cached based on the key (num_entries, user_id),
+        and the cache will be expired based on _GET_POPULAR_TABLE_CACHE_EXPIRY_SEC
+
+        :return: Iterable of table uri
+        """
+        statement = textwrap.dedent("""
+        MATCH (:User {key:$user_id})<-[:READ_BY]-(:Table)-[:READ_BY]->
+             (coUser:User)<-[coRead:READ_BY]-(table:Table)
+        WITH table.key AS table_key, count(DISTINCT coUser) AS co_readers,
+             sum(coRead.read_count) AS total_co_reads
+        WHERE co_readers >= $num_readers
+        RETURN table_key, (co_readers * log(total_co_reads)) AS score
+        ORDER BY score DESC LIMIT $num_entries;
+        """)
+        LOGGER.info('Querying popular tables URIs')
+        num_readers = current_app.config['POPULAR_TABLE_MINIMUM_READER_COUNT']
+        records = self._execute_cypher_query(statement=statement,
+                                             param_dict={'user_id': user_id,
+                                                         'num_readers': num_readers,
+                                                         'num_entries': num_entries})
+
+        return [record['table_key'] for record in records]
+
+    @timer_with_counter
+    def get_popular_tables(self, *,
+                           num_entries: int,
+                           user_id: Optional[str] = None) -> List[PopularTable]:
         """
         Retrieve popular tables. As popular table computation requires full scan of table and user relationship,
         it will utilize cached method _get_popular_tables_uris.
@@ -893,8 +943,13 @@ class Neo4jProxy(BaseProxy):
         :param num_entries:
         :return: Iterable of PopularTable
         """
+        if user_id is None:
+            # Get global popular table URIs
+            table_uris = self._get_global_popular_tables_uris(num_entries)
+        else:
+            # Get personalized popular table URIs
+            table_uris = self._get_personal_popular_tables_uris(num_entries, user_id)
 
-        table_uris = self._get_popular_tables_uris(num_entries)
         if not table_uris:
             return []
 
@@ -951,6 +1006,61 @@ class Neo4jProxy(BaseProxy):
             manager_name = ''
 
         return self._build_user_from_record(record=record, manager_name=manager_name)
+
+    def create_update_user(self, *, user: User) -> Tuple[User, bool]:
+        """
+        Create a user if it does not exist, otherwise update the user. Required
+        fields for creating / updating a user are validated upstream to this when
+        the User object is created.
+
+        :param user:
+        :return:
+        """
+        user_data = UserSchema().dump(user)
+        user_props = self._create_props_body(user_data, 'usr')
+
+        create_update_user_query = textwrap.dedent("""
+        MERGE (usr:User {key: $user_id})
+        on CREATE SET %s, usr.%s=timestamp()
+        on MATCH SET %s
+        RETURN usr, usr.%s = timestamp() as created
+        """ % (user_props, CREATED_EPOCH_MS, user_props, CREATED_EPOCH_MS))
+
+        try:
+            tx = self._driver.session().begin_transaction()
+            result = tx.run(create_update_user_query, user_data)
+
+            user_result = result.single()
+            if not user_result:
+                raise RuntimeError('Failed to create user with data %s' % user_data)
+            tx.commit()
+
+            new_user = self._build_user_from_record(user_result['usr'])
+            new_user_created = True if user_result['created'] is True else False
+
+        except Exception as e:
+            if not tx.closed():
+                tx.rollback()
+            # propagate the exception back to api
+            raise e
+
+        return new_user, new_user_created
+
+    def _create_props_body(self,
+                           record_dict: dict,
+                           identifier: str) -> str:
+        """
+        Creates a Neo4j property body by converting a dictionary into a comma
+        separated string of KEY = VALUE.
+        """
+        props = []
+        for k, v in record_dict.items():
+            if v:
+                props.append(f'{identifier}.{k} = ${k}')
+
+        props.append(f"{identifier}.{PUBLISHED_TAG_PROPERTY_NAME} = 'api_create_update_user'")
+        props.append(f"{identifier}.{LAST_UPDATED_EPOCH_MS} = timestamp()")
+        return ', '.join(props)
 
     def get_users(self) -> List[UserEntity]:
         statement = "MATCH (usr:User) WHERE usr.is_active = true RETURN collect(usr) as users"
@@ -1299,8 +1409,7 @@ class Neo4jProxy(BaseProxy):
         owners = [self._build_user_from_record(record=owner) for owner in dashboard_record['owners']]
         tags = [Tag(tag_type=tag['tag_type'], tag_name=tag['key']) for tag in dashboard_record['tags']]
 
-        badges = [TableBadge(badge_name=badge['key'],
-                             category=badge['category']) for badge in dashboard_record['badges']]
+        badges = self._make_badges(dashboard_record['badges'])
 
         chart_names = [chart['name'] for chart in dashboard_record['charts'] if 'name' in chart and chart['name']]
         # TODO Deprecate query_names in favor of queries after several releases from v2.5.0
@@ -1401,3 +1510,113 @@ class Neo4jProxy(BaseProxy):
         for record in records:
             results.append(DashboardSummary(**record))
         return {'dashboards': results}
+
+    @timer_with_counter
+    def get_lineage(self, *,
+                    id: str, resource_type: ResourceType, direction: str, depth: int = 1) -> Lineage:
+        """
+        Retrieves the lineage information for the specified resource type.
+
+        :param id: key of a table or a column
+        :param resource_type: Type of the entity for which lineage is being retrieved
+        :param direction: Whether to get the upstream/downstream or both directions
+        :param depth: depth or level of lineage information
+        :return: The Lineage object with upstream & downstream lineage items
+        """
+
+        get_both_lineage_query = textwrap.dedent(u"""
+        MATCH (source:{resource} {{key: $query_key}})
+        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
+        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
+        WITH downstream_entity, upstream_entity, downstream_len, upstream_len
+        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(upstream_badge:Badge)
+        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(downstream_badge:Badge)
+        WITH CASE WHEN downstream_badge IS NULL THEN []
+        ELSE collect(distinct {{key:downstream_badge.key,category:downstream_badge.category}})
+        END AS downstream_badges, CASE WHEN upstream_badge IS NULL THEN []
+        ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}})
+        END AS upstream_badges, upstream_entity, downstream_entity, upstream_len, downstream_len
+        OPTIONAL MATCH (downstream_entity:{resource})-[downstream_read:READ_BY]->(:User)
+        WITH upstream_entity, downstream_entity, upstream_len, downstream_len,
+        downstream_badges, upstream_badges, sum(downstream_read.read_count) as downstream_read_count
+        OPTIONAL MATCH (upstream_entity:{resource})-[upstream_read:READ_BY]->(:User)
+        WITH upstream_entity, downstream_entity, upstream_len, downstream_len,
+        downstream_badges, upstream_badges, downstream_read_count,
+        sum(upstream_read.read_count) as upstream_read_count
+        WITH CASE WHEN upstream_len IS NULL THEN []
+        ELSE COLLECT(distinct{{level:SIZE(upstream_len), source:split(upstream_entity.key,'://')[0],
+        key:upstream_entity.key, badges:upstream_badges, usage:upstream_read_count}})
+        END AS upstream_entities, CASE WHEN downstream_len IS NULL THEN []
+        ELSE COLLECT(distinct{{level:SIZE(downstream_len), source:split(downstream_entity.key,'://')[0],
+        key:downstream_entity.key, badges:downstream_badges, usage:downstream_read_count}})
+        END AS downstream_entities RETURN downstream_entities, upstream_entities
+        """).format(depth=depth, resource=resource_type.name)
+
+        get_upstream_lineage_query = textwrap.dedent(u"""
+        MATCH (source:{resource} {{key: $query_key}})
+        OPTIONAL MATCH (source)-[upstream_len:HAS_UPSTREAM*..{depth}]->(upstream_entity:{resource})
+        WITH upstream_entity, upstream_len
+        OPTIONAL MATCH (upstream_entity)-[:HAS_BADGE]->(upstream_badge:Badge)
+        WITH CASE WHEN upstream_badge IS NULL THEN []
+        ELSE collect(distinct {{key:upstream_badge.key,category:upstream_badge.category}})
+        END AS upstream_badges, upstream_entity, upstream_len
+        OPTIONAL MATCH (upstream_entity:{resource})-[upstream_read:READ_BY]->(:User)
+        WITH upstream_entity, upstream_len, upstream_badges,
+        sum(upstream_read.read_count) as upstream_read_count
+        WITH CASE WHEN upstream_len IS NULL THEN []
+        ELSE COLLECT(distinct{{level:SIZE(upstream_len), source:split(upstream_entity.key,'://')[0],
+        key:upstream_entity.key, badges:upstream_badges, usage:upstream_read_count}})
+        END AS upstream_entities RETURN upstream_entities
+        """).format(depth=depth, resource=resource_type.name)
+
+        get_downstream_lineage_query = textwrap.dedent(u"""
+        MATCH (source:{resource} {{key: $query_key}})
+        OPTIONAL MATCH (source)-[downstream_len:HAS_DOWNSTREAM*..{depth}]->(downstream_entity:{resource})
+        WITH downstream_entity, downstream_len
+        OPTIONAL MATCH (downstream_entity)-[:HAS_BADGE]->(downstream_badge:Badge)
+        WITH CASE WHEN downstream_badge IS NULL THEN []
+        ELSE collect(distinct {{key:downstream_badge.key,category:downstream_badge.category}})
+        END AS downstream_badges, downstream_entity, downstream_len
+        OPTIONAL MATCH (downstream_entity:{resource})-[downstream_read:READ_BY]->(:User)
+        WITH downstream_entity, downstream_len, downstream_badges,
+        sum(downstream_read.read_count) as downstream_read_count
+        WITH CASE WHEN downstream_len IS NULL THEN []
+        ELSE COLLECT(distinct{{level:SIZE(downstream_len), source:split(downstream_entity.key,'://')[0],
+        key:downstream_entity.key, badges:downstream_badges, usage:downstream_read_count}})
+        END AS downstream_entities RETURN downstream_entities
+        """).format(depth=depth, resource=resource_type.name)
+
+        if direction == 'upstream':
+            lineage_query = get_upstream_lineage_query
+
+        elif direction == 'downstream':
+            lineage_query = get_downstream_lineage_query
+
+        else:
+            lineage_query = get_both_lineage_query
+
+        records = self._execute_cypher_query(statement=lineage_query,
+                                             param_dict={'query_key': id})
+        result = records.single()
+
+        downstream_tables = []
+        upstream_tables = []
+
+        for downstream in result.get("downstream_entities") or []:
+            downstream_tables.append(LineageItem(**{"key": downstream["key"],
+                                                    "source": downstream["source"],
+                                                    "level": downstream["level"],
+                                                    "badges": self._make_badges(downstream["badges"]),
+                                                    "usage": downstream.get("usage", 0)}))
+
+        for upstream in result.get("upstream_entities") or []:
+            upstream_tables.append(LineageItem(**{"key": upstream["key"],
+                                                  "source": upstream["source"],
+                                                  "level": upstream["level"],
+                                                  "badges": self._make_badges(upstream["badges"]),
+                                                  "usage": upstream.get("usage", 0)}))
+
+        return Lineage(**{"key": id,
+                          "upstream_entities": upstream_tables,
+                          "downstream_entities": downstream_tables,
+                          "direction": direction, "depth": depth})

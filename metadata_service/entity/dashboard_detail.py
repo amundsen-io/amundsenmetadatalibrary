@@ -1,15 +1,13 @@
 # Copyright Contributors to the Amundsen project.
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
 import attr
 from amundsen_common.models.popular_table import PopularTable
-from amundsen_common.models.table import Tag
-from amundsen_common.models.table import Badge
+from amundsen_common.models.table import Badge, Tag
 from amundsen_common.models.user import User
-from marshmallow_annotations.ext.attrs import AttrsSchema
+from marshmallow3_annotations.ext.attrs import AttrsSchema
 
 from metadata_service.entity.dashboard_query import DashboardQuery
 

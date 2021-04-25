@@ -3,9 +3,9 @@
 
 import os
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-__version__ = '3.0.0'
+__version__ = '3.5.0'
 
 
 requirements_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'requirements.txt')
@@ -22,10 +22,10 @@ setup(
     packages=find_packages(exclude=['tests*']),
     include_package_data=True,
     zip_safe=False,
-    dependency_links=[],
     install_requires=requirements,
     extras_require={
-        'oidc': ['flaskoidc==0.1.1']
+        'oidc': ['flaskoidc==0.1.1'],
+        'atlas': ['apache-atlas==0.0.11']
     },
     python_requires=">=3.6",
     classifiers=[

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
-from typing import List, Dict
+from typing import Dict, List
 
 
 class DottedDict(dict):
@@ -54,6 +54,16 @@ class Data:
                 }},
             ]
         },
+        "classifications": [
+            {
+                "typeName": "active_col_badge",
+                "entityStatus": "ACTIVE"
+            },
+            {
+                "typeName": "inactive_col_badge",
+                "entityStatus": "INACTIVE"
+            }
+        ]
     }
 
     test_column_inactive = copy.deepcopy(test_column)
@@ -357,10 +367,10 @@ class Data:
 
     report_entities = [report_entity_1, report_entity_2, report_entity_3]
 
-    metrics_data = [DottedDict({
+    metrics_data = DottedDict({
         'general': {
             'stats': {
                 'Notification:lastMessageProcessedTime': 1598342400000
             }
         }
-    })]
+    })

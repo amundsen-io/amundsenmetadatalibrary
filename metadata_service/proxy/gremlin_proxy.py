@@ -7,69 +7,62 @@ import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta
 from operator import attrgetter
-from typing import (
-    Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set,
-    Type, TypeVar, Union, no_type_check, overload
-)
+from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
+                    Sequence, Set, Tuple, Type, TypeVar, Union, no_type_check,
+                    overload)
 from urllib.parse import unquote
 
 import gremlin_python
-from amundsen_common.models.table import (
-    Application, Column, ProgrammaticDescription, Reader, Source,
-    Stat, Table, Tag, Watermark
-)
+from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.lineage import Lineage
+from amundsen_common.models.popular_table import PopularTable
+from amundsen_common.models.table import (Application, Column,
+                                          ProgrammaticDescription, Reader,
+                                          Source, Stat, Table, Tag, Watermark)
 from amundsen_common.models.user import User
-from amundsen_gremlin.gremlin_model import (
-    EdgeType, EdgeTypes, VertexType, VertexTypes, WellKnownProperties
-)
+from amundsen_gremlin.gremlin_model import (EdgeType, EdgeTypes, VertexType,
+                                            VertexTypes, WellKnownProperties)
 from amundsen_gremlin.gremlin_shared import \
     append_traversal as _append_traversal  # TODO: rename the references
-from amundsen_gremlin.gremlin_shared import (
-    make_column_uri, make_description_uri
-)
-from amundsen_gremlin.neptune_bulk_loader.gremlin_model_converter import (
+from amundsen_gremlin.gremlin_shared import (make_column_uri,
+                                             make_description_uri)
+from amundsen_gremlin.neptune_bulk_loader.gremlin_model_converter import \
     ensure_vertex_type
-)
 from amundsen_gremlin.script_translator import (
-    ScriptTranslator, ScriptTranslatorTargetJanusgraph
-)
+    ScriptTranslator, ScriptTranslatorTargetJanusgraph)
 from amundsen_gremlin.test_and_development_shard import get_shard
 from gremlin_python.driver.client import Client
-from gremlin_python.driver.driver_remote_connection import (
+from gremlin_python.driver.driver_remote_connection import \
     DriverRemoteConnection
-)
 from gremlin_python.driver.resultset import ResultSet
 from gremlin_python.process.anonymous_traversal import traversal
-from gremlin_python.process.graph_traversal import (
-    GraphTraversal, GraphTraversalSource, V, __, bothV, coalesce,
-    constant, has, inE, inV, outE,
-    outV, select, unfold, valueMap, values
-)
+from gremlin_python.process.graph_traversal import (GraphTraversal,
+                                                    GraphTraversalSource, V,
+                                                    __, bothV, coalesce,
+                                                    constant, has, inE, inV,
+                                                    outE, outV, select, unfold,
+                                                    valueMap, values)
 from gremlin_python.process.traversal import Cardinality
 from gremlin_python.process.traversal import Column as MapColumn
-from gremlin_python.process.traversal import (
-    Direction, Order, P, T, TextP, Traversal, gte, not_, within, without
-)
+from gremlin_python.process.traversal import (Direction, Order, P, T, TextP,
+                                              Traversal, gte, not_, within,
+                                              without)
 from neptune_python_utils.gremlin_utils import ExtendedGraphSONSerializersV3d0
 from overrides import overrides
 from tornado import httpclient
 from typing_extensions import Protocol  # TODO: it's in typing 3.8
 
-from amundsen_common.models.popular_table import PopularTable
-from metadata_service.entity.tag_detail import TagDetail
-from metadata_service.exception import NotFoundException
-from metadata_service.util import UserResourceRel
-from metadata_service.proxy.statsd_utilities import timer_with_counter
-
-from .base_proxy import BaseProxy
-from .shared import (
-    checkNotNone, retrying
-)
-from amundsen_common.models.dashboard import DashboardSummary
-
-from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
+from metadata_service.entity.dashboard_detail import \
+    DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
+from metadata_service.entity.tag_detail import TagDetail
+from metadata_service.exception import NotFoundException
+from metadata_service.proxy.statsd_utilities import timer_with_counter
+from metadata_service.util import UserResourceRel
+
+from .base_proxy import BaseProxy
+from .shared import checkNotNone, retrying
 
 # don't use statics.load_statics(globals()) it plays badly with mypy
 
@@ -464,11 +457,13 @@ def _V(label: Union[str, VertexTypes, VertexType], key: Optional[Union[str, Text
         if key_property_name is None:
             raise AssertionError('expected key_property_name')
         g = g.V().has(get_label_from(label), key_property_name, key)
-        properties.setdefault(WellKnownProperties.TestShard.value.name, get_shard())
+        if get_shard():
+            properties.setdefault(WellKnownProperties.TestShard.value.name, get_shard())
     else:
         # let's support hasLabel, but need to limit it to either the test_shard (or unsharded perhaps)
         g = g.V().hasLabel(get_label_from(label))
-        properties.setdefault(WellKnownProperties.TestShard.value.name, get_shard())
+        if get_shard():
+            properties.setdefault(WellKnownProperties.TestShard.value.name, get_shard())
 
     # should we do this when using the V(id)? there are a couple or one case where we use it to filter  so seems handy
     if properties is not None:
@@ -532,7 +527,8 @@ def _upsert(*, executor: ExecuteQuery, execute: Callable[[ResultSet], TYPE] = Fr
         id = label.id(key=key, **properties)
     else:
         raise AssertionError('wat')  # appease mypy
-    properties.setdefault(WellKnownProperties.TestShard.value.name, get_shard())
+    if get_shard():
+        properties.setdefault(WellKnownProperties.TestShard.value.name, get_shard())
 
     existing_node = executor(query=g.V(id).valueMap(True), get=FromResultSet.getOptional)
     _label = get_label_from(label)
@@ -1014,6 +1010,9 @@ class AbstractGremlinProxy(BaseProxy):
         user.manager_fullname = _safe_get(managers[0], 'full_name', default=None) if managers else None
         return user
 
+    def create_update_user(self, *, user: User) -> Tuple[User, bool]:
+        pass
+
     @timer_with_counter
     @overrides
     def get_users(self) -> List[User]:
@@ -1033,8 +1032,7 @@ class AbstractGremlinProxy(BaseProxy):
 
     @timer_with_counter
     @overrides
-    def get_table(self, *, table_uri: str,
-                  is_reviewer: bool = False) -> Table:
+    def get_table(self, *, table_uri: str, is_reviewer: bool = False) -> Table:
         """
         :param table_uri: Table URI
         :return:  A Table object
@@ -1048,9 +1046,7 @@ class AbstractGremlinProxy(BaseProxy):
         readers = self._get_table_readers(table_uri=table_uri)
 
         users_by_type: Dict[str, List[User]] = {}
-        users_by_type['owner'] = sorted(
-            _safe_get_list(result, f'all_owners', transform=self._convert_to_user) or [],
-            key=attrgetter('user_id'))
+        users_by_type['owner'] = _safe_get_list(result, f'all_owners', transform=self._convert_to_user) or []
 
         stats = _safe_get_list(result, 'stats', transform=self._convert_to_statistics) or []
 
@@ -1095,7 +1091,7 @@ class AbstractGremlinProxy(BaseProxy):
                        hasLabel(VertexTypes.Application.value.label).fold()).as_('application')
         g = g.coalesce(select('table').outE(EdgeTypes.LastUpdatedAt.value.label).inV().
                        hasLabel(VertexTypes.Updatedtimestamp.value.label).
-                       values('latest_timestamp').fold()).as_('timestamp')
+                       values('timestamp').fold()).as_('timestamp')
         g = g.coalesce(select('table').inE(EdgeTypes.Tag.value.label).outV().
                        hasLabel(VertexTypes.Tag.value.label).fold()).as_('tags')
         g = g.coalesce(select('table').outE(EdgeTypes.Source.value.label).inV().
@@ -1103,10 +1099,10 @@ class AbstractGremlinProxy(BaseProxy):
         g = g.coalesce(select('table').outE(EdgeTypes.Stat.value.label).inV().
                        hasLabel(VertexTypes.Stat.value.label).fold()).as_('stats')
         g = g.coalesce(select('table').outE(EdgeTypes.Description.value.label).
-                       inV().has(VertexTypes.Description.value.label, 'source', 'user').fold()).as_('description')
-        g = g.coalesce(select('table').outE(EdgeTypes.Description.value.label).
-                       inV().has(VertexTypes.Description.value.label, 'source', without('user')).fold()). \
-            as_('programmatic_descriptions')
+                       inV().hasLabel(VertexTypes.Description.value.label).fold()).as_('description')
+        g = g.coalesce(
+            select('table').out(EdgeTypes.Description.value.label).hasLabel('Programmatic_Description').fold()
+        ).as_('programmatic_descriptions')
         g = g.coalesce(select('table').inE(EdgeTypes.Read.value.label).
                        has('date', gte(date.today() - timedelta(days=5))).
                        where(outV().hasLabel(VertexTypes.User.value.label)).
@@ -1144,8 +1140,9 @@ class AbstractGremlinProxy(BaseProxy):
         g = _V(g=self.g, label=VertexTypes.Table.value.label, key=table_uri). \
             outE(EdgeTypes.Column.value.label). \
             inV().hasLabel(VertexTypes.Column.value.label).as_('column')
-        g = g.coalesce(select('column').outE(EdgeTypes.Description.value.label).
-                       inV().has(VertexTypes.Description.value.label, 'source', 'user').fold()).as_('description')
+        g = g.coalesce(
+            select('column').out(EdgeTypes.Description.value.label).hasLabel(VertexTypes.Description.value.label).fold()
+        ).as_('description')
         g = g.coalesce(select('column').outE(EdgeTypes.Stat.value.label).inV().
                        hasLabel(VertexTypes.Stat.value.label).fold()).as_('stats')
         g = g.select('column', 'description', 'stats'). \
@@ -1236,7 +1233,7 @@ class AbstractGremlinProxy(BaseProxy):
 
         g = _V(g=self.g, label=VertexTypes.Table, key=table_uri). \
             outE(EdgeTypes.Description.value.label).inV(). \
-            has(VertexTypes.Description.value.label, 'source', 'user'). \
+            has('description_source', 'description'). \
             values('description').fold()
         descriptions = self.query_executor()(query=g, get=FromResultSet.getOnly)
         return _safe_get(descriptions)
@@ -1256,9 +1253,10 @@ class AbstractGremlinProxy(BaseProxy):
         description = unquote(description)
 
         # default table description is user added
-        desc_key = make_description_uri(subject_uri=table_uri, source='user')
+        desc_key = make_description_uri(subject_uri=table_uri, source='description')
+
         _upsert(executor=executor, g=self.g, label=VertexTypes.Description, key=desc_key,
-                key_property_name=self.key_property_name, description=description, source='user')
+                key_property_name=self.key_property_name, description=description, description_source='description')
         _link(executor=executor, g=self.g, edge_label=EdgeTypes.Description, key_property_name=self.key_property_name,
               vertex1_label=VertexTypes.Table, vertex1_key=table_uri,
               vertex2_label=VertexTypes.Description, vertex2_key=desc_key)
@@ -1358,9 +1356,12 @@ class AbstractGremlinProxy(BaseProxy):
 
         column_uri = make_column_uri(table_uri=table_uri, column_name=column_name)
         # default table description is user added
-        desc_key = make_description_uri(subject_uri=column_uri, source='user')
-        vertex_id: Any = _upsert(executor=executor, g=self.g, label=VertexTypes.Description, key=desc_key,
-                                 key_property_name=self.key_property_name, description=description, source='user')
+        desc_key = make_description_uri(subject_uri=column_uri, source='description')
+        vertex_id: Any = _upsert(
+            executor=executor, g=self.g,
+            label=VertexTypes.Description, key=desc_key, key_property_name=self.key_property_name,
+            description=description, description_source='description'
+        )
         _link(executor=executor, g=self.g, edge_label=EdgeTypes.Description, key_property_name=self.key_property_name,
               vertex1_label=VertexTypes.Column, vertex1_key=column_uri, vertex2_id=vertex_id)
 
@@ -1377,12 +1378,14 @@ class AbstractGremlinProxy(BaseProxy):
         column_uri = make_column_uri(table_uri=table_uri, column_name=column_name)
         g = _V(g=self.g, label=VertexTypes.Column, key=column_uri)
         g = g.outE(EdgeTypes.Description.value.label).inV()
-        g = g.has(VertexTypes.Description.value.label, 'source', 'user').values('description')
+        g = g.has(VertexTypes.Description.value.label, 'description_source', 'description').values('description')
         return self.query_executor()(query=g, get=FromResultSet.getOptional)
 
     @timer_with_counter
     @overrides
-    def get_popular_tables(self, *, num_entries: int = 10) -> List[PopularTable]:
+    def get_popular_tables(self, *,
+                           num_entries: int = 10,
+                           user_id: Optional[str] = None) -> List[PopularTable]:
         """
         Retrieve popular tables. As popular table computation requires full scan of table and user relationship,
         it will utilize cached method _get_popular_tables_uris.
@@ -1403,8 +1406,9 @@ class AbstractGremlinProxy(BaseProxy):
             outV().hasLabel(VertexTypes.Cluster.value.label).as_('cluster')
         g = g.inE(EdgeTypes.Cluster.value.label). \
             outV().hasLabel(VertexTypes.Database.value.label).as_('database')
-        g = g.coalesce(select('table').outE(EdgeTypes.Description.value.label).
-                       inV().has(VertexTypes.Description.value.label, 'source', 'user').fold()).as_('description')
+        g = g.coalesce(
+            select('table').out(EdgeTypes.Description.value.label).hasLabel(VertexTypes.Description.value.label).fold()
+        ).as_('description')
         g = g.select('database', 'cluster', 'schema', 'table', 'description'). \
             by('name').by('name').by('name').by('name').by(unfold().values('description').fold())
         results = self.query_executor()(query=g, get=FromResultSet.toList)
@@ -1672,11 +1676,12 @@ class AbstractGremlinProxy(BaseProxy):
             application_url=_safe_get(result, 'application_url'),
             description=_safe_get(result, 'description'),
             name=_safe_get(result, 'name'),
-            id=_safe_get(result, 'id', default=''))
+            id=_safe_get(result, 'id', default='')
+        )
 
     def _convert_to_description(self, result: Mapping[str, Any]) -> ProgrammaticDescription:
         return ProgrammaticDescription(text=_safe_get(result, 'description'),
-                                       source=_safe_get(result, 'source'))
+                                       source=_safe_get(result, 'description_source'))
 
     def _convert_to_user(self, result: Mapping[str, Any]) -> User:
         return User(email=_safe_get(result, 'email'),
@@ -1732,6 +1737,10 @@ class AbstractGremlinProxy(BaseProxy):
 
         raise NotImplementedError(f"Don't know how to handle UserResourceRel={relation}")
 
+    def get_lineage(self, *,
+                    id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        pass
+
 
 class GenericGremlinProxy(AbstractGremlinProxy):
     """
@@ -1745,7 +1754,8 @@ class GenericGremlinProxy(AbstractGremlinProxy):
 
     def __init__(self, *, host: str, port: Optional[int] = None, user: Optional[str] = None,
                  password: Optional[str] = None, traversal_source: 'str' = 'g', key_property_name: str = 'key',
-                 driver_remote_connection_options: Mapping[str, Any] = {}) -> None:
+                 driver_remote_connection_options: Mapping[str, Any] = {},
+                 **kwargs: dict) -> None:
         driver_remote_connection_options = dict(driver_remote_connection_options)
 
         # as others, we repurpose host a url

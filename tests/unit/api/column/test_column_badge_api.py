@@ -10,13 +10,14 @@ from tests.unit.test_basics import BasicTestCase
 
 TABLE_NAME = 'magic'
 BADGE_NAME = 'alpha'
+COLUMN_NAME = 'beta'
 
 
-class TestTableBadgeAPI(BasicTestCase):
+class TestColumnBadgeAPI(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.mock_client = patch('metadata_service.api.table.get_proxy_client')
+        self.mock_client = patch('metadata_service.api.column.get_proxy_client')
         self.mock_proxy = self.mock_client.start().return_value = Mock()
 
     def tearDown(self) -> None:
@@ -26,21 +27,24 @@ class TestTableBadgeAPI(BasicTestCase):
 
     def test_block_bad_badge_name(self) -> None:
         self.app.config['WHITELIST_BADGES'] = []
-        response = self.app.test_client().put(f'/table/{TABLE_NAME}/badge/{BADGE_NAME}?category=table_status')
+        response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}'
+                                              f'/badge/{BADGE_NAME}?category=table_status')
 
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_block_badge_missing_category(self) -> None:
         self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
                                                      category='table_status')]
-        response = self.app.test_client().put(f'/table/{TABLE_NAME}/badge/{BADGE_NAME}')
+        response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}'
+                                              f'/badge/{BADGE_NAME}')
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_badge_with_category(self) -> None:
         self.app.config['WHITELIST_BADGES'] = [Badge(badge_name='alpha',
                                                      category='table_status')]
-        response = self.app.test_client().put(f'/table/{TABLE_NAME}/badge/{BADGE_NAME}?category=table_status')
+        response = self.app.test_client().put(f'/table/{TABLE_NAME}/column/{COLUMN_NAME}'
+                                              f'/badge/{BADGE_NAME}?category=table_status')
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
 

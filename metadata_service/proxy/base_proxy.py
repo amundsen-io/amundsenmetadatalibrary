@@ -2,14 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+from amundsen_common.models.dashboard import DashboardSummary
+from amundsen_common.models.lineage import Lineage
 from amundsen_common.models.popular_table import PopularTable
 from amundsen_common.models.table import Table
 from amundsen_common.models.user import User
-from amundsen_common.models.dashboard import DashboardSummary
 
-from metadata_service.entity.dashboard_detail import DashboardDetail as DashboardDetailEntity
+from metadata_service.entity.dashboard_detail import \
+    DashboardDetail as DashboardDetailEntity
 from metadata_service.entity.description import Description
 from metadata_service.entity.resource_type import ResourceType
 from metadata_service.util import UserResourceRel
@@ -23,6 +25,18 @@ class BaseProxy(metaclass=ABCMeta):
 
     @abstractmethod
     def get_user(self, *, id: str) -> Union[User, None]:
+        pass
+
+    @abstractmethod
+    def create_update_user(self, *, user: User) -> Tuple[User, bool]:
+        """
+        Allows creating and updating users. Returns a tuple of the User
+        object that has been created or updated as well as a flag that
+        depicts whether or no the user was created or updated.
+
+        :param user: a User object
+        :return: Tuple of [User object, bool (True = created, False = updated)]
+        """
         pass
 
     @abstractmethod
@@ -84,7 +98,9 @@ class BaseProxy(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_popular_tables(self, *, num_entries: int) -> List[PopularTable]:
+    def get_popular_tables(self, *,
+                           num_entries: int,
+                           user_id: Optional[str] = None) -> List[PopularTable]:
         pass
 
     @abstractmethod
@@ -154,4 +170,15 @@ class BaseProxy(metaclass=ABCMeta):
     def get_resources_using_table(self, *,
                                   id: str,
                                   resource_type: ResourceType) -> Dict[str, List[DashboardSummary]]:
+        pass
+
+    @abstractmethod
+    def get_lineage(self, *,
+                    id: str, resource_type: ResourceType, direction: str, depth: int) -> Lineage:
+        """
+        Method should be implemented to obtain lineage from whatever source is preferred internally
+        :param direction: if the request is for a list of upstream/downstream nodes or both
+        :param depth: the level of lineage requested (ex: 1 would mean only nodes directly connected
+        to the current id in whatever direction is specified)
+        """
         pass
