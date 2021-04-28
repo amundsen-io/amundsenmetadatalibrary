@@ -1,3 +1,7 @@
+# Deprecated: please visit https://github.com/amundsen-io/amundsen/tree/main/metadata
+
+The Amundsen project [moved to a monorepo](https://github.com/amundsen-io/rfcs/pull/31). This repository will be kept up temporarily to allow users to transition gracefully, but new PRs won't be accepted.
+
 # Amundsen Metadata Service
 [![PyPI version](https://badge.fury.io/py/amundsen-metadata.svg)](https://badge.fury.io/py/amundsen-metadata)
 [![Build Status](https://api.travis-ci.com/lyft/amundsenmetadatalibrary.svg?branch=master)](https://travis-ci.com/lyft/amundsenmetadatalibrary)
