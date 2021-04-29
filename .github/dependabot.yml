@@ -1,0 +1,36 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: boto3
+    versions:
+    - 1.16.47
+    - 1.16.63
+    - 1.17.14
+    - 1.17.20
+  - dependency-name: overrides
+    versions:
+    - 3.1.0
+  - dependency-name: pytest-cov
+    versions:
+    - 2.11.1
+  - dependency-name: pytest
+    versions:
+    - 6.2.2
+  - dependency-name: flake8-tidy-imports
+    versions:
+    - 4.2.1
+  - dependency-name: aniso8601
+    versions:
+    - 8.1.1
+  - dependency-name: pytest-mock
+    versions:
+    - 3.5.1
+  - dependency-name: pyatlasclient
+    versions:
+    - 1.1.2
