@@ -1,4 +1,6 @@
 ### Feature
+* Add System Statistics Metrics Endpoint ([#228](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/228)) ([`0f47f53`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/0f47f537bad27b6972aeded95200b50125a8243b))
+* Implements the table and column lineage for Neo4j ([#294](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/294)) ([`3bc3193`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/3bc3193add5d1772ea1190793414ad0256dd81d7))
 * Create users in metadata backend via API ([#289](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/289)) ([`eeba485`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/eeba485b5c211e6d92bbb841bfc26bca79f051e0))
 * Add Column Badge API ([#273](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/273)) ([`ee0ac63`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/ee0ac63194a4286715cd32c34042443c979f4cea))
 * Column Lineage API ([#280](https://github.com/amundsen-io/amundsenmetadatalibrary/issues/280)) ([`681893f`](https://github.com/amundsen-io/amundsenmetadatalibrary/commit/681893fb47ebcfc61ed4736f535618fddb6c4631))
