@@ -53,7 +53,7 @@ Jinja2>=2.10.1
 jsonschema==2.6.0
 MarkupSafe==1.1 
 pytz==2018.4
-Werkzeug==0.15.5
+Werkzeug==3.0.1
 wheel==0.33.1
 neo4j==1.7.6
 neotime==1.7.1
